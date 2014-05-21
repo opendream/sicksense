@@ -5,9 +5,19 @@ var when = require('when');
 describe('UserController test', function() {
 
   describe('[POST] /users', function() {
-    this.timeout(10000);
 
     before(function(done) {
+      clearUsers()
+        .then(clearAccessTokens)
+        .then(function() {
+          done();
+        })
+        .catch(function(err) {
+          done(err);
+        });
+    });
+
+    after(function(done) {
       clearUsers()
         .then(clearAccessTokens)
         .then(function() {
@@ -128,33 +138,4 @@ describe('UserController test', function() {
 
   });
 
-  describe('[POST] login', function() {
-    it('should require accessToken query parameters', function(done) {
-      done();
-    });
-  });
-
 });
-
-function clearUsers() {
-  return when.promise(function(resolve, reject) {
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
-      if (err) return reject(err);
-      client.query('DELETE FROM users', [], function(err, result) {
-        pgDone();
-
-        if (err) return reject(err);
-        resolve();
-      });
-    });
-  });
-}
-
-function clearAccessTokens() {
-  return when.promise(function(resolve, reject) {
-    AccessToken.destroy().exec(function(err) {
-      if (err) return reject(err);
-      resolve();
-    });
-  });
-}

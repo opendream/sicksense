@@ -97,35 +97,17 @@ module.exports = {
 
           // Then generate accessToken.
           AccessToken.create({
-            token: hat(512, 36),
+            token: AccessTokenService.generateToken(),
             userId: savedUser.id
           }).exec(function(err, result) {
             var accessToken = (result && result.token) || '';
 
-            res.ok({
-              id: savedUser.id,
-              email: savedUser.email,
-              tel: savedUser.tel,
-              gender: savedUser.gender,
-              birthYear: savedUser.birthYear,
-              address: {
-                subdistrict: savedUser.subdistrict,
-                district: savedUser.district,
-                city: savedUser.city
-              },
-              location: {
-                longitude: savedUser.longitude,
-                latitude: savedUser.latitude
-              },
-              accessToken: accessToken
-            });
+            res.ok(UserService.getUserJSON(savedUser, { accessToken: accessToken }));
           });
 
         });
       });
     }
-
-    return;
   }
 
 };

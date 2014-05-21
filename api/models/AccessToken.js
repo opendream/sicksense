@@ -8,6 +8,7 @@ module.exports = {
     userId: {
       type: "string",
       required: true
-    }
+    },
+    expired: "datetime"
   }
 };
