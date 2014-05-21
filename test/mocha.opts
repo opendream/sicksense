@@ -1,0 +1,5 @@
+--require should
+--require test/testHelper.js test/index.js
+--reporter spec
+--recursive
+--colors
