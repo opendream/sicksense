@@ -1,19 +1,21 @@
 var pg = require('pg');
 var request = require('supertest');
+var when = require('when');
 
 describe('UserController test', function() {
 
   describe('[POST] /users', function() {
+    this.timeout(10000);
 
     before(function(done) {
-      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
-        if (err) return done(err);
-        client.query('DELETE FROM users', [], function(err, result) {
-          pgDone();
-          if (err) return done(err);
+      clearUsers()
+        .then(clearAccessTokens)
+        .then(function() {
           done();
+        })
+        .catch(function(err) {
+          done(err);
         });
-      });
     });
 
     it('should validate parameters', function(done) {
@@ -62,6 +64,7 @@ describe('UserController test', function() {
           if (err) return done(err);
 
           res.body.meta.status.should.equal(200);
+          res.body.response.should.not.have.property('password');
           res.body.response.id.should.ok;
           res.body.response.email.should.equal("siriwat@opendream.co.th");
           res.body.response.tel.should.equal("0841291342");
@@ -72,8 +75,22 @@ describe('UserController test', function() {
           res.body.response.address.city.should.equal("Bangkok");
           res.body.response.location.latitude.should.equal(13.1135);
           res.body.response.location.longitude.should.equal(105.0014);
+          res.body.response.accessToken.should.be.ok;
 
-          done();
+          // Also verify that password is encrypted.
+          pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+            client.query(
+              "SELECT password FROM users WHERE id=$1",
+              [ res.body.response.id ],
+              function(err, result) {
+                pgDone();
+                if (err) return done(err);
+
+                result.rows[0].password.should.not.equal("12345678");
+                done();
+              }
+            );
+          });
         });
     });
 
@@ -111,4 +128,33 @@ describe('UserController test', function() {
 
   });
 
+  describe('[POST] login', function() {
+    it('should require accessToken query parameters', function(done) {
+      done();
+    });
+  });
+
 });
+
+function clearUsers() {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) return reject(err);
+      client.query('DELETE FROM users', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
+function clearAccessTokens() {
+  return when.promise(function(resolve, reject) {
+    AccessToken.destroy().exec(function(err) {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}

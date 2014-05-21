@@ -1,4 +1,7 @@
 var pg = require('pg');
+var hat = require('hat');
+var wkt = require('terraformer-wkt-parser');
+var passgen = require('password-hash-and-salt');
 
 module.exports = {
 
@@ -39,66 +42,88 @@ module.exports = {
     }
 
     var data = req.body;
-    var values = [
-      data.email,
-      data.password,
-      data.tel,
-      data.gender,
-      data.birthYear,
-      data.address.subdistrict,
-      data.address.district,
-      data.address.city,
-      data.location.latitude,
-      data.location.longitude,
-      new Date(),
-      new Date()
-    ];
+    passgen(data.password).hash(sails.config.session.secret, function(err, hashedPassword) {
+      var values = [
+        data.email,
+        hashedPassword,
+        data.tel,
+        data.gender,
+        data.birthYear,
+        data.address.subdistrict,
+        data.address.district,
+        data.address.city,
+        data.location.latitude,
+        data.location.longitude,
+        'SRID=4326;' + wkt.convert({
+          type: "Point",
+          coordinates: [
+            data.location.latitude,
+            data.location.longitude
+          ]
+        }),
+        new Date(),
+        new Date()
+      ];
 
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, done) {
-      if (err) return res.serverError("Could not connect to database");
-
-      client.query('\
-        INSERT \
-        INTO "users" ( \
-          "email", "password", "tel", "gender", "birthYear", "subdistrict", "district", \
-          "city", "latitude", "longitude", "createdAt", "updatedAt" \
-        ) \
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING * \
-      ', values, function(err, result) {
-        done();
-
-        if (err) {
-          if (err.detail.match(/Key \(email\).*already exists/)) {
-            res.conflict("This e-mail is already registered, please login or try another e-mail");
-          }
-          else {
-            res.serverError("Could not perform your request");
-          }
-
-          return;
-        }
-
-        var savedUser = result.rows[0];
-
-        res.ok({
-          id: savedUser.id,
-          email: savedUser.email,
-          tel: savedUser.tel,
-          gender: savedUser.gender,
-          birthYear: savedUser.birthYear,
-          address: {
-            subdistrict: savedUser.subdistrict,
-            district: savedUser.district,
-            city: savedUser.city
-          },
-          location: {
-            longitude: savedUser.longitude,
-            latitude: savedUser.latitude
-          }
-        });
-
-      });
+      save(values);
     });
+
+    function save(values) {
+      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, done) {
+        if (err) return res.serverError("Could not connect to database");
+
+        client.query('\
+          INSERT \
+          INTO "users" ( \
+            "email", "password", "tel", "gender", "birthYear", "subdistrict", "district", \
+            "city", "latitude", "longitude", "geom", "createdAt", "updatedAt" \
+          ) \
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING * \
+        ', values, function(err, result) {
+          done();
+
+          if (err) {
+            if (err.detail.match(/Key \(email\).*already exists/)) {
+              res.conflict("This e-mail is already registered, please login or try another e-mail");
+            }
+            else {
+              res.serverError("Could not perform your request");
+            }
+
+            return;
+          }
+
+          var savedUser = result.rows[0];
+
+          // Then generate accessToken.
+          AccessToken.create({
+            token: hat(512, 36),
+            userId: savedUser.id
+          }).exec(function(err, result) {
+            var accessToken = (result && result.token) || '';
+
+            res.ok({
+              id: savedUser.id,
+              email: savedUser.email,
+              tel: savedUser.tel,
+              gender: savedUser.gender,
+              birthYear: savedUser.birthYear,
+              address: {
+                subdistrict: savedUser.subdistrict,
+                district: savedUser.district,
+                city: savedUser.city
+              },
+              location: {
+                longitude: savedUser.longitude,
+                latitude: savedUser.latitude
+              },
+              accessToken: accessToken
+            });
+          });
+
+        });
+      });
+    }
 
     return;
   }
