@@ -9,6 +9,7 @@
     "opendream"
   ],
   "dependencies": {
+    "date-utils": "^1.2.15",
     "ejs": "~0.8.4",
     "grunt": "0.4.2",
     "grunt-contrib-clean": "~0.5.0",
@@ -22,14 +23,19 @@
     "grunt-contrib-watch": "~0.5.3",
     "grunt-sails-linker": "~0.9.5",
     "grunt-sync": "~0.0.4",
+    "hat": "0.0.3",
     "include-all": "~0.1.3",
     "password-hash-and-salt": "^0.1.2",
+    "pg": "^3.1.0",
     "rc": "~0.3.3",
-    "sails": "~0.10.0-rc7"
+    "sails": "~0.10.0-rc7",
+    "terraformer-wkt-parser": "^1.0.0",
+    "when": "^3.2.1"
   },
   "devDependencies": {
-    "should": "~3.2.0",
+    "Faker": "^0.7.2",
     "rc": "~0.3.3",
+    "should": "~3.2.0",
     "supertest": "*"
   },
   "scripts": {
