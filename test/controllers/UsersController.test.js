@@ -1,3 +1,4 @@
+var pg = require('pg');
 var request = require('supertest');
 
 describe('UserController test', function() {
@@ -5,9 +6,13 @@ describe('UserController test', function() {
   describe('[POST] /users', function() {
 
     before(function(done) {
-      Users.destroy({}).exec(function(err) {
+      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
         if (err) return done(err);
-        done();
+        client.query('DELETE FROM users', [], function(err, result) {
+          pgDone();
+          if (err) return done(err);
+          done();
+        });
       });
     });
 
