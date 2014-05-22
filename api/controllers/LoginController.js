@@ -27,12 +27,10 @@ module.exports = {
 
       UserService.getUserByEmailPassword(client, email, password)
         .then(function(_user) {
-          console.log('==', _user);
           user = _user;
           return UserService.getAccessToken(client, user.id, true);
         })
         .then(function(accessToken) {
-          console.log('++', accessToken);
           res.ok(UserService.getUserJSON(user, { accessToken: accessToken.token }));
         })
         .catch(function(err) {
