@@ -97,7 +97,15 @@ describe('UserController test', function() {
                 if (err) return done(err);
 
                 result.rows[0].password.should.not.equal("12345678");
-                done();
+
+                // AccessToken must not expired.
+                AccessToken.findOneByToken(res.body.response.accessToken).exec(function(err, accessToken) {
+                  if (err) return done(err);
+                  accessToken.expired.should.be.ok;
+                  accessToken.expired.getTime().should.greaterThan((new Date()).getTime());
+
+                  done();
+                });
               }
             );
           });
