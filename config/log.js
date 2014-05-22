@@ -22,7 +22,7 @@ module.exports = {
   // 'verbose': Display calls from `.error()`, `.warn()`, `.debug()`, `.info()` to `.verbose()`
   //
   log: {
-    level: 'silly'
+    level: 'info'
   }
 
 };
