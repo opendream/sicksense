@@ -20,6 +20,10 @@ module.exports.policies = {
   // (`true` allows public access)
   '*': true,
 
+	'ReportsController': {
+		create: 'tokenAuth'
+	}
+
 	// Here's an example of mapping some policies to run before
   // a controller and its actions
 	// RabbitController: {
