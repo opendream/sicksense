@@ -96,14 +96,14 @@ module.exports = {
           var savedUser = result.rows[0];
 
           // Then generate accessToken.
-          AccessToken.create({
-            token: AccessTokenService.generateToken(),
-            userId: savedUser.id
-          }).exec(function(err, result) {
-            var accessToken = (result && result.token) || '';
-
-            res.ok(UserService.getUserJSON(savedUser, { accessToken: accessToken }));
-          });
+          AccessTokenService.refresh(savedUser.id)
+            .then(function(accessToken) {
+              res.ok(UserService.getUserJSON(savedUser, { accessToken: accessToken.token }));
+            })
+            .catch(function(err) {
+              sails.log.error(err);
+              res.serverError(new Error("Registration is success but cannot automatically login. Please login manually."));
+            });
 
         });
       });

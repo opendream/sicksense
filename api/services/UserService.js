@@ -76,7 +76,7 @@ function getAccessToken(client, userId, refresh) {
   });
 }
 
-function getUserJSON(user, extra) {
+function getUserJSON (user, extra) {
   extra = extra || {};
 
   return _.assign({
