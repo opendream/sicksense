@@ -7,8 +7,8 @@ describe('UserController test', function() {
   describe('[POST] /users', function() {
 
     before(function(done) {
-      clearUsers()
-        .then(clearAccessTokens)
+      TestHelper.clearUsers()
+        .then(TestHelper.clearAccessTokens)
         .then(function() {
           done();
         })
@@ -18,8 +18,8 @@ describe('UserController test', function() {
     });
 
     after(function(done) {
-      clearUsers()
-        .then(clearAccessTokens)
+      TestHelper.clearUsers()
+        .then(TestHelper.clearAccessTokens)
         .then(function() {
           done();
         })

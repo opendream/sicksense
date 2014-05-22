@@ -2,14 +2,14 @@ var request = require('supertest');
 var when = require('when');
 var pg = require('pg');
 
-describe('Login', function() {
+describe('LoginController test', function() {
 
   describe('[POST] login', function() {
     before(function(done) {
-      clearUsers()
-        .then(clearAccessTokens)
+      TestHelper.clearUsers()
+        .then(TestHelper.clearAccessTokens)
         .then(function() {
-          createUser({ email: "siriwat@opendream.co.th", password: "12345678" })
+          TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" })
             .then(function(user) {
               done();
             })
@@ -23,8 +23,8 @@ describe('Login', function() {
     });
 
     after(function(done) {
-      clearUsers()
-        .then(clearAccessTokens)
+      TestHelper.clearUsers()
+        .then(TestHelper.clearAccessTokens)
         .then(function() {
           done();
         })

@@ -4,7 +4,7 @@ var wkt = require('terraformer-wkt-parser');
 var passgen = require('password-hash-and-salt');
 var Faker = require('Faker');
 
-global.clearUsers = function clearUsers() {
+function clearUsers() {
   return when.promise(function(resolve, reject) {
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) return reject(err);
@@ -16,18 +16,18 @@ global.clearUsers = function clearUsers() {
       });
     });
   });
-};
+}
 
-global.clearAccessTokens = function clearAccessTokens() {
+function clearAccessTokens() {
   return when.promise(function(resolve, reject) {
     AccessToken.destroy().exec(function(err) {
       if (err) return reject(err);
       resolve();
     });
   });
-};
+}
 
-global.createUser = function createUser(values) {
+function createUser(values) {
   values = values || {};
 
   return when.promise(function(resolve, reject) {
@@ -76,4 +76,10 @@ global.createUser = function createUser(values) {
       });
     });
   });
+}
+
+global.TestHelper = {
+  createUser: createUser,
+  clearUsers: clearUsers,
+  clearAccessTokens: clearAccessTokens
 };
