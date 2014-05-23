@@ -35,6 +35,9 @@ module.exports = {
       return res.badRequest(_.first(errors).msg, paramErrors);
     }
 
+    var values = req.body;
+    values.userId = req.user.id;
+
     var report;
     ReportService.create(req.body)
       .then(function(_report) {

@@ -16,7 +16,7 @@ module.exports = function(req, res, next) {
           UserService.getUserByID(client, accessToken.userId)
             .then(function(user) {
               pgDone();
-              res.user = user;
+              req.user = user;
               next();
             })
             .finally(function() {

@@ -37,7 +37,7 @@ CREATE TABLE reports
   longitude double precision,
   geom Geometry(Point, 4326),
   "moreInfo" text,
-  "userId" integer,
+  "userId" integer NOT NULL,
   "createdAt" timestamp with time zone,
   "updatedAt" timestamp with time zone,
   CONSTRAINT reports_pkey PRIMARY KEY (id)
@@ -51,7 +51,7 @@ DROP TABLE symptoms;
 CREATE TABLE symptoms
 (
   id serial NOT NULL,
-  name text,
+  name text NOT NULL,
   "createdAt" timestamp with time zone,
   "updatedAt" timestamp with time zone,
   CONSTRAINT symptoms_pkey PRIMARY KEY (id)
@@ -64,9 +64,9 @@ DROP TABLE reportssymptoms;
 
 CREATE TABLE reportssymptoms
 (
-  "reportId" integer,
-  "symptomId" integer,
   id serial NOT NULL,
+  "reportId" integer NOT NULL,
+  "symptomId" integer NOT NULL,
   "createdAt" timestamp with time zone,
   "updatedAt" timestamp with time zone,
   CONSTRAINT reportssymptoms_pkey PRIMARY KEY (id)
