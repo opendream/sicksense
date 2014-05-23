@@ -146,4 +146,102 @@ describe('UserController test', function() {
 
   });
 
+  describe('[GET] /user/:id/reports', function() {
+    var user, accessToken, anotherAccessToken;
+
+    before(function(done) {
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function(_user) {
+          user = _user;
+          accessToken = user.accessToken;
+        })
+        .then(function() {
+          return TestHelper.createUser({ email: "siriwat+faker@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function(anotherUser) {
+          anotherAccessToken = anotherUser.accessToken;
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should require accessToken', function(done) {
+      request(sails.hooks.http.app)
+        .get('/users/' + user.id + '/reports')
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should check only owner can get own reports history', function(done) {
+      request(sails.hooks.http.app)
+        .get('/users/' + user.id + '/reports')
+        .query({ accessToken: anotherAccessToken })
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should return user\'s reports with respect offset and limit', function(done) {
+      var reports = [];
+
+      doMockReports().then(function() {
+        request(sails.hooks.http.app)
+          .get('/users/' + user.id + '/reports')
+          .query({ accessToken: accessToken, offset: 1, limit: 1 })
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(err);
+
+            res.body.response.reports.should.be.ok;
+            res.body.response.reports.count.should.equal(4);
+            res.body.response.reports.items.should.be.Array;
+            res.body.response.reports.items.length.should.equal(1);
+
+            var _reports = res.body.response.reports.items;
+
+            _reports[0].should.have.properties([ 'id', 'isFine', 'startedAt', 'location' ]);
+            _reports[0].id.should.equal(reports[2].id);
+            // Must hide privacy data.
+            _reports[0].should.not.have.properties([ 'userId' ]);
+
+            done();
+          });
+      });
+
+      function doMockReports() {
+        return TestHelper.createReport({ userId: user.id })
+          .then(function(report) {
+            reports.push(report);
+            return TestHelper.createReport({ userId: user.id });
+          })
+          .then(function(report) {
+            reports.push(report);
+            return TestHelper.createReport({ userId: user.id });
+          })
+          .then(function(report) {
+            reports.push(report);
+            return TestHelper.createReport({ userId: user.id });
+          })
+          .then(function(report) {
+            reports.push(report);
+          });
+      }
+
+    });
+
+  });
+
 });

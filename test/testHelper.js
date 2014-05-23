@@ -3,6 +3,8 @@ var when = require('when');
 var wkt = require('terraformer-wkt-parser');
 var passgen = require('password-hash-and-salt');
 var Faker = require('Faker');
+var rack = require('hat').rack(512, 36);
+require('date-utils');
 
 function clearUsers() {
   return when.promise(function(resolve, reject) {
@@ -27,7 +29,7 @@ function clearAccessTokens() {
   });
 }
 
-function createUser(values) {
+function createUser(values, generateAccessToken) {
   values = values || {};
 
   return when.promise(function(resolve, reject) {
@@ -73,7 +75,22 @@ function createUser(values) {
           pgDone();
 
           if (err) return reject(err);
-          resolve(result.rows[0]);
+
+          var user = result.rows[0];
+
+          if (generateAccessToken) {
+            AccessToken.create({
+              token: rack(),
+              userId: user.id,
+              expired: (new Date()).addDays(30)
+            }).exec(function(err, accessToken) {
+              user.accessToken = accessToken.token;
+              resolve(user);
+            });
+          }
+          else {
+            resolve(user);
+          }
         });
       });
     });
@@ -99,13 +116,13 @@ function createReport (values) {
         _.isEmpty(values.symptoms),
         Boolean(values.animalContact),
         new Date(values.startedAt || new Date()),
-        parseFloat(values.location.latitude || fakeLatitude),
-        parseFloat(values.location.longitude || fakeLongitude),
+        parseFloat((values.location && values.location.latitude) || fakeLatitude),
+        parseFloat((values.location && values.location.longitude) || fakeLongitude),
         'SRID=4326;' + wkt.convert({
           type: "Point",
           coordinates: [
-            parseFloat(values.location.longitude || fakeLongitude),
-            parseFloat(values.location.latitude || fakeLatitude)
+            parseFloat((values.location && values.location.longitude) || fakeLongitude),
+            parseFloat((values.location && values.location.latitude) || fakeLatitude)
           ]
         }),
         values.moreInfo || Faker.Lorem.paragraph(),

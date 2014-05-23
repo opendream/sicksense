@@ -39,6 +39,11 @@ module.exports.routes = {
     action: 'create'
   },
 
+  'get /users/:id/reports': {
+    controller: 'users',
+    action: 'userReports'
+  },
+
   'post /reports': {
     controller: 'reports',
     action: 'create'

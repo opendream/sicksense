@@ -2,6 +2,7 @@ var pg = require('pg');
 var hat = require('hat');
 var wkt = require('terraformer-wkt-parser');
 var passgen = require('password-hash-and-salt');
+var when = require('when');
 
 module.exports = {
 
@@ -108,6 +109,97 @@ module.exports = {
         });
       });
     }
+  },
+
+  userReports: function(req, res) {
+    // Check own access token first.
+    AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
+      if (err) {
+        sails.log.error(err);
+        return res.accessToken(new Error("Could not perform your request"));
+      }
+      
+      if (!accessToken || accessToken.userId != req.params.id) {
+        return res.forbidden(new Error("You can not get another user's reports"));
+      }
+
+      if (req.query.offset) {
+        req.sanitize('offset', 'Field `offset` is not valid').toInt();
+      }
+      if (req.query.limit) {
+        req.sanitize('limit', 'Field `limit` is not valid').toInt();
+      }
+
+      var errors = req.validationErrors();
+      var paramErrors = req.validationErrors(true);
+      if (errors) {
+        return res.badRequest(_.first(errors).msg, paramErrors);
+      }
+
+      var query = _.extend({
+        offset: 0,
+        limit: 10
+      }, req.query);
+
+      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+        if (err) {
+          sails.log.error(err);
+          return res.serverError(new Error("Could not connect to database"));
+        }
+
+        var selectQuery, selectValues, countQuery, countValues;
+
+        selectQuery = '\
+          SELECT * \
+          FROM reports r \
+          ORDER BY r."createdAt" DESC \
+          LIMIT $1 OFFSET $2\
+        ';
+        selectValues = [ query.limit, query.offset ];
+
+        countQuery = '\
+          SELECT COUNT(r.id) as total \
+          FROM reports r \
+        ';
+        countValues = [];
+
+        client.query(selectQuery, selectValues, function(err, result) {
+          if (err) {
+            sails.log.error(err);
+            return res.serverError(new Error("Could not perform your request"));
+          }
+
+          client.query(countQuery, countValues, function(err, countResult) {
+            pgDone();
+
+            if (err) {
+              sails.log.error(err);
+              return res.serverError(new Error("Could not perform your request"));
+            }
+
+            when.map(result.rows, function(row) {
+              return when.promise(function(resolve, reject) {
+                ReportService.loadSymptoms(row)
+                  .then(function(symptoms) {
+                    row.symptoms = symptoms;
+                    resolve();
+                  })
+                  .catch(reject);
+              });
+            }).then(function() {
+              res.ok({
+                reports: {
+                  count: parseInt(countResult.rows[0].total),
+                  items: _.map(result.rows, function(row) {
+                    return ReportService.getReportJSON(row, { symptoms: row.symptoms });
+                  })
+                }
+              });
+            });
+          });
+        });
+      });
+    });
   }
 
 };
