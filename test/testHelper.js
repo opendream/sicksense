@@ -59,6 +59,8 @@ function createUser(values) {
       ];
 
       pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+        if (err) return reject(err);
+
         var query = '\
           INSERT \
           INTO "users" \
@@ -78,8 +80,53 @@ function createUser(values) {
   });
 }
 
+function clearReports () {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) return reject(err);
+
+      client.query('DELETE FROM reports', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
+function clearSymptoms () {
+  return when.promise(function(resolve, reject) {
+    Symptoms.destroy().exec(function(err) {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
+
+function clearReportsSymptoms () {
+  return when.promise(function(resolve, reject) {
+    ReportsSymptoms.destroy().exec(function(err) {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
+
+function clearAll () {
+  return clearUsers()
+    .then(clearAccessTokens)
+    .then(clearSymptoms)
+    .then(clearReports)
+    .then(clearReportsSymptoms);
+}
+
 global.TestHelper = {
   createUser: createUser,
   clearUsers: clearUsers,
-  clearAccessTokens: clearAccessTokens
+  clearAccessTokens: clearAccessTokens,
+  clearSymptoms: clearSymptoms,
+  clearReportsSymptoms: clearReportsSymptoms,
+  clearReports: clearReports,
+  clearAll: clearAll
 };

@@ -4,25 +4,15 @@ require('date-utils');
 
 describe('ReportController test', function() {
   before(function(done) {
-    TestHelper.clearUsers()
-      .then(TestHelper.clearAccessTokens)
-      .then(function() {
-        done();
-      })
-      .catch(function(err) {
-        done(err);
-      });
+    TestHelper.clearAll()
+      .then(done)
+      .catch(done);
   });
 
   after(function(done) {
-    TestHelper.clearUsers()
-      .then(TestHelper.clearAccessTokens)
-      .then(function() {
-        done();
-      })
-      .catch(function(err) {
-        done(err);
-      });
+    TestHelper.clearAll()
+      .then(done)
+      .catch(done);
   });
 
   describe('[POST] Report', function() {
