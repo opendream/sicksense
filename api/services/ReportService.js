@@ -29,8 +29,8 @@ function create (values) {
         'SRID=4326;' + wkt.convert({
           type: "Point",
           coordinates: [
-            values.location.latitude,
-            values.location.longitude
+            values.location.longitude,
+            values.location.latitude
           ]
         }),
         values.moreInfo,
@@ -72,6 +72,9 @@ function create (values) {
 
 function saveSymptoms(report, symptoms) {
   return when.promise(function(resolve, reject) {
+    if (_.isEmpty(symptoms)) {
+      return resolve([]);
+    }
     // Get symptom id first
     when.map(symptoms, function(item) {
       var deferred = when.defer();

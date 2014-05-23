@@ -27,6 +27,14 @@ expressValidator.validator.extend('hasValue', function(value) {
   return !_.isEmpty(value);
 });
 
+expressValidator.validator.extend('isLatitudeLongitudePairs', function(value) {
+  var value = value.split(',');
+  var latitude = value[0];
+  var longitude = value[1];
+
+  return  (-90.0 <= latitude && latitude <= 90.0) && (-180.0 <= longitude && longitude <= 180.0);
+});
+
 
 module.exports.express = {
   middleware: {

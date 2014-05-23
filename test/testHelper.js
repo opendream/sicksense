@@ -80,6 +80,73 @@ function createUser(values) {
   });
 }
 
+function createReport (values) {
+  values = values || {};
+
+  return when.promise(function(resolve, reject) {
+    var fakeLatitude = Faker.Address.latitude();
+    var fakeLongitude = Faker.Address.longitude();
+
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) {
+        sails.log.error(err);
+        var error = new Error("Could not connect to database");
+        error.statusCode = 500;
+        return reject(error);
+      }
+
+      var preparedValues = [
+        _.isEmpty(values.symptoms),
+        Boolean(values.animalContact),
+        new Date(values.startedAt || new Date()),
+        parseFloat(values.location.latitude || fakeLatitude),
+        parseFloat(values.location.longitude || fakeLongitude),
+        'SRID=4326;' + wkt.convert({
+          type: "Point",
+          coordinates: [
+            parseFloat(values.location.longitude || fakeLongitude),
+            parseFloat(values.location.latitude || fakeLatitude)
+          ]
+        }),
+        values.moreInfo || Faker.Lorem.paragraph(),
+        values.userId,
+        values.createdAt || new Date(),
+        values.updatedAt || new Date()
+      ];
+
+      client.query('\
+        INSERT\
+        INTO reports\
+          ("isFine", "animalContact", "startedAt", "latitude", "longitude", "geom", "moreInfo", "userId", "createdAt", "updatedAt")\
+        VALUES\
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING * \
+      ', preparedValues, function(err, result) {
+        pgDone();
+
+        if (err) {
+          sails.log.error(err);
+          var error = new Error("Could not perform your request");
+          error.statusCode = 500;
+          return reject(error);
+        }
+
+        var report = result.rows[0];
+
+        values.symptoms = values.symptoms || [];
+
+        ReportService.saveSymptoms(report, values.symptoms)
+          .then(function() {
+            resolve(report);
+          })
+          .catch(function(err) {
+            reject(err);
+          });
+      });
+    });
+
+  });
+}
+
 function clearReports () {
   return when.promise(function(resolve, reject) {
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
@@ -123,6 +190,7 @@ function clearAll () {
 
 global.TestHelper = {
   createUser: createUser,
+  createReport: createReport,
   clearUsers: clearUsers,
   clearAccessTokens: clearAccessTokens,
   clearSymptoms: clearSymptoms,

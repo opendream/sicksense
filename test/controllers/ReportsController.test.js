@@ -1,11 +1,22 @@
 var request = require('supertest');
 var when = require('when');
+var pg = require('pg');
 require('date-utils');
 
 describe('ReportController test', function() {
+  var user, accessToken;
+
   before(function(done) {
     TestHelper.clearAll()
-      .then(done)
+      .then(_.bind(TestHelper.createUser, { email: "siriwat@opendream.co.th", password: "12345678" }))
+      .then(function(_user) {
+        user = _user;
+
+        AccessTokenService.refresh(user.id).then(function(result) {
+          accessToken = result;
+          done();
+        });
+      })
       .catch(done);
   });
 
@@ -15,19 +26,97 @@ describe('ReportController test', function() {
       .catch(done);
   });
 
-  describe('[POST] Report', function() {
+  describe('[GET] Reports', function() {
 
-    var accessToken;
     before(function(done) {
-      TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" })
-        .then(function(user) {
-          AccessTokenService.refresh(user.id).then(function(result) {
-            accessToken = result;
-            done();
+      TestHelper.clearReports()
+        .then(function() {
+          return TestHelper.createReport({ userId: user.id, location: { latitude: 16.00, longitude: 103.00 } });
+        })
+        .then(function() {
+          return TestHelper.createReport({ userId: user.id, location: { latitude: 15.00, longitude: 102.00 } });
+        })
+        .then(function() {
+          return TestHelper.createReport({ userId: user.id, location: { latitude: 14.00, longitude: 101.00 } });
+        })
+        .then(function() {
+          return TestHelper.createReport({
+            userId: user.id,
+            symptoms: [ "symptom_1", "symptom_2" ],
+            location: {
+              latitude: 13.00,
+              longitude: 100.00
+            }
           });
+        })
+        .then(function() { done(); })
+        .catch(done);
+    });
+
+    it('should return reports', function(done) {
+      request(sails.hooks.http.app)
+        .get('/reports')
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.reports.should.be.ok;
+          res.body.response.reports.count.should.equal(4);
+          res.body.response.reports.items.should.be.Array;
+          res.body.response.reports.items.length.should.equal(4);
+
+          var reports = res.body.response.reports.items;
+
+          reports[0].should.have.properties([ 'id', 'isFine', 'symptoms', 'startedAt', 'location' ]);
+          reports[0].symptoms.length.should.equal(2);
+          reports[0].location.latitude.should.equal(13.00);
+          reports[0].location.longitude.should.equal(100.00);
+          // Must hide privacy data.
+          reports[0].should.not.have.properties([ 'userId' ]);
+
+          done();
         });
     });
 
+    it('should respect offset and limit', function(done) {
+      request(sails.hooks.http.app)
+        .get('/reports')
+        .query({ offset: 1, limit: 1 })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.reports.count.should.equal(4);
+          res.body.response.reports.items.length.should.equal(1);
+
+          res.body.response.reports.items[0].location.latitude.should.equal(14.00);
+          res.body.response.reports.items[0].location.longitude.should.equal(101.00);
+
+          done();
+        });
+    });
+
+    it('should respect boundary parameters', function(done) {
+      request(sails.hooks.http.app)
+        .get('/reports')
+        .query({ sw: "15.5,102.5", ne: "16.5,103.5" })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.reports.count.should.equal(1);
+          res.body.response.reports.items.length.should.equal(1);
+
+          res.body.response.reports.items[0].location.latitude.should.equal(16.00);
+          res.body.response.reports.items[0].location.longitude.should.equal(103.00);
+
+          done();
+        });
+    });
+
+  });
+
+  describe('[POST] Report', function() {
 
     it('should required `accessToken`', function(done) {
       request(sails.hooks.http.app)
@@ -258,7 +347,22 @@ describe('ReportController test', function() {
           // Must hide privacy data.
           res.body.response.should.not.have.properties([ 'userId' ]);
 
-          done();
+          // Also check in DB too.
+          pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+            if (err) return done(err);
+
+            client.query('SELECT *, ST_AsText(geom) as latlon FROM reports WHERE id=$1', [ res.body.response.id ], function(err, result) {
+              pgDone();
+              if (err) return done(err);
+
+              var report = result.rows[0];
+
+              report.userId.should.equal(user.id);
+              report.latlon.should.equal('POINT(100.587473 13.791343)');
+
+              done();
+            });
+          })
         });
     });
   });
