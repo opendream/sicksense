@@ -100,9 +100,23 @@ function createUser(values, generateAccessToken) {
 function createReport (values) {
   values = values || {};
 
+  values.address = _.extend({
+    subdistrict: "Samsen Nok",
+    district: "Huai Khwang",
+    city: "Bangkok"
+  }, values.address);
+
+  values.locationByAddress = _.extend({
+    latitude: 13.781730,
+    longitude: 100.545357
+  }, values.locationByAddress);
+
   return when.promise(function(resolve, reject) {
     var fakeLatitude = Faker.Address.latitude();
     var fakeLongitude = Faker.Address.longitude();
+
+    var latitude = parseFloat((values.location && values.location.latitude) || fakeLatitude);
+    var longitude = parseFloat((values.location && values.location.longitude) || fakeLongitude);
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {
@@ -116,13 +130,20 @@ function createReport (values) {
         _.isEmpty(values.symptoms),
         Boolean(values.animalContact),
         new Date(values.startedAt || new Date()),
-        parseFloat((values.location && values.location.latitude) || fakeLatitude),
-        parseFloat((values.location && values.location.longitude) || fakeLongitude),
+
+        values.address.subdistrict,
+        values.address.district,
+        values.address.city,
+        values.locationByAddress.latitude || latitude,
+        values.locationByAddress.longitude || longitude,
+
+        latitude,
+        longitude,
         'SRID=4326;' + wkt.convert({
           type: "Point",
           coordinates: [
-            parseFloat((values.location && values.location.longitude) || fakeLongitude),
-            parseFloat((values.location && values.location.latitude) || fakeLatitude)
+            longitude,
+            latitude
           ]
         }),
         values.moreInfo || Faker.Lorem.paragraph(),
@@ -133,10 +154,12 @@ function createReport (values) {
 
       client.query('\
         INSERT\
-        INTO reports\
-          ("isFine", "animalContact", "startedAt", "latitude", "longitude", "geom", "moreInfo", "userId", "createdAt", "updatedAt")\
-        VALUES\
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING * \
+          INTO reports\
+            ("isFine", "animalContact", "startedAt", "subdistrict", "district", "city", \
+             "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", \
+             "moreInfo", "userId", "createdAt", "updatedAt")\
+          VALUES\
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
 
