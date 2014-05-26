@@ -8,7 +8,7 @@ describe('ReportController test', function() {
 
   before(function(done) {
     TestHelper.clearAll()
-      .then(_.bind(TestHelper.createUser, { email: "siriwat@opendream.co.th", password: "12345678" }))
+      .then(_.bind(TestHelper.createUser, { email: "siriwat@opendream.co.th", password: "12345678", latitude: 13.781730, longitude: 100.545357 }))
       .then(function(_user) {
         user = _user;
 
@@ -67,7 +67,7 @@ describe('ReportController test', function() {
 
           var reports = res.body.response.reports.items;
 
-          reports[0].should.have.properties([ 'id', 'isFine', 'symptoms', 'startedAt', 'location' ]);
+          reports[0].should.have.properties([ 'id', 'isFine', 'symptoms', 'startedAt', 'location', 'userAddress', 'locationByAddress' ]);
           reports[0].symptoms.length.should.equal(2);
           reports[0].location.latitude.should.equal(13.00);
           reports[0].location.longitude.should.equal(100.00);
@@ -339,6 +339,14 @@ describe('ReportController test', function() {
           res.body.response.symptoms.indexOf('symptom_2').should.not.equal(-1);
           res.body.response.animalContact.should.equal(true);
           (new Date(res.body.response.startedAt)).getTime().should.equal(startedAt.getTime());
+
+          res.body.response.userAddress.subdistrict.should.equal("Samsen Nok");
+          res.body.response.userAddress.district.should.equal("Huai Khwang");
+          res.body.response.userAddress.city.should.equal("Bangkok");
+
+          res.body.response.locationByAddress.latitude.should.equal(13.784730);
+          res.body.response.locationByAddress.longitude.should.equal(100.585747);
+
           res.body.response.location.latitude.should.equal(13.791343);
           res.body.response.location.longitude.should.equal(100.587473);
           // More flexible. Server may cut off the long more info text.
@@ -362,7 +370,7 @@ describe('ReportController test', function() {
 
               done();
             });
-          })
+          });
         });
     });
   });

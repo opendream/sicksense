@@ -119,10 +119,19 @@ module.exports = {
 
           when.map(result.rows, function(row) {
             return when.promise(function(resolve, reject) {
+
               ReportService.loadSymptoms(row)
-                .then(function(symptoms) {
-                  row.symptoms = symptoms;
-                  resolve();
+                .then(function(result) {
+                  row.symptoms = result;
+                  return ReportService.loadUserAddress(row);
+                })
+                .then(function(result) {
+                  row.userAddress = result;
+                  return ReportService.loadLocationByAddress(result);
+                })
+                .then(function(result) {
+                  row.locationByAddress = result;
+                  resolve(row);
                 })
                 .catch(reject);
             });
@@ -131,7 +140,11 @@ module.exports = {
               reports: {
                 count: parseInt(countResult.rows[0].total),
                 items: _.map(result.rows, function(row) {
-                  return ReportService.getReportJSON(row, { symptoms: row.symptoms });
+                  return ReportService.getReportJSON(row, {
+                    symptoms: row.symptoms,
+                    userAddress: row.userAddress,
+                    locationByAddress: row.locationByAddress
+                  });
                 })
               }
             });
@@ -173,14 +186,30 @@ module.exports = {
     var values = req.body;
     values.userId = req.user.id;
 
-    var report;
+    var report, symptoms, userAddress, locationByAddress;
     ReportService.create(req.body)
       .then(function(_report) {
         report = _report;
         return ReportService.loadSymptoms(_report);
       })
-      .then(function(symptoms) {
-        return res.ok(ReportService.getReportJSON(report, { symptoms: symptoms }));
+      .then(function(result) {
+        symptoms = result;
+        return ReportService.loadUserAddress(report);
+      })
+      .then(function(result) {
+        userAddress = result;
+        return ReportService.loadLocationByAddress(result);
+      })
+      .then(function(result) {
+        locationByAddress = result;
+        report.locationByAddress = result;
+      })
+      .then(function() {
+        return res.ok(ReportService.getReportJSON(report, {
+          symptoms: symptoms,
+          userAddress: userAddress,
+          locationByAddress: locationByAddress
+        }));
       })
       .catch(function(err) {
         res.serverError(err);

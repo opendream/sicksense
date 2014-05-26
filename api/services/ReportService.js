@@ -6,7 +6,9 @@ module.exports = {
   create: create,
   getReportJSON: getReportJSON,
   saveSymptoms: saveSymptoms,
-  loadSymptoms: loadSymptoms
+  loadSymptoms: loadSymptoms,
+  loadLocationByAddress: loadLocationByAddress,
+  loadUserAddress: loadUserAddress
 };
 
 function create (values) {
@@ -165,6 +167,63 @@ function loadSymptoms(report) {
       });
     });
 
+  });
+}
+
+function loadUserAddress(report) {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) {
+        sails.log.error(err);
+        var error = new Error("Could not connect to database");
+        error.statusCode = 500;
+        return reject(error);
+      }
+
+      UserService.getUserByID(client, report.userId)
+        .then(function(user) {
+          if (!user) {
+            var error = new Error("User not found");
+            error.statusCode = 404;
+            sails.log.error(error);
+            return reject(error);
+          }
+
+          resolve({
+            subdistrict: user.subdistrict,
+            district: user.district,
+            city: user.city
+          });
+        })
+        .catch(function(err) {
+          sails.log.error(err);
+          var error = new Error("Could not perform your request");
+          error.statusCode = 500;
+          return reject(error);
+        });
+    });
+  });
+}
+
+function loadLocationByAddress(address) {
+  return when.promise(function(resolve, reject) {
+    Locations.findOne({
+      tambon_en: address.subdistrict,
+      amphoe_en: address.district,
+      province_en: address.city
+    }).exec(function(err, location) {
+      if (err) {
+        sails.log.error(err);
+        var error = new Error("Could not perform your request");
+        error.statusCode = 500;
+        return reject(error);
+      }
+
+      resolve({
+        latitude: location.latitude,
+        longitude: location.longitude
+      });
+    });
   });
 }
 
