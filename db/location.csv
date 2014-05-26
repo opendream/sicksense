@@ -1,4 +1,4 @@
-code,tambon_th,tambon_en,amphoe_en,amphoe_th,province_en,province_th,latitude,longitude
+code,tambon_th,tambon_en,amphoe_en,amphoe_th,province_en,province_th,lat,lng
 "100101","พระบรมมหาราชวัง","Praborommaharatchawang","Phra Nakhon","เขตพระนคร","Bangkok","กรุงเทพมหานคร","13.751690","100.491882"
 "100102","วังบูรพาภิรมย์","Wang Burapaphirom","Phra Nakhon","เขตพระนคร","Bangkok","กรุงเทพมหานคร","13.744580","100.498978"
 "100103","วัดราชบพิธ","Wat Ratchaborphit","Phra Nakhon","เขตพระนคร","Bangkok","กรุงเทพมหานคร","13.750480","100.499039"

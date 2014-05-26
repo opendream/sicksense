@@ -26,6 +26,11 @@ function create (values) {
         Boolean(values.isFine),
         Boolean(values.animalContact),
         new Date(values.startedAt),
+        values.address.subdistrict,
+        values.address.district,
+        values.address.city,
+        values.locationByAddress.latitude,
+        values.locationByAddress.longitude,
         parseFloat(values.location.latitude),
         parseFloat(values.location.longitude),
         'SRID=4326;' + wkt.convert({
@@ -44,9 +49,11 @@ function create (values) {
       client.query('\
         INSERT\
         INTO reports\
-          ("isFine", "animalContact", "startedAt", "latitude", "longitude", "geom", "moreInfo", "userId", "createdAt", "updatedAt")\
+          ("isFine", "animalContact", "startedAt", "subdistrict", "district", "city", \
+           "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", \
+           "moreInfo", "userId", "createdAt", "updatedAt")\
         VALUES\
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING * \
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
 
@@ -235,6 +242,15 @@ function getReportJSON(report, extra) {
     isFine: report.isFine,
     animalContact: report.animalContact,
     startedAt: report.startedAt,
+    address: {
+      subdistrict: report.subdistrict,
+      district: report.district,
+      city: report.city
+    },
+    locationByAddress: {
+      longitude: report.addressLongitude,
+      latitude: report.addressLatitude
+    },
     location: {
       longitude: report.longitude,
       latitude: report.latitude

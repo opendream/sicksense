@@ -130,7 +130,7 @@ module.exports = {
                   return ReportService.loadLocationByAddress(result);
                 })
                 .then(function(result) {
-                  row.locationByAddress = result;
+                  row.locationByUserAddress = result;
                   resolve(row);
                 })
                 .catch(reject);
@@ -143,7 +143,7 @@ module.exports = {
                   return ReportService.getReportJSON(row, {
                     symptoms: row.symptoms,
                     userAddress: row.userAddress,
-                    locationByAddress: row.locationByAddress
+                    locationByUserAddress: row.locationByUserAddress
                   });
                 })
               }
@@ -185,9 +185,18 @@ module.exports = {
 
     var values = req.body;
     values.userId = req.user.id;
+    values.address = {
+      subdistrict: req.user.subdistrict,
+      district: req.user.district,
+      city: req.user.city
+    };
 
-    var report, symptoms, userAddress, locationByAddress;
-    ReportService.create(req.body)
+    var report, symptoms, userAddress, locationByUserAddress;
+    ReportService.loadLocationByAddress(values.address)
+      .then(function(result) {
+        values.locationByAddress = result;
+        return ReportService.create(values);
+      })
       .then(function(_report) {
         report = _report;
         return ReportService.loadSymptoms(_report);
@@ -201,14 +210,14 @@ module.exports = {
         return ReportService.loadLocationByAddress(result);
       })
       .then(function(result) {
-        locationByAddress = result;
+        locationByUserAddress = result;
         report.locationByAddress = result;
       })
       .then(function() {
         return res.ok(ReportService.getReportJSON(report, {
           symptoms: symptoms,
           userAddress: userAddress,
-          locationByAddress: locationByAddress
+          locationByUserAddress: locationByUserAddress
         }));
       })
       .catch(function(err) {

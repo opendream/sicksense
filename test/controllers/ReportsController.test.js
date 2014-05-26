@@ -67,7 +67,10 @@ describe('ReportController test', function() {
 
           var reports = res.body.response.reports.items;
 
-          reports[0].should.have.properties([ 'id', 'isFine', 'symptoms', 'startedAt', 'location', 'userAddress', 'locationByAddress' ]);
+          reports[0].should.have.properties([
+            'id', 'isFine', 'symptoms', 'startedAt', 'location', 'address', 'locationByAddress',
+            'userAddress', 'locationByUserAddress'
+          ]);
           reports[0].symptoms.length.should.equal(2);
           reports[0].location.latitude.should.equal(13.00);
           reports[0].location.longitude.should.equal(100.00);
@@ -340,12 +343,17 @@ describe('ReportController test', function() {
           res.body.response.animalContact.should.equal(true);
           (new Date(res.body.response.startedAt)).getTime().should.equal(startedAt.getTime());
 
+          res.body.response.address.subdistrict.should.equal("Samsen Nok");
+          res.body.response.address.district.should.equal("Huai Khwang");
+          res.body.response.address.city.should.equal("Bangkok");
+          res.body.response.locationByAddress.latitude.should.equal(13.784730);
+          res.body.response.locationByAddress.longitude.should.equal(100.585747);
+
           res.body.response.userAddress.subdistrict.should.equal("Samsen Nok");
           res.body.response.userAddress.district.should.equal("Huai Khwang");
           res.body.response.userAddress.city.should.equal("Bangkok");
-
-          res.body.response.locationByAddress.latitude.should.equal(13.784730);
-          res.body.response.locationByAddress.longitude.should.equal(100.585747);
+          res.body.response.locationByUserAddress.latitude.should.equal(13.784730);
+          res.body.response.locationByUserAddress.longitude.should.equal(100.585747);
 
           res.body.response.location.latitude.should.equal(13.791343);
           res.body.response.location.longitude.should.equal(100.587473);
@@ -367,6 +375,12 @@ describe('ReportController test', function() {
 
               report.userId.should.equal(user.id);
               report.latlon.should.equal('POINT(100.587473 13.791343)');
+
+              report.subdistrict.should.equal("Samsen Nok");
+              report.district.should.equal("Huai Khwang");
+              report.city.should.equal("Bangkok");
+              report.addressLatitude.should.equal(13.784730);
+              report.addressLongitude.should.equal(100.585747);
 
               done();
             });
