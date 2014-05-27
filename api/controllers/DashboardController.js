@@ -1,3 +1,4 @@
+/*jshint multistr: true */
 var pg = require('pg');
 var when = require('when');
 require('date-utils');
@@ -33,7 +34,7 @@ module.exports = {
     var weekAgoEndDate = (new Date(endDate)).addDays(-7);
 
 
-    getReportSummary()
+    getReportSummary(city, startDate, endDate)
       // Get reports summary
       .then(function(result) {
         reports = result;
@@ -115,19 +116,8 @@ module.exports = {
 };
 
 
-function getReportSummary() {
+function getReportSummary(city, startDate, endDate) {
   return when.promise(function(resolve, reject) {
-    var selectQuery = '\
-      SELECT \
-        r.district as district, \
-        MAX(r."addressLatitude") as latitude, \
-        MAX(r."addressLongitude") as longitude, \
-        COUNT(CASE WHEN "isFine" THEN 1 ELSE NULL END) as finecount, \
-        COUNT(CASE WHEN "isFine" THEN NULL ELSE 1 END) as sickcount, \
-        COUNT(r.id) as total \
-      FROM reports r \
-      GROUP BY r.district \
-    ';
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {
@@ -137,7 +127,41 @@ function getReportSummary() {
         return reject(err);
       }
 
-      client.query(selectQuery, [], function(err, result) {
+      var values = [ startDate.toJSON(), endDate.toJSON() ];
+
+      var cityCriteria = '';
+      if (city) {
+        cityCriteria = ' AND r.city = $3 ';
+        values.push(city);
+      }
+
+      var selectQuery = ' \
+        SELECT \
+          r2.subdistrict, \
+          r2.district, \
+          r2.city, \
+          MAX(r2."addressLatitude") as latitude, \
+          MAX(r2."addressLongitude") as longitude, \
+          COUNT(CASE WHEN r2."isFine" THEN 1 ELSE NULL END) as finecount, \
+          COUNT(CASE WHEN r2."isFine" THEN NULL ELSE 1 END) as sickcount, \
+          COUNT(*) as total \
+        FROM ( \
+          SELECT \
+            r."userId", \
+            MAX(r.subdistrict) as subdistrict, \
+            MAX(r.district) as district, \
+            MAX(r.city) as city, \
+            MAX(r."addressLatitude") as "addressLatitude", \
+            MAX(r."addressLongitude") as "addressLongitude", \
+            BOOL_AND(r."isFine") as "isFine" \
+          FROM reports r \
+          WHERE r."createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+          GROUP BY r."userId" \
+        ) as r2 \
+        GROUP BY r2.city, r2.district, r2.subdistrict \
+      ';
+
+      client.query(selectQuery, values, function(err, result) {
         pgDone();
 
         if (err) {
@@ -147,7 +171,18 @@ function getReportSummary() {
           return reject(err);
         }
 
-        return resolve(result.rows);
+        return resolve(_.map(result.rows, function(row) {
+          return {
+            subdistrict: row.subdistrict,
+            district: row.district,
+            city: row.city,
+            latitude: parseFloat(row.latitude),
+            longitude: parseFloat(row.longitude),
+            fineCount: parseInt(row.finecount),
+            sickCount: parseInt(row.sickcount),
+            total: parseInt(row.total)
+          };
+        }));
       });
     });
   });

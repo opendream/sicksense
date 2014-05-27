@@ -107,8 +107,8 @@ describe('DashboardController Test', function() {
         // user1 this week
         .then(function() {
           return TestHelper.createReport({
-            address: report2.address,
-            locationByAddress: report2.locationByAddress,
+            address: report1.address,
+            locationByAddress: report1.locationByAddress,
             isFine: false,
             symptoms: [ 'cough', 'fever' ],
             userId: user1.id,
@@ -118,8 +118,8 @@ describe('DashboardController Test', function() {
         // user1 this week second time.
         .then(function() {
           return TestHelper.createReport({
-            address: report2.address,
-            locationByAddress: report2.locationByAddress,
+            address: report1.address,
+            locationByAddress: report1.locationByAddress,
             userId: user1.id,
             createdAt: currentDate
           });
@@ -201,6 +201,28 @@ describe('DashboardController Test', function() {
             'reports', 'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
           ]);
 
+          res.body.response.reports.count.should.equal(3);
+          res.body.response.reports.items.length.should.equal(3);
+          res.body.response.reports.items[0].should.have.properties([
+            'subdistrict', 'district', 'city', 'latitude', 'longitude', 'fineCount', 'sickCount', 'total'
+          ]);
+
+          var district1 = _.find(res.body.response.reports.items, { subdistrict: 'Samsen Nok' });
+          var district2 = _.find(res.body.response.reports.items, { subdistrict: 'Samsen Ni' });
+          var district3 = _.find(res.body.response.reports.items, { subdistrict: 'Sri Phum' });
+
+          district1.fineCount.should.equal(0);
+          district1.sickCount.should.equal(1);
+          district1.total.should.equal(1);
+
+          district2.fineCount.should.equal(0);
+          district2.sickCount.should.equal(1);
+          district2.total.should.equal(1);
+
+          district3.fineCount.should.equal(1);
+          district3.sickCount.should.equal(0);
+          district3.total.should.equal(1);
+
           res.body.response.ILI.thisWeek.should.equal(66.67);
           res.body.response.ILI.lastWeek.should.equal(33.33);
           res.body.response.ILI.delta.should.equal(33.34);
@@ -241,6 +263,23 @@ describe('DashboardController Test', function() {
             'reports', 'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
           ]);
 
+          res.body.response.reports.count.should.equal(2);
+          res.body.response.reports.items.length.should.equal(2);
+          res.body.response.reports.items[0].should.have.properties([
+            'subdistrict', 'district', 'city', 'latitude', 'longitude', 'fineCount', 'sickCount', 'total'
+          ]);
+
+          var district1 = _.find(res.body.response.reports.items, { subdistrict: 'Samsen Nok' });
+          var district2 = _.find(res.body.response.reports.items, { subdistrict: 'Samsen Ni' });
+
+          district1.fineCount.should.equal(0);
+          district1.sickCount.should.equal(1);
+          district1.total.should.equal(1);
+
+          district2.fineCount.should.equal(0);
+          district2.sickCount.should.equal(1);
+          district2.total.should.equal(1);
+
           res.body.response.ILI.thisWeek.should.equal(100);
           res.body.response.ILI.lastWeek.should.equal(50);
           res.body.response.ILI.delta.should.equal(50);
@@ -280,6 +319,28 @@ describe('DashboardController Test', function() {
           res.body.response.should.have.properties([
             'reports', 'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
           ]);
+
+          res.body.response.reports.count.should.equal(3);
+          res.body.response.reports.items.length.should.equal(3);
+          res.body.response.reports.items[0].should.have.properties([
+            'subdistrict', 'district', 'city', 'latitude', 'longitude', 'fineCount', 'sickCount', 'total'
+          ]);
+
+          var district1 = _.find(res.body.response.reports.items, { subdistrict: 'Samsen Nok' });
+          var district2 = _.find(res.body.response.reports.items, { subdistrict: 'Samsen Ni' });
+          var district3 = _.find(res.body.response.reports.items, { subdistrict: 'Sri Phum' });
+
+          district1.fineCount.should.equal(0);
+          district1.sickCount.should.equal(1);
+          district1.total.should.equal(1);
+
+          district2.fineCount.should.equal(0);
+          district2.sickCount.should.equal(1);
+          district2.total.should.equal(1);
+
+          district3.fineCount.should.equal(1);
+          district3.sickCount.should.equal(0);
+          district3.total.should.equal(1);
 
           res.body.response.ILI.thisWeek.should.equal(33.33);
           res.body.response.ILI.lastWeek.should.equal(0);
