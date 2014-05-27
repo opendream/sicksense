@@ -167,13 +167,21 @@ describe('DashboardController Test', function() {
           });
         })
         // user3 last week
-        .then(function(result) {
-          user2 = result;
+        .then(function() {
           return TestHelper.createReport({
             address: report3.address,
             locationByAddress: report3.locationByAddress,
             userId: user3.id,
             createdAt: weekAgoDate
+          });
+        })
+        // user3 before last week
+        .then(function() {
+          return TestHelper.createReport({
+            address: report3.address,
+            locationByAddress: report3.locationByAddress,
+            userId: user3.id,
+            createdAt: (new Date(weekAgoDate)).addDays(-7)
           });
         })
         .then(function() {
@@ -219,7 +227,7 @@ describe('DashboardController Test', function() {
         });
     });
 
-    it('should return dashboard data of `city` = "Bangkok" if specify', function(done) {
+    it('should return dashboard data of `city` if specify', function(done) {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
@@ -254,6 +262,45 @@ describe('DashboardController Test', function() {
           res.body.response.topSymptoms[1].name.should.equal('fever');
           res.body.response.topSymptoms[1].percentOfReports.should.equal(50);
           res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
+
+          done();
+        });
+    });
+
+    it('should return dashboard data within specific `date`', function(done) {
+      request(sails.hooks.http.app)
+        .get('/dashboard')
+        .query({
+          date: (new Date()).addDays(-7)
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.should.have.properties([
+            'reports', 'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
+          ]);
+
+          res.body.response.ILI.thisWeek.should.equal(33.33);
+          res.body.response.ILI.lastWeek.should.equal(0);
+          res.body.response.ILI.delta.should.equal(33.33);
+
+          res.body.response.numberOfReporters.should.equal(3);
+          res.body.response.numberOfReports.should.equal(3);
+          res.body.response.numberOfFinePeople.should.equal(1);
+          res.body.response.numberOfSickPeople.should.equal(2);
+          res.body.response.percentOfFinePeople.should.equal(33.33);
+          res.body.response.percentOfSickPeople.should.equal(66.67);
+
+          res.body.response.graphs.BOE.should.be.Array;
+          res.body.response.graphs.Sicksense.should.be.Array;
+
+          res.body.response.topSymptoms.should.be.Array;
+          res.body.response.topSymptoms.length.should.equal(2);
+          // No significant order if it's the same rank
+          res.body.response.topSymptoms[0].name.should.match(/rash|sore\-throat/);
+          res.body.response.topSymptoms[0].percentOfReports.should.equal(50);
+          res.body.response.topSymptoms[0].numberOfReports.should.equal(1);
 
           done();
         });

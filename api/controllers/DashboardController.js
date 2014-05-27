@@ -21,8 +21,17 @@ module.exports = {
 
     // Query parameters.
     var city = req.query.city;
-    var currentDate = (new Date()).addDays(-7);
+    var currentDate = (new Date(req.query.date || new Date())).addDays(-7);
     var weekAgoDate = (new Date(currentDate)).addDays(-7);
+
+    // Get the first week day.
+    var startDate = (new Date(currentDate)).addDays(-1 * currentDate.getDay()).clearTime();
+    // .. and endDate = startDate + 7 days
+    var endDate = (new Date(startDate)).addDays(7);
+
+    var weekAgoStartDate = (new Date(startDate)).addDays(-7);
+    var weekAgoEndDate = (new Date(endDate)).addDays(-7);
+
 
     getReportSummary()
       // Get reports summary
@@ -31,12 +40,12 @@ module.exports = {
       })
       // Get ILI summary
       .then(function() {
-        return getILI(city, currentDate)
+        return getILI(city, startDate, endDate)
           .then(function(result) {
             ILIThisWeek = result;
           })
           .then(function() {
-            return getILI(city, weekAgoDate);
+            return getILI(city, weekAgoStartDate, weekAgoEndDate);
           })
           .then(function(result) {
             ILILastWeek = result;
@@ -45,7 +54,7 @@ module.exports = {
       })
       // Get report stat
       .then(function() {
-        return getNumberOfReportersAndReports(city, currentDate)
+        return getNumberOfReportersAndReports(city, startDate, endDate)
           .then(function(result) {
             numberOfReporters = result.numberOfReporters;
             numberOfReports = result.numberOfReports;
@@ -53,14 +62,14 @@ module.exports = {
       })
       // Get top(popular) symptoms
       .then(function() {
-        return getTopSymptoms(city, currentDate)
+        return getTopSymptoms(city, startDate, endDate)
           .then(function(result) {
             topSymptoms = result.items;
           });
       })
       // Get fine and sick numbers
       .then(function() {
-        return getFineAndSickNumbers(city, currentDate)
+        return getFineAndSickNumbers(city, startDate, endDate)
           .then(function(result) {
             numberOfFinePeople = result.fineCount;
             numberOfSickPeople = result.sickCount;
@@ -144,13 +153,8 @@ function getReportSummary() {
   });
 }
 
-function getILI(city, currentDate) {
+function getILI(city, startDate, endDate) {
   return when.promise(function(resolve, reject) {
-    currentDate = new Date(currentDate || null);
-    // Get the first week day.
-    var startDate = (new Date(currentDate)).addDays(-1 * currentDate.getDay()).clearTime();
-    // .. and endDate = startDate + 7 days
-    var endDate = (new Date(startDate)).addDays(7);
 
     var ILISymptoms = sails.config.symptoms.ILISymptoms;
     var values = [ startDate.toJSON(), endDate.toJSON() ];
@@ -218,7 +222,8 @@ function getILI(city, currentDate) {
           return resolve(parseFloat(
             // Make it percent.
             (100.00 *
-              (iliResult.rows[0].ilicount / totalResult.rows[0].total)
+              // If NaN then it's zero.
+              (iliResult.rows[0].ilicount / totalResult.rows[0].total || 0 )
             )
             // Only 2 digits after the decimal place.
             .toFixed(2)
@@ -229,13 +234,9 @@ function getILI(city, currentDate) {
   });
 }
 
-function getNumberOfReportersAndReports(city, currentDate) {
+function getNumberOfReportersAndReports(city, startDate, endDate) {
   return when.promise(function(resolve, reject) {
-    currentDate = new Date(currentDate || null);
-    // Get the first week day.
-    var startDate = (new Date(currentDate)).addDays(-1 * currentDate.getDay()).clearTime();
-    // .. and endDate = startDate + 7 days
-    var endDate = (new Date(startDate)).addDays(7);
+
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {
@@ -276,13 +277,8 @@ function getNumberOfReportersAndReports(city, currentDate) {
   });
 }
 
-function getTopSymptoms(city, currentDate) {
+function getTopSymptoms(city, startDate, endDate) {
   return when.promise(function(resolve, reject) {
-    currentDate = new Date(currentDate || null);
-    // Get the first week day.
-    var startDate = (new Date(currentDate)).addDays(-1 * currentDate.getDay()).clearTime();
-    // .. and endDate = startDate + 7 days
-    var endDate = (new Date(startDate)).addDays(7);
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {
@@ -353,13 +349,8 @@ function getTopSymptoms(city, currentDate) {
   });
 }
 
-function getFineAndSickNumbers(city, currentDate) {
+function getFineAndSickNumbers(city, startDate, endDate) {
   return when.promise(function(resolve, reject) {
-    currentDate = new Date(currentDate || null);
-    // Get the first week day.
-    var startDate = (new Date(currentDate)).addDays(-1 * currentDate.getDay()).clearTime();
-    // .. and endDate = startDate + 7 days
-    var endDate = (new Date(startDate)).addDays(7);
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {
