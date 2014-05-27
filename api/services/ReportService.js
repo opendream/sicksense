@@ -189,6 +189,8 @@ function loadUserAddress(report) {
 
       UserService.getUserByID(client, report.userId)
         .then(function(user) {
+          pgDone();
+          
           if (!user) {
             var error = new Error("User not found");
             error.statusCode = 404;
