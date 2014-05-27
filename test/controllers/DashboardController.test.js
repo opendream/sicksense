@@ -199,6 +199,10 @@ describe('DashboardController Test', function() {
 
           res.body.response.numberOfReporters.should.equal(3);
           res.body.response.numberOfReports.should.equal(4);
+          res.body.response.numberOfFinePeople.should.equal(1);
+          res.body.response.numberOfSickPeople.should.equal(2);
+          res.body.response.percentOfFinePeople.should.equal(33.33);
+          res.body.response.percentOfSickPeople.should.equal(66.67);
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.Sicksense.should.be.Array;
@@ -215,7 +219,7 @@ describe('DashboardController Test', function() {
         });
     });
 
-    it('should return dashboard data of last week if specify', function(done) {
+    it('should return dashboard data of `city` = "Bangkok" if specify', function(done) {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
@@ -235,6 +239,10 @@ describe('DashboardController Test', function() {
 
           res.body.response.numberOfReporters.should.equal(2);
           res.body.response.numberOfReports.should.equal(3);
+          res.body.response.numberOfFinePeople.should.equal(0);
+          res.body.response.numberOfSickPeople.should.equal(2);
+          res.body.response.percentOfFinePeople.should.equal(0);
+          res.body.response.percentOfSickPeople.should.equal(100);
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.Sicksense.should.be.Array;

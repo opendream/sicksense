@@ -16,7 +16,7 @@ module.exports = {
 
     var reports;
     var ILIThisWeek, ILILastWeek, ILIDelta;
-    var numberOfReporters, numberOfReports;
+    var numberOfReporters, numberOfReports, numberOfFinePeople, numberOfSickPeople, percentOfFinePeople, percentOfSickPeople;
     var topSymptoms;
 
     // Query parameters.
@@ -58,6 +58,16 @@ module.exports = {
             topSymptoms = result.items;
           });
       })
+      // Get fine and sick numbers
+      .then(function() {
+        return getFineAndSickNumbers(city, currentDate)
+          .then(function(result) {
+            numberOfFinePeople = result.fineCount;
+            numberOfSickPeople = result.sickCount;
+            percentOfFinePeople = result.finePercent;
+            percentOfSickPeople = result.sickPercent;
+          });
+      })
       // Send error
       .catch(function(err) {
         if (err.statusCode == 404) {
@@ -81,6 +91,10 @@ module.exports = {
           },
           numberOfReporters: numberOfReporters,
           numberOfReports: numberOfReports,
+          numberOfFinePeople: numberOfFinePeople,
+          numberOfSickPeople: numberOfSickPeople,
+          percentOfFinePeople: percentOfFinePeople,
+          percentOfSickPeople: percentOfSickPeople,
           graphs: {
             BOE: [ 0 ],
             Sicksense: [ 0 ]
@@ -333,6 +347,67 @@ function getTopSymptoms(city, currentDate) {
             items: topList
           });
 
+        });
+      });
+    });
+  });
+}
+
+function getFineAndSickNumbers(city, currentDate) {
+  return when.promise(function(resolve, reject) {
+    currentDate = new Date(currentDate || null);
+    // Get the first week day.
+    var startDate = (new Date(currentDate)).addDays(-1 * currentDate.getDay()).clearTime();
+    // .. and endDate = startDate + 7 days
+    var endDate = (new Date(startDate)).addDays(7);
+
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) {
+        sails.log.error('-- fine and sick numbers', err);
+        var error = new Error("Could not connect to database");
+        error.statusCode = 500;
+        return reject(err);
+      }
+
+      var values = [ startDate.toJSON(), endDate.toJSON() ];
+
+      var cityCriteria = '';
+      if (city) {
+        cityCriteria = ' AND r.city = $3 ';
+        values.push(city);
+      }
+
+      client.query(' \
+        SELECT \
+          COUNT(uid) as total, \
+          COUNT(CASE WHEN fine::boolean THEN 1 ELSE NULL END) as finecount, \
+          COUNT(CASE WHEN fine::boolean THEN NULL ELSE 1 END) as sickcount \
+        FROM ( \
+          SELECT r."userId" as uid, MIN("isFine"::int) as fine \
+          FROM reports r \
+          WHERE "createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+          GROUP BY r."userId" \
+        ) as sub \
+      ', values, function(err, result) {
+        pgDone();
+
+        if (err) {
+          sails.log.error('-- count fine and sick numbers', err);
+          var error = new Error("Could not perform your request");
+          error.statusCode = 500;
+          return reject(err);
+        }
+
+        var total = parseInt(result.rows[0].total);
+        var fineCount = parseInt(result.rows[0].finecount);
+        var sickCount =  parseInt(result.rows[0].sickcount);
+
+        resolve({
+          total: total,
+          fineCount: fineCount,
+          sickCount: sickCount,
+          finePercent: parseFloat((100 * ( (fineCount / total) || 0)).toFixed(2)),
+          sickPercent: parseFloat((100 * ( (sickCount / total) || 0)).toFixed(2))
         });
       });
     });
