@@ -51,6 +51,21 @@ describe('DashboardController Test', function() {
       }
     };
 
+    var report3 = {
+      address: {
+        subdistrict: "Sri Phum",
+        district: "Amphoe Muang Chiang Mai",
+        city: "Chiang Mai"
+      },
+      locationByAddress: {
+        latitude: 18.796209,
+        longitude: 98.985741
+      }
+    };
+
+    var currentDate = (new Date()).addDays(-7);
+    var weekAgoDate = (new Date(currentDate)).addDays(-7);
+
     before(function(done) {
       TestHelper
         .createUser({
@@ -96,7 +111,8 @@ describe('DashboardController Test', function() {
             locationByAddress: report2.locationByAddress,
             isFine: false,
             symptoms: [ 'cough', 'fever' ],
-            userId: user1.id
+            userId: user1.id,
+            createdAt: currentDate
           });
         })
         // user1 this week second time.
@@ -104,7 +120,8 @@ describe('DashboardController Test', function() {
           return TestHelper.createReport({
             address: report2.address,
             locationByAddress: report2.locationByAddress,
-            userId: user1.id
+            userId: user1.id,
+            createdAt: currentDate
           });
         })
         // user1 last week
@@ -112,10 +129,10 @@ describe('DashboardController Test', function() {
           return TestHelper.createReport({
             address: report1.address,
             locationByAddress: report1.locationByAddress,
-            createdAt: (new Date()).addDays(-7),
             isFine: false,
             symptoms: [ 'sore-throat' ],
-            userId: user1.id
+            userId: user1.id,
+            createdAt: weekAgoDate
           });
         })
         // user2 this week
@@ -125,7 +142,8 @@ describe('DashboardController Test', function() {
             locationByAddress: report2.locationByAddress,
             isFine: false,
             symptoms: [ 'cough' ],
-            userId: user2.id
+            userId: user2.id,
+            createdAt: currentDate,
           });
         })
         // user2 last week
@@ -133,28 +151,29 @@ describe('DashboardController Test', function() {
           return TestHelper.createReport({
             address: report2.address,
             locationByAddress: report2.locationByAddress,
-            createdAt: (new Date()).addDays(-7),
             isFine: false,
             symptoms: [ 'rash' ],
-            userId: user2.id
+            userId: user2.id,
+            createdAt: weekAgoDate
           });
         })
         // user3 this week
         .then(function() {
           return TestHelper.createReport({
-            address: report1.address,
-            locationByAddress: report1.locationByAddress,
-            userId: user3.id
+            address: report3.address,
+            locationByAddress: report3.locationByAddress,
+            userId: user3.id,
+            createdAt: currentDate
           });
         })
         // user3 last week
         .then(function(result) {
           user2 = result;
           return TestHelper.createReport({
-            address: report1.address,
-            locationByAddress: report1.locationByAddress,
-            createdAt: (new Date()).addDays(-7),
-            userId: user3.id
+            address: report3.address,
+            locationByAddress: report3.locationByAddress,
+            userId: user3.id,
+            createdAt: weekAgoDate
           });
         })
         .then(function() {
@@ -163,7 +182,7 @@ describe('DashboardController Test', function() {
         .catch(done);
     });
 
-    it('should dashboard data', function(done) {
+    it('should return dashboard data of current week', function(done) {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .expect(200)
@@ -180,6 +199,42 @@ describe('DashboardController Test', function() {
 
           res.body.response.numberOfReporters.should.equal(3);
           res.body.response.numberOfReports.should.equal(4);
+
+          res.body.response.graphs.BOE.should.be.Array;
+          res.body.response.graphs.Sicksense.should.be.Array;
+
+          res.body.response.topSymptoms.should.be.Array;
+          res.body.response.topSymptoms[0].name.should.equal('cough');
+          res.body.response.topSymptoms[0].percentOfReports.should.equal(100);
+          res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
+          res.body.response.topSymptoms[1].name.should.equal('fever');
+          res.body.response.topSymptoms[1].percentOfReports.should.equal(50);
+          res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
+
+          done();
+        });
+    });
+
+    it('should return dashboard data of last week if specify', function(done) {
+      request(sails.hooks.http.app)
+        .get('/dashboard')
+        .query({
+          city: "Bangkok"
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.should.have.properties([
+            'reports', 'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
+          ]);
+
+          res.body.response.ILI.thisWeek.should.equal(100);
+          res.body.response.ILI.lastWeek.should.equal(50);
+          res.body.response.ILI.delta.should.equal(50);
+
+          res.body.response.numberOfReporters.should.equal(2);
+          res.body.response.numberOfReports.should.equal(3);
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.Sicksense.should.be.Array;

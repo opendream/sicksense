@@ -4,12 +4,24 @@ require('date-utils');
 
 module.exports = {
   index: function(req, res) {
+    if (req.query.date) {
+      req.check('date', 'Field `date` is invalid').isDate();
+    }
+
+    var errors = req.validationErrors();
+    var paramErrors = req.validationErrors(true);
+    if (errors) {
+      return res.badRequest(_.first(errors).msg, paramErrors);
+    }
+
     var reports;
     var ILIThisWeek, ILILastWeek, ILIDelta;
     var numberOfReporters, numberOfReports;
     var topSymptoms;
 
-    var currentDate = new Date();
+    // Query parameters.
+    var city = req.query.city;
+    var currentDate = (new Date()).addDays(-7);
     var weekAgoDate = (new Date(currentDate)).addDays(-7);
 
     getReportSummary()
@@ -19,12 +31,12 @@ module.exports = {
       })
       // Get ILI summary
       .then(function() {
-        return getILI(currentDate)
+        return getILI(city, currentDate)
           .then(function(result) {
             ILIThisWeek = result;
           })
           .then(function() {
-            return getILI(weekAgoDate);
+            return getILI(city, weekAgoDate);
           })
           .then(function(result) {
             ILILastWeek = result;
@@ -33,7 +45,7 @@ module.exports = {
       })
       // Get report stat
       .then(function() {
-        return getNumberOfReportersAndReports(currentDate)
+        return getNumberOfReportersAndReports(city, currentDate)
           .then(function(result) {
             numberOfReporters = result.numberOfReporters;
             numberOfReports = result.numberOfReports;
@@ -41,7 +53,7 @@ module.exports = {
       })
       // Get top(popular) symptoms
       .then(function() {
-        return getTopSymptoms(currentDate)
+        return getTopSymptoms(city, currentDate)
           .then(function(result) {
             topSymptoms = result.items;
           });
@@ -99,7 +111,7 @@ function getReportSummary() {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
-        reject(err);
+        return reject(err);
       }
 
       client.query(selectQuery, [], function(err, result) {
@@ -109,16 +121,16 @@ function getReportSummary() {
           sails.log.error(err);
           var error = new Error("Could not perform your request");
           error.statusCode = 500;
-          reject(err);
+          return reject(err);
         }
 
-        resolve(result.rows);
+        return resolve(result.rows);
       });
     });
   });
 }
 
-function getILI(currentDate) {
+function getILI(city, currentDate) {
   return when.promise(function(resolve, reject) {
     currentDate = new Date(currentDate || null);
     // Get the first week day.
@@ -129,11 +141,19 @@ function getILI(currentDate) {
     var ILISymptoms = sails.config.symptoms.ILISymptoms;
     var values = [ startDate.toJSON(), endDate.toJSON() ];
     var params = [];
+    var lastIndex = 0;
 
     _.each(ILISymptoms, function(value, index) {
       values.push(value);
-      params.push('$' + (index + 3)); // So it will be [ 3, 4, 5, ... ]
+      lastIndex = index + 3;
+      params.push('$' + lastIndex); // So it will be [ 3, 4, 5, ... ]
     });
+
+    var cityCriteria = '';
+    if (city) {
+      cityCriteria = ' AND r.city = $' + (lastIndex + 1) + ' ';
+      values.push(city);
+    }
 
     var selectQuery = '\
       SELECT COUNT(DISTINCT r."userId") as ilicount \
@@ -141,7 +161,7 @@ function getILI(currentDate) {
         INNER JOIN reportssymptoms rs ON r.id = rs."reportId" \
         INNER JOIN symptoms s ON rs."symptomId" = s.id \
       WHERE r."createdAt" BETWEEN $1 AND $2 \
-        AND s.name IN (' + params.join(', ') + ') \
+        AND s.name IN (' + params.join(', ') + ') ' + cityCriteria + ' \
     ';
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
@@ -149,33 +169,39 @@ function getILI(currentDate) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
-        reject(err);
+        return reject(err);
       }
 
       client.query(selectQuery, values, function(err, iliResult) {
         if (err) {
-          sails.log.error(err);
+          sails.log.error('-- iliresult', err);
           var error = new Error("Could not perform your request");
           error.statusCode = 500;
-          reject(err);
+          return reject(err);
+        }
+
+        var values = [ startDate.toJSON(), endDate.toJSON() ];
+        if (city) {
+          values.push(city);
+          cityCriteria = ' AND r.city = $3 ';
         }
 
         // Count all reports for current week.
         client.query('\
           SELECT COUNT(DISTINCT r."userId") as total \
           FROM reports r \
-          WHERE "createdAt" BETWEEN $1 AND $2 \
-        ', [ startDate.toJSON(), endDate.toJSON() ], function(err, totalResult) {
+          WHERE "createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+        ', values, function(err, totalResult) {
           pgDone();
 
           if (err) {
-            sails.log.error(err);
+            sails.log.error('-- countili', err);
             var error = new Error("Could not perform your request");
             error.statusCode = 500;
-            reject(err);
+            return reject(err);
           }
 
-          resolve(parseFloat(
+          return resolve(parseFloat(
             // Make it percent.
             (100.00 *
               (iliResult.rows[0].ilicount / totalResult.rows[0].total)
@@ -189,7 +215,7 @@ function getILI(currentDate) {
   });
 }
 
-function getNumberOfReportersAndReports(currentDate) {
+function getNumberOfReportersAndReports(city, currentDate) {
   return when.promise(function(resolve, reject) {
     currentDate = new Date(currentDate || null);
     // Get the first week day.
@@ -199,27 +225,35 @@ function getNumberOfReportersAndReports(currentDate) {
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {
-        sails.log.error(err);
+        sails.log.error('-- report numbers', err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
-        reject(err);
+        return reject(err);
+      }
+
+      var values = [ startDate.toJSON(), endDate.toJSON() ];
+
+      var cityCriteria = '';
+      if (city) {
+        cityCriteria = ' AND r.city = $3 ';
+        values.push(city);
       }
 
       client.query(' \
         SELECT COUNT(*) as totalreports, COUNT(DISTINCT "userId") as totalreporters \
-        FROM reports \
-        WHERE "createdAt" BETWEEN $1 AND $2 \
-      ', [ startDate.toJSON(), endDate.toJSON() ], function(err, result) {
+        FROM reports r \
+        WHERE "createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+      ', values, function(err, result) {
         pgDone();
 
         if (err) {
-          sails.log.error(err);
+          sails.log.error('-- count report numbers', err);
           var error = new Error("Could not perform your request");
           error.statusCode = 500;
-          reject(err);
+          return reject(err);
         }
 
-        resolve({
+        return resolve({
           numberOfReporters: parseInt(result.rows[0].totalreporters),
           numberOfReports: parseInt(result.rows[0].totalreports)
         });
@@ -228,7 +262,7 @@ function getNumberOfReportersAndReports(currentDate) {
   });
 }
 
-function getTopSymptoms(currentDate) {
+function getTopSymptoms(city, currentDate) {
   return when.promise(function(resolve, reject) {
     currentDate = new Date(currentDate || null);
     // Get the first week day.
@@ -238,10 +272,18 @@ function getTopSymptoms(currentDate) {
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {
-        sails.log.error(err);
+        sails.log.error('-- get top symptoms', err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
-        reject(err);
+        return reject(err);
+      }
+
+      var values = [ startDate.toJSON(), endDate.toJSON() ];
+
+      var cityCriteria = '';
+      if (city) {
+        cityCriteria = ' AND r.city = $3 ';
+        values.push(city);
       }
 
       client.query('\
@@ -249,32 +291,32 @@ function getTopSymptoms(currentDate) {
         FROM reports r \
           INNER JOIN reportssymptoms rs ON r.id = rs."reportId" \
           INNER JOIN symptoms s ON rs."symptomId" = s.id \
-        WHERE r."createdAt" BETWEEN $1 AND $2 \
+        WHERE r."createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
         GROUP BY s.name \
         ORDER BY count DESC \
-      ', [ startDate.toJSON(), endDate.toJSON() ], function(err, selectResult) {
+      ', values, function(err, selectResult) {
 
         if (err) {
-          sails.log.error(err);
+          sails.log.error('-- get top symptoms', err);
           var error = new Error("Could not perform your request");
           error.statusCode = 500;
-          reject(err);
+          return reject(err);
         }
 
         // Count all reports for current week.
         client.query('\
           SELECT COUNT(DISTINCT r."userId") as total \
           FROM reports r \
-          WHERE r."createdAt" BETWEEN $1 AND $2 \
+          WHERE r."createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
             AND r."isFine" IS FALSE \
-        ', [ startDate.toJSON(), endDate.toJSON() ], function(err, totalResult) {
+        ', values, function(err, totalResult) {
           pgDone();
 
           if (err) {
-            sails.log.error(err);
+            sails.log.error('-- get count symptoms', err);
             var error = new Error("Could not perform your request");
             error.statusCode = 500;
-            reject(err);
+            return reject(err);
           }
 
           var total = parseInt(totalResult.rows[0].total);
@@ -286,7 +328,7 @@ function getTopSymptoms(currentDate) {
             };
           });
 
-          resolve({
+          return resolve({
             count: total,
             items: topList
           });
