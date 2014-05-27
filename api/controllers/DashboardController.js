@@ -7,6 +7,10 @@ module.exports = {
     var reports;
     var ILIThisWeek, ILILastWeek, ILIDelta;
     var numberOfReporters, numberOfReports;
+    var topSymptoms;
+
+    var currentDate = new Date();
+    var weekAgoDate = (new Date(currentDate)).addDays(-7);
 
     getReportSummary()
       // Get reports summary
@@ -15,12 +19,12 @@ module.exports = {
       })
       // Get ILI summary
       .then(function() {
-        return getILI(new Date())
+        return getILI(currentDate)
           .then(function(result) {
             ILIThisWeek = result;
           })
           .then(function() {
-            return getILI((new Date()).addDays(-7));
+            return getILI(weekAgoDate);
           })
           .then(function(result) {
             ILILastWeek = result;
@@ -29,10 +33,17 @@ module.exports = {
       })
       // Get report stat
       .then(function() {
-        return getNumberOfReportersAndReports(new Date())
+        return getNumberOfReportersAndReports(currentDate)
           .then(function(result) {
             numberOfReporters = result.numberOfReporters;
             numberOfReports = result.numberOfReports;
+          });
+      })
+      // Get top(popular) symptoms
+      .then(function() {
+        return getTopSymptoms(currentDate)
+          .then(function(result) {
+            topSymptoms = result.items;
           });
       })
       // Send error
@@ -62,7 +73,7 @@ module.exports = {
             BOE: [ 0 ],
             Sicksense: [ 0 ]
           },
-          topSymptoms: [ 0 ]
+          topSymptoms: topSymptoms
         });
       });
   }
@@ -211,6 +222,75 @@ function getNumberOfReportersAndReports(currentDate) {
         resolve({
           numberOfReporters: parseInt(result.rows[0].totalreporters),
           numberOfReports: parseInt(result.rows[0].totalreports)
+        });
+      });
+    });
+  });
+}
+
+function getTopSymptoms(currentDate) {
+  return when.promise(function(resolve, reject) {
+    currentDate = new Date(currentDate || null);
+    // Get the first week day.
+    var startDate = (new Date(currentDate)).addDays(-1 * currentDate.getDay()).clearTime();
+    // .. and endDate = startDate + 7 days
+    var endDate = (new Date(startDate)).addDays(7);
+
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) {
+        sails.log.error(err);
+        var error = new Error("Could not connect to database");
+        error.statusCode = 500;
+        reject(err);
+      }
+
+      client.query('\
+        SELECT s.name as name, COUNT(DISTINCT r."userId") as count \
+        FROM reports r \
+          INNER JOIN reportssymptoms rs ON r.id = rs."reportId" \
+          INNER JOIN symptoms s ON rs."symptomId" = s.id \
+        WHERE r."createdAt" BETWEEN $1 AND $2 \
+        GROUP BY s.name \
+        ORDER BY count DESC \
+      ', [ startDate.toJSON(), endDate.toJSON() ], function(err, selectResult) {
+
+        if (err) {
+          sails.log.error(err);
+          var error = new Error("Could not perform your request");
+          error.statusCode = 500;
+          reject(err);
+        }
+
+        // Count all reports for current week.
+        client.query('\
+          SELECT COUNT(DISTINCT r."userId") as total \
+          FROM reports r \
+          WHERE r."createdAt" BETWEEN $1 AND $2 \
+            AND r."isFine" IS FALSE \
+        ', [ startDate.toJSON(), endDate.toJSON() ], function(err, totalResult) {
+          pgDone();
+
+          if (err) {
+            sails.log.error(err);
+            var error = new Error("Could not perform your request");
+            error.statusCode = 500;
+            reject(err);
+          }
+
+          var total = parseInt(totalResult.rows[0].total);
+          var topList = _.map(selectResult.rows, function(row) {
+            return {
+              name: row.name,
+              numberOfReports: parseInt(row.count),
+              percentOfReports: parseFloat(100 * (row.count / total).toFixed(2))
+            };
+          });
+
+          resolve({
+            count: total,
+            items: topList
+          });
+
         });
       });
     });

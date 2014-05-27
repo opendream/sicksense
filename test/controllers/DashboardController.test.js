@@ -189,8 +189,8 @@ describe('DashboardController Test', function() {
           res.body.response.topSymptoms[0].percentOfReports.should.equal(100);
           res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
           res.body.response.topSymptoms[1].name.should.equal('fever');
-          res.body.response.topSymptoms[1].percentOfReports.should.equal(1);
-          res.body.response.topSymptoms[0].numberOfReports.should.equal(1);
+          res.body.response.topSymptoms[1].percentOfReports.should.equal(50);
+          res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
 
           done();
         });
