@@ -155,7 +155,7 @@ function getReportSummary(city, startDate, endDate) {
             MAX(r."addressLongitude") as "addressLongitude", \
             BOOL_AND(r."isFine") as "isFine" \
           FROM reports r \
-          WHERE r."createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+          WHERE r."startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
           GROUP BY r."userId" \
         ) as r2 \
         GROUP BY r2.city, r2.district, r2.subdistrict \
@@ -213,7 +213,7 @@ function getILI(city, startDate, endDate) {
       FROM reports r \
         INNER JOIN reportssymptoms rs ON r.id = rs."reportId" \
         INNER JOIN symptoms s ON rs."symptomId" = s.id \
-      WHERE r."createdAt" BETWEEN $1 AND $2 \
+      WHERE r."startedAt" BETWEEN $1 AND $2 \
         AND s.name IN (' + params.join(', ') + ') ' + cityCriteria + ' \
     ';
 
@@ -243,7 +243,7 @@ function getILI(city, startDate, endDate) {
         client.query('\
           SELECT COUNT(DISTINCT r."userId") as total \
           FROM reports r \
-          WHERE "createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+          WHERE "startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
         ', values, function(err, totalResult) {
           pgDone();
 
@@ -292,7 +292,7 @@ function getNumberOfReportersAndReports(city, startDate, endDate) {
       client.query(' \
         SELECT COUNT(*) as totalreports, COUNT(DISTINCT "userId") as totalreporters \
         FROM reports r \
-        WHERE "createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+        WHERE "startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
       ', values, function(err, result) {
         pgDone();
 
@@ -336,7 +336,7 @@ function getTopSymptoms(city, startDate, endDate) {
         FROM reports r \
           INNER JOIN reportssymptoms rs ON r.id = rs."reportId" \
           INNER JOIN symptoms s ON rs."symptomId" = s.id \
-        WHERE r."createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+        WHERE r."startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
         GROUP BY s.name \
         ORDER BY count DESC \
       ', values, function(err, selectResult) {
@@ -352,7 +352,7 @@ function getTopSymptoms(city, startDate, endDate) {
         client.query('\
           SELECT COUNT(DISTINCT r."userId") as total \
           FROM reports r \
-          WHERE r."createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+          WHERE r."startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
             AND r."isFine" IS FALSE \
         ', values, function(err, totalResult) {
           pgDone();
@@ -411,7 +411,7 @@ function getFineAndSickNumbers(city, startDate, endDate) {
         FROM ( \
           SELECT r."userId" as uid, MIN("isFine"::int) as fine \
           FROM reports r \
-          WHERE "createdAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+          WHERE "startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
           GROUP BY r."userId" \
         ) as sub \
       ', values, function(err, result) {
