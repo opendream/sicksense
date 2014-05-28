@@ -112,7 +112,7 @@ describe('DashboardController Test', function() {
             isFine: false,
             symptoms: [ 'cough', 'fever' ],
             userId: user1.id,
-            createdAt: currentDate
+            startedAt: currentDate
           });
         })
         // user1 this week second time.
@@ -121,7 +121,7 @@ describe('DashboardController Test', function() {
             address: report1.address,
             locationByAddress: report1.locationByAddress,
             userId: user1.id,
-            createdAt: currentDate
+            startedAt: currentDate
           });
         })
         // user1 last week
@@ -132,7 +132,7 @@ describe('DashboardController Test', function() {
             isFine: false,
             symptoms: [ 'sore-throat' ],
             userId: user1.id,
-            createdAt: weekAgoDate
+            startedAt: weekAgoDate
           });
         })
         // user2 this week
@@ -143,7 +143,7 @@ describe('DashboardController Test', function() {
             isFine: false,
             symptoms: [ 'cough' ],
             userId: user2.id,
-            createdAt: currentDate,
+            startedAt: currentDate,
           });
         })
         // user2 last week
@@ -154,7 +154,7 @@ describe('DashboardController Test', function() {
             isFine: false,
             symptoms: [ 'rash' ],
             userId: user2.id,
-            createdAt: weekAgoDate
+            startedAt: weekAgoDate
           });
         })
         // user3 this week
@@ -163,7 +163,7 @@ describe('DashboardController Test', function() {
             address: report3.address,
             locationByAddress: report3.locationByAddress,
             userId: user3.id,
-            createdAt: currentDate
+            startedAt: currentDate
           });
         })
         // user3 last week
@@ -172,7 +172,7 @@ describe('DashboardController Test', function() {
             address: report3.address,
             locationByAddress: report3.locationByAddress,
             userId: user3.id,
-            createdAt: weekAgoDate
+            startedAt: weekAgoDate
           });
         })
         // user3 before last week
@@ -181,7 +181,7 @@ describe('DashboardController Test', function() {
             address: report3.address,
             locationByAddress: report3.locationByAddress,
             userId: user3.id,
-            createdAt: (new Date(weekAgoDate)).addDays(-7)
+            startedAt: (new Date(weekAgoDate)).addDays(-7)
           });
         })
         .then(function() {
