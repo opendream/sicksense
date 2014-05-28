@@ -281,17 +281,9 @@ Illness (or just fine) report from users.
                     "_links": {
                         "self": { "href": "/reports/1" }
                     },
-                    "symptoms": [
-                        {
-                            "_links": {
-                                "self": { "href": "/symptoms/1" },
-                            },
-                            "id": "1",
-                            "name": "Fever"
-                        }
-                    ],
-                    "id": "1",
                     "isFine": false,
+                    "symptoms": [ "fever", "cough" ],
+                    "id": "1",
                     "animalContact": true,
                     "startedAt": "2014-03-01T10:00:00.000Z",
                     "location": {
@@ -302,7 +294,7 @@ Illness (or just fine) report from users.
                     "createdAt": "2014-05-02T19:00:00.000Z"
                 }
             }
-            
+
 ### GET /reports{?offset,limit,sw,ne}
 Return list of reports determine by provided criterias (parameters).
 
@@ -311,7 +303,7 @@ Return list of reports determine by provided criterias (parameters).
     + limit (number, optional) ... Limit. Default to `10`
     + sw (float, optional) ... Required if `ne` is provided. Boundary query. Latitude and longitude coordinates of the south-west boundary.
     + ne (float, optional) ... Required if `sw` is provided. Boundary query. Latitude and longitude coordinates of the north-east boundary.
-    
+
 + Response 200 (application/hal+json)
 
     + Headers
@@ -332,17 +324,9 @@ Return list of reports determine by provided criterias (parameters).
                                 "_links": {
                                     "self": { "href": "/reports/1" }
                                 },
-                                "symptoms": [
-                                    {
-                                        "_links": {
-                                            "self": { "href": "/symptoms/1" },
-                                        },
-                                        "id": "1",
-                                        "name": "Fever"
-                                    }
-                                ],
                                 "id": "1",
                                 "isFine": false,
+                                "symptoms": [ "fever", "cough" ],
                                 "animalContact": true,
                                 "startedAt": "2014-03-01T10:00:00.000Z",
                                 "location": {
@@ -356,9 +340,9 @@ Return list of reports determine by provided criterias (parameters).
                                 "_links": {
                                     "self": { "href": "/reports/2" }
                                 },
-                                "symptoms": [],
                                 "id": "1",
                                 "isFine": true,
+                                "symptoms": [],
                                 "animalContact": false,
                                 "startedAt": "2014-02-01T10:00:00.000Z",
                                 "location": {
@@ -372,7 +356,7 @@ Return list of reports determine by provided criterias (parameters).
                     }
                 }
             }
-    
+
 
 ### GET /reports/{id}{?accessToken}
 
@@ -398,7 +382,8 @@ Return list of reports determine by provided criterias (parameters).
 + Request (application/json)
 
         {
-            "symptoms": ["1", "2"],
+            "isFine": false,
+            "symptoms": [ "fever", "cough" ],
             "animalContact": true,
             "startedAt": "2014-03-01T10:00:00.000Z",
             "location": {
@@ -427,45 +412,6 @@ Return list of reports determine by provided criterias (parameters).
             }
         }
 
-# Group Symptom
-
-## Symptom [/symptoms]
-Symptoms related API. REMARK: Symptom name localization is embed in UI, server keep only English name.
-
-### Get symptoms list [GET]
-
-+ Response 200 (application/hal+json)
-
-    + Body
-
-            {
-                "meta": {
-                    "status": 200
-                },
-                "response": {
-                    "_links": {
-                        "self": { "href": "/symptoms" }
-                    },
-                    "symptoms": [
-                        "count": 3,
-                        "items": [
-                            {
-                                "id": "1",
-                                "name": "Trauma"
-                            },
-                            {
-                                "id": "2",
-                                "name": "Headache"
-                            },
-                            {
-                                "id": "3",
-                                "name": "Diarrhea"
-                            }
-                        ]
-                    ]
-                }
-            }
-
 # Group Dashboard
 
 ## Dashboard [/dashboard]
@@ -482,8 +428,7 @@ Get all data ready to show on dashboard. These contains:
 
 + Parameters
     + city (string, `Bangkok`) ... Specify city to get data of.
-    + startDate (string, optional) ... Start date. If startDate and endDate isn't provided. Use current week as default period.
-    + endDate (string, optional) ... End date. If startDate is provided but endDate is empty. Will use default period.
+    + date (string, optional) ... Date in the week to display as last week. May use the first day of the week.
 
 + Response 200 (application/hal+json)
 
@@ -496,22 +441,23 @@ Get all data ready to show on dashboard. These contains:
                     "count": 305,
                     "items": [
                         {
-                            "_links": {
-                                "self": { "href": "/reports/1" }
-                            },
-                            "id": "1",
-                            "latitude": 13.1135,
-                            "longitude": 105.0014,
-                            "isFine": false
+                            "subdistrict": "Samsen Nok",
+                            "district": "Huai Khwang",
+                            "city": "Bangkok",
+                            "latitude": 13.1001,
+                            "longitude": 105.0011,
+                            "fineCount": 100,
+                            "sickCount": 4
                         },
                         {
-                            "_links": {
-                                "self": { "href": "/reports/2" }
-                            },
-                            "id": "2",
-                            "latitude": 13.1134,
-                            "longitude": 105.0015,
-                            "isFine": true
+                            "subdistrict": "Samsen Nai",
+                            "district": "Huai Khwang",
+                            "city": "Bangkok",
+                            "latitude": 13.2501,
+                            "longitude": 105.4511,
+                            "fineCount": 80,
+                            "sickCount": 19
+                        }
                     ]
                 },
                 "ILI": {
@@ -521,6 +467,10 @@ Get all data ready to show on dashboard. These contains:
                 },
                 "numberOfReporter": 124,
                 "numberOfReports": 362,
+                "numberOfPeopleFine": 180,
+                "numberOfPeopleSick": 20,
+                "percentOfPeopleFine": 90,
+                "percentOfPeopleSick": 10,
                 "graphs": {
                     "BOE": [
                         0.0, 0.0, 0.0, 0.3, 0.5, 0.8, 1.6, 3.2, 6.4, 7.2, 7.8, 7.85, 7.8,
@@ -533,13 +483,11 @@ Get all data ready to show on dashboard. These contains:
                 },
                 "topSymptoms": [
                     {
-                        "id": "2",
                         "name": "Headache",
                         "percentOfReports": 7.25,
                         "numbersOfReports": 9
                     },
                     {
-                        "id": "1",
                         "name": "Trauma",
                         "percentOfReports": 4.03,
                         "numbersOfReports": 5
