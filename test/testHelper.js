@@ -228,7 +228,7 @@ function clearAll () {
     .then(clearReportsSymptoms);
 }
 
-global.TestHelper = {
+module.exports = global.TestHelper = {
   createUser: createUser,
   createReport: createReport,
   clearUsers: clearUsers,

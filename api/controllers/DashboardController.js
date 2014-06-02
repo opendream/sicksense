@@ -33,7 +33,6 @@ module.exports = {
     var weekAgoStartDate = (new Date(startDate)).addDays(-7);
     var weekAgoEndDate = (new Date(endDate)).addDays(-7);
 
-
     getReportSummary(city, startDate, endDate)
       // Get reports summary
       .then(function(result) {

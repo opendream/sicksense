@@ -25,6 +25,7 @@ module.exports.http = {
       'compress',
       'methodOverride',
       'poweredBy',
+      'jsonp',
       '$custom',
       'router',
       'www',
