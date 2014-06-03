@@ -190,7 +190,7 @@ function loadUserAddress(report) {
       UserService.getUserByID(client, report.userId)
         .then(function(user) {
           pgDone();
-          
+
           if (!user) {
             var error = new Error("User not found");
             error.statusCode = 404;
@@ -216,21 +216,33 @@ function loadUserAddress(report) {
 
 function loadLocationByAddress(address) {
   return when.promise(function(resolve, reject) {
-    Locations.findOne({
-      tambon_en: address.subdistrict,
-      amphoe_en: address.district,
-      province_en: address.city
-    }).exec(function(err, location) {
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
-        var error = new Error("Could not perform your request");
+        var error = new Error("Could not connect to database");
         error.statusCode = 500;
         return reject(error);
       }
 
-      resolve({
-        latitude: location.latitude,
-        longitude: location.longitude
+      client.query("\
+        SELECT * FROM locations \
+        WHERE tambon_en = $1 AND \
+              amphoe_en = $2 AND \
+              province_en = $3 \
+      ", [ address.subdistrict, address.district, address.city ], function(err, result) {
+        pgDone();
+
+        if (err) {
+          sails.log.error(err);
+          var error = new Error("Could not perform your request");
+          error.statusCode = 500;
+          return reject(error);
+        }
+
+        resolve({
+          latitude: result.rows[0].latitude,
+          longitude: result.rows[0].longitude
+        });
       });
     });
   });

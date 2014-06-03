@@ -79,3 +79,27 @@ CREATE TABLE reportssymptoms
 WITH (
   OIDS=FALSE
 );
+
+DROP TABLE locations;
+
+CREATE TABLE locations
+(
+  code text,
+  tambon_th text,
+  tambon_en text,
+  amphoe_en text,
+  amphoe_th text,
+  province_en text,
+  province_th text,
+  latitude double precision,
+  longitude double precision,
+  id serial NOT NULL,
+  "createdAt" timestamp with time zone,
+  "updatedAt" timestamp with time zone,
+  geom geometry(Point,4326),
+  CONSTRAINT locations_pkey PRIMARY KEY (id),
+  CONSTRAINT locations_code_key UNIQUE (code)
+)
+WITH (
+  OIDS=FALSE
+);
