@@ -40,10 +40,12 @@ describe('UserController test', function() {
           res.body.meta.errorMessage.should.match(/is required/);
 
           res.body.meta.invalidFields.should.have.properties([
-            'email', 'password', 'tel', 'gender', 'birthYear',
+            'email', 'password', 'gender', 'birthYear',
             'address.subdistrict', 'address.district', 'address.city',
             'location.latitude', 'location.longitude'
           ]);
+
+          res.body.meta.invalidFields.should.not.have.properties('tel');
 
           done();
         });

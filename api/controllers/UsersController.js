@@ -13,8 +13,6 @@ module.exports = {
     req.checkBody('password', 'Password field is required').notEmpty();
     req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
 
-    req.checkBody('tel', 'Telephone field is required').notEmpty();
-
     req.checkBody('gender', 'Gender field is required').notEmpty();
     req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
 
@@ -118,7 +116,7 @@ module.exports = {
         sails.log.error(err);
         return res.accessToken(new Error("Could not perform your request"));
       }
-      
+
       if (!accessToken || accessToken.userId != req.params.id) {
         return res.forbidden(new Error("You can not get another user's reports"));
       }
