@@ -226,9 +226,9 @@ function loadLocationByAddress(address) {
 
       client.query("\
         SELECT * FROM locations \
-        WHERE tambon_en = $1 AND \
-              amphoe_en = $2 AND \
-              province_en = $3 \
+        WHERE (tambon_en = $1 OR tambon_th = $1) AND \
+              (amphoe_en = $2 OR amphoe_th = $2)  AND \
+              (province_en = $3 OR province_th = $3) \
       ", [ address.subdistrict, address.district, address.city ], function(err, result) {
         pgDone();
 
