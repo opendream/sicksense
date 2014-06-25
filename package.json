@@ -28,10 +28,12 @@
     "password-hash-and-salt": "^0.1.2",
     "pg": "^3.1.0",
     "rc": "~0.3.3",
+    "request": "^2.36.0",
     "sails": "~0.10.0-rc7",
     "sails-postgresql": "^0.10.0-rc3",
     "terraformer-wkt-parser": "^1.0.0",
-    "when": "^3.2.1"
+    "when": "^3.2.1",
+    "xml2js": "^0.4.4"
   },
   "devDependencies": {
     "Faker": "^0.7.2",
