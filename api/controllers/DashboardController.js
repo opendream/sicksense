@@ -380,6 +380,7 @@ function getILILogs(source, startDate, endDate, limit) {
   return when.promise(function(resolve, reject) {
 
     var values = [ startDate.toJSON(), endDate.toJSON(), source, limit ];
+    console.log('->', values);
 
     pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) {

@@ -3,6 +3,7 @@ var xml2js = require('xml2js');
 var pg = require('pg');
 var when = require('when');
 var moment = require('moment');
+require('date-utils');
 
 var config = require('../config/local.js');
 var FIRST_YEAR = 2010;
@@ -42,7 +43,7 @@ request('http://interfetpthailand.net/ili/', function (error, response, body) {
                   return when.promise(function(resolve, reject) {
                     var doc = {
                       source: 'boe',
-                      date: moment(currentYear.toString()).weeks(week.$.x).day('Sunday').toDate(),
+                      date: moment(currentYear.toString()).weeks(week.$.x).day('Sunday').toDate().clearTime(),
                       year: currentYear,
                       week: parseFloat(week.$.x),
                       value: parseFloat(week.$.y)
@@ -62,8 +63,8 @@ request('http://interfetpthailand.net/ili/', function (error, response, body) {
                         return reject(error);
                       }
 
-                      var updateQuery = "UPDATE ililog SET value = $1, \"updatedAt\" = $2 WHERE source = 'boe' AND year = $3 AND week = $4";
-                      var updateValue = [doc.value, new Date(), doc.year, doc.week];
+                      var updateQuery = "UPDATE ililog SET date = $1, value = $2, \"updatedAt\" = $3 WHERE source = 'boe' AND year = $4 AND week = $5";
+                      var updateValue = [doc.date, doc.value, new Date(), doc.year, doc.week];
 
                       var insertQuery = "INSERT INTO ililog (source, date, year, week, value, \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7)";
                       var insertValue = [doc.source, doc.date, doc.year, doc.week, doc.value, new Date(), new Date()];

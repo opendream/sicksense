@@ -2,6 +2,7 @@ var pg = require('pg');
 var when = require('when');
 var moment = require('moment');
 var _ = require('lodash');
+require('date-utils');
 
 var config = loadConfig();
 var FIRST_YEAR = 2010;
@@ -9,11 +10,10 @@ var FIRST_YEAR = 2010;
 // Loop throuth each year.
 when
   .map(_.range(FIRST_YEAR, moment().year() + 1), function(year) {
-    var firstDayOfYear = moment(year.toString()).weeks(1);
     // Loop throuth each week.
     return when.map(_.range(1, 53), function (week) {
       // Calculate ILI for that week.
-      var startDate = moment(firstDayOfYear).weeks(week).day('Sunday');
+      var startDate = moment(year.toString()).weeks(week).day('Sunday');
       var endDate = moment(startDate).add('week', 1);
 
       return getILI(null, startDate, endDate)
@@ -21,7 +21,7 @@ when
           // Save to ililog
           var doc = {
             source: 'sicksense',
-            date: startDate.toDate(),
+            date: startDate.toDate().clearTime(),
             year: year,
             week: week,
             value: ili
@@ -59,8 +59,8 @@ function saveILILog(doc) {
           return reject(error);
         }
 
-        var updateQuery = "UPDATE ililog SET value = $1, \"updatedAt\" = $2 WHERE source = 'sicksense' AND year = $3 AND week = $4";
-        var updateValue = [doc.value, new Date(), doc.year, doc.week];
+        var updateQuery = "UPDATE ililog SET date = $1, value = $2, \"updatedAt\" = $3 WHERE source = 'sicksense' AND year = $4 AND week = $5";
+        var updateValue = [doc.date, doc.value, new Date(), doc.year, doc.week];
 
         var insertQuery = "INSERT INTO ililog (source, date, year, week, value, \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7)";
         var insertValue = [doc.source, doc.date, doc.year, doc.week, doc.value, new Date(), new Date()];
