@@ -5,6 +5,11 @@ module.exports = {
       required: true
     },
 
+    date: {
+      type: 'datetime',
+      required: true
+    },
+
     year: {
       type: 'integer',
       required: true

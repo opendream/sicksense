@@ -1,6 +1,7 @@
 /*jshint multistr: true */
 var pg = require('pg');
 var when = require('when');
+var moment = require('moment');
 require('date-utils');
 
 module.exports = {
@@ -19,6 +20,11 @@ module.exports = {
     var ILIThisWeek, ILILastWeek, ILIDelta;
     var numberOfReporters, numberOfReports, numberOfFinePeople, numberOfSickPeople, percentOfFinePeople, percentOfSickPeople;
     var topSymptoms;
+
+    var graphs = {
+      BOE: [],
+      SickSense: []
+    };
 
     // Query parameters.
     var city = req.query.city;
@@ -40,12 +46,12 @@ module.exports = {
       })
       // Get ILI summary
       .then(function() {
-        return getILI(city, startDate, endDate)
+        return ReportService.getILI(city, startDate, endDate)
           .then(function(result) {
             ILIThisWeek = result;
           })
           .then(function() {
-            return getILI(city, weekAgoStartDate, weekAgoEndDate);
+            return ReportService.getILI(city, weekAgoStartDate, weekAgoEndDate);
           })
           .then(function(result) {
             ILILastWeek = result;
@@ -77,6 +83,19 @@ module.exports = {
             percentOfSickPeople = result.sickPercent;
           });
       })
+      // Get ILI log for graph.
+      .then(function() {
+        return getILILogsAtDate('boe', currentDate)
+          .then(function(result) {
+            graphs.BOE = result;
+          })
+          .then(function() {
+            return getILILogsAtDate('sicksense', currentDate);
+          })
+          .then(function(result) {
+            graphs.SickSense = result;
+          });
+      })
       // Send error
       .catch(function(err) {
         if (err.statusCode == 404) {
@@ -104,10 +123,7 @@ module.exports = {
           numberOfSickPeople: numberOfSickPeople,
           percentOfFinePeople: percentOfFinePeople,
           percentOfSickPeople: percentOfSickPeople,
-          graphs: {
-            BOE: [ 0 ],
-            Sicksense: [ 0 ]
-          },
+          graphs: graphs,
           topSymptoms: topSymptoms
         });
       });
@@ -182,87 +198,6 @@ function getReportSummary(city, startDate, endDate) {
             total: parseInt(row.total)
           };
         }));
-      });
-    });
-  });
-}
-
-function getILI(city, startDate, endDate) {
-  return when.promise(function(resolve, reject) {
-
-    var ILISymptoms = sails.config.symptoms.ILISymptoms;
-    var values = [ startDate.toJSON(), endDate.toJSON() ];
-    var params = [];
-    var lastIndex = 0;
-
-    _.each(ILISymptoms, function(value, index) {
-      values.push(value);
-      lastIndex = index + 3;
-      params.push('$' + lastIndex); // So it will be [ 3, 4, 5, ... ]
-    });
-
-    var cityCriteria = '';
-    if (city) {
-      cityCriteria = ' AND r.city = $' + (lastIndex + 1) + ' ';
-      values.push(city);
-    }
-
-    var selectQuery = '\
-      SELECT COUNT(DISTINCT r."userId") as ilicount \
-      FROM reports r \
-        INNER JOIN reportssymptoms rs ON r.id = rs."reportId" \
-        INNER JOIN symptoms s ON rs."symptomId" = s.id \
-      WHERE r."startedAt" BETWEEN $1 AND $2 \
-        AND s.name IN (' + params.join(', ') + ') ' + cityCriteria + ' \
-    ';
-
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
-      if (err) {
-        sails.log.error(err);
-        var error = new Error("Could not connect to database");
-        error.statusCode = 500;
-        return reject(err);
-      }
-
-      client.query(selectQuery, values, function(err, iliResult) {
-        if (err) {
-          sails.log.error('-- iliresult', err);
-          var error = new Error("Could not perform your request");
-          error.statusCode = 500;
-          return reject(err);
-        }
-
-        var values = [ startDate.toJSON(), endDate.toJSON() ];
-        if (city) {
-          values.push(city);
-          cityCriteria = ' AND r.city = $3 ';
-        }
-
-        // Count all reports for current week.
-        client.query('\
-          SELECT COUNT(DISTINCT r."userId") as total \
-          FROM reports r \
-          WHERE "startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
-        ', values, function(err, totalResult) {
-          pgDone();
-
-          if (err) {
-            sails.log.error('-- countili', err);
-            var error = new Error("Could not perform your request");
-            error.statusCode = 500;
-            return reject(err);
-          }
-
-          return resolve(parseFloat(
-            // Make it percent.
-            (100.00 *
-              // If NaN then it's zero.
-              (iliResult.rows[0].ilicount / totalResult.rows[0].total || 0 )
-            )
-            // Only 2 digits after the decimal place.
-            .toFixed(2)
-          ));
-        });
       });
     });
   });
@@ -437,4 +372,89 @@ function getFineAndSickNumbers(city, startDate, endDate) {
       });
     });
   });
+}
+
+function getILILogs(source, startDate, endDate, limit) {
+  limit = limit || 6;
+
+  return when.promise(function(resolve, reject) {
+
+    var values = [ startDate.toJSON(), endDate.toJSON(), source, limit ];
+
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) {
+        sails.log.error('-- BOE stat error', err);
+        var error = new Error("Could not connect to database");
+        error.statusCode = 500;
+        return reject(err);
+      }
+
+      client.query('\
+        SELECT * \
+        FROM ililog\
+        WHERE "date" BETWEEN $1 AND $2 \
+              AND source = $3 \
+        LIMIT $4 \
+      ', values, function(err, result) {
+        pgDone();
+
+        if (err) {
+          sails.log.error('-- BOE stat error (sql)', err);
+          var error = new Error("Could not connect to database");
+          error.statusCode = 500;
+          return reject(err);
+        }
+
+        var rows = _.map(result.rows, function (item) {
+          return {
+            date: item.date,
+            value: item.value
+          };
+        });
+
+        resolve(rows);
+      });
+    });
+  });
+}
+
+function getILILogsAtDate(source, date) {
+  date = date || new Date();
+
+  var dateObj;
+  if (typeof date == 'string') {
+    dateObj = new Date(Date.parse(date));
+  }
+  else {
+    dateObj = new Date(date);
+  }
+  dateObj.clearTime();
+
+  var firstDay = moment(dateObj).day('Sunday');
+
+  return when
+    .map(_.range(0, 6), function (i) {
+      var a = moment(firstDay).add('week', i).toDate();
+      var b = moment(a).add('day', 6).toDate();
+      return getILILogs(source, a, b);
+    })
+    .then(function(rows) {
+      return when.promise(function(resolve, reject) {
+        var results = [];
+
+        _.each(rows, function(row, i) {
+          if (_.isEmpty(row)) {
+            results.push({
+              date: moment(firstDay).add('week', i).toDate(),
+              value: 0
+            });
+          }
+          else {
+            results.push(row[0]);
+          }
+        });
+
+        resolve(results);
+      });
+    });
 }

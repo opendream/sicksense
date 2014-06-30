@@ -2,6 +2,7 @@ var request = require('request');
 var xml2js = require('xml2js');
 var pg = require('pg');
 var when = require('when');
+var moment = require('moment');
 
 var config = require('../config/local.js');
 var FIRST_YEAR = 2010;
@@ -41,28 +42,31 @@ request('http://interfetpthailand.net/ili/', function (error, response, body) {
                   return when.promise(function(resolve, reject) {
                     var doc = {
                       source: 'boe',
+                      date: moment(currentYear.toString()).weeks(week.$.x).day('Sunday').toDate(),
                       year: currentYear,
                       week: parseFloat(week.$.x),
                       value: parseFloat(week.$.y)
                     };
                     var query = {
-                      source: doc.boe,
+                      source: doc.source,
                       year: doc.year,
                       week: doc.week
                     };
 
                     console.info('Saving year:', doc.year, 'week:', doc.week);
 
-                    client.query(query, function (error, result) {
+                    client.query(' \
+                      SELECT id FROM ililog WHERE source = $1 AND year = $2 AND week = $3 \
+                    ', [ doc.source, doc.year, doc.week ], function (error, result) {
                       if (error) {
                         return reject(error);
                       }
 
-                      var updateQuery = "UPDATE ililog SET value = $1, \"updatedAt\" = $2 WHERE year = $3 AND week = $4";
+                      var updateQuery = "UPDATE ililog SET value = $1, \"updatedAt\" = $2 WHERE source = 'boe' AND year = $3 AND week = $4";
                       var updateValue = [doc.value, new Date(), doc.year, doc.week];
 
-                      var insertQuery = "INSERT INTO ililog (source, year, week, value, \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6)";
-                      var insertValue = [doc.source, doc.year, doc.week, doc.value, new Date(), new Date()];
+                      var insertQuery = "INSERT INTO ililog (source, date, year, week, value, \"createdAt\", \"updatedAt\") VALUES ($1, $2, $3, $4, $5, $6, $7)";
+                      var insertValue = [doc.source, doc.date, doc.year, doc.week, doc.value, new Date(), new Date()];
 
                       var query, value;
                       if (result.rows.length > 0) {

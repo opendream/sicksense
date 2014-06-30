@@ -1,6 +1,7 @@
 var when = require('when');
 var pg = require('pg');
 var wkt = require('terraformer-wkt-parser');
+require('date-utils');
 
 module.exports = {
   create: create,
@@ -8,7 +9,9 @@ module.exports = {
   saveSymptoms: saveSymptoms,
   loadSymptoms: loadSymptoms,
   loadLocationByAddress: loadLocationByAddress,
-  loadUserAddress: loadUserAddress
+  loadUserAddress: loadUserAddress,
+
+  getILI: getILI
 };
 
 function create (values) {
@@ -272,4 +275,85 @@ function getReportJSON(report, extra) {
     moreInfo: report.moreInfo,
     createdAt: report.createdAt
   }, extra);
+}
+
+function getILI(city, startDate, endDate) {
+  return when.promise(function(resolve, reject) {
+
+    var ILISymptoms = sails.config.symptoms.ILISymptoms;
+    var values = [ startDate.toJSON(), endDate.toJSON() ];
+    var params = [];
+    var lastIndex = 0;
+
+    _.each(ILISymptoms, function(value, index) {
+      values.push(value);
+      lastIndex = index + 3;
+      params.push('$' + lastIndex); // So it will be [ 3, 4, 5, ... ]
+    });
+
+    var cityCriteria = '';
+    if (city) {
+      cityCriteria = ' AND r.city = $' + (lastIndex + 1) + ' ';
+      values.push(city);
+    }
+
+    var selectQuery = '\
+      SELECT COUNT(DISTINCT r."userId") as ilicount \
+      FROM reports r \
+        INNER JOIN reportssymptoms rs ON r.id = rs."reportId" \
+        INNER JOIN symptoms s ON rs."symptomId" = s.id \
+      WHERE r."startedAt" BETWEEN $1 AND $2 \
+        AND s.name IN (' + params.join(', ') + ') ' + cityCriteria + ' \
+    ';
+
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) {
+        sails.log.error(err);
+        var error = new Error("Could not connect to database");
+        error.statusCode = 500;
+        return reject(err);
+      }
+
+      client.query(selectQuery, values, function(err, iliResult) {
+        if (err) {
+          sails.log.error('-- iliresult', err);
+          var error = new Error("Could not perform your request");
+          error.statusCode = 500;
+          return reject(err);
+        }
+
+        var values = [ startDate.toJSON(), endDate.toJSON() ];
+        if (city) {
+          values.push(city);
+          cityCriteria = ' AND r.city = $3 ';
+        }
+
+        // Count all reports for current week.
+        client.query('\
+          SELECT COUNT(DISTINCT r."userId") as total \
+          FROM reports r \
+          WHERE "startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
+        ', values, function(err, totalResult) {
+          pgDone();
+
+          if (err) {
+            sails.log.error('-- countili', err);
+            var error = new Error("Could not perform your request");
+            error.statusCode = 500;
+            return reject(err);
+          }
+
+          return resolve(parseFloat(
+            // Make it percent.
+            (100.00 *
+              // If NaN then it's zero.
+              (iliResult.rows[0].ilicount / totalResult.rows[0].total || 0 )
+            )
+            // Only 2 digits after the decimal place.
+            .toFixed(2)
+          ));
+        });
+      });
+    });
+  });
 }
