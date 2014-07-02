@@ -146,7 +146,7 @@ function getReportSummary(city, startDate, endDate) {
 
       var cityCriteria = '';
       if (city) {
-        cityCriteria = ' AND r.city = $3 ';
+        cityCriteria = ' AND r.city ILIKE $3 ';
         values.push(city);
       }
 

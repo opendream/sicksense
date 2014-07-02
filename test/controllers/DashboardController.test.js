@@ -443,6 +443,26 @@ describe('DashboardController Test', function() {
         });
     });
 
+    it('should support case-insensitive `city` query too', function(done) {
+      request(sails.hooks.http.app)
+        .get('/dashboard')
+        .query({
+          city: "Bangkok"
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.should.have.properties([
+            'reports', 'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
+          ]);
+
+          res.body.response.reports.count.should.equal(2);
+
+          done();
+        });
+    });
+
     it('should return dashboard data within specific `date`', function(done) {
       request(sails.hooks.http.app)
         .get('/dashboard')
