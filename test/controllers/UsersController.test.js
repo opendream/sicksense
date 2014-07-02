@@ -5,6 +5,7 @@ var when = require('when');
 describe('UserController test', function() {
 
   describe('[POST] /users', function() {
+    var user;
 
     before(function(done) {
       TestHelper.clearUsers()
@@ -89,6 +90,9 @@ describe('UserController test', function() {
           res.body.response.location.longitude.should.equal(105.0014);
           res.body.response.accessToken.should.be.ok;
 
+          // Keep in variable so it can later user.
+          user = res.body.response;
+
           // Also verify that password is encrypted.
           pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
             client.query(
@@ -146,9 +150,53 @@ describe('UserController test', function() {
         });
     });
 
+    describe('[POST] /user/:id', function() {
+
+      it('should require accessToken to save existing user', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users/' + user.id)
+          .expect(403)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+            done();
+          });
+      });
+
+      it('should save existing user record if provide userId', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users/' + user.id)
+          .query({
+            accessToken: user.accessToken
+          })
+          .send({
+            gender: "female",
+            birthYear: 1990,
+            address: {
+              subdistrict: "Suan Luang",
+              district: "Amphoe Krathum Baen",
+              city: "Samut Sakhon"
+            }
+          })
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+
+            res.body.meta.status.should.equal(200);
+            res.body.response.id.should.be.ok;
+            res.body.response.gender.should.equal('female');
+            res.body.response.birthYear.should.equal(1990);
+            res.body.response.address.subdistrict.should.equal('Suan Luang');
+            res.body.response.address.district.should.equal('Amphoe Krathum Baen');
+            res.body.response.address.city.should.equal('Samut Sakhon');
+
+            done();
+          });
+      });
+    });
+
   });
 
-  describe('[GET] /user/:id/reports', function() {
+  describe('[GET] /users/:id/reports', function() {
     var user, accessToken, anotherAccessToken;
 
     before(function(done) {

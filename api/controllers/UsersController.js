@@ -109,6 +109,77 @@ module.exports = {
     }
   },
 
+  update: function(req, res) {
+    // Check own access token first.
+    AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
+      if (err) {
+        sails.log.error(err);
+        return res.accessToken(new Error("Could not perform your request"));
+      }
+
+      if (!accessToken || accessToken.userId != req.params.id) {
+        return res.forbidden(new Error("Can not save to other profile"));
+      }
+
+      if (req.body.gender) {
+        req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
+      }
+
+      if (req.body.birthYear) {
+        req.sanitize('birthYear').toInt();
+        req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
+        req.checkBody('birthYear', 'Birth Year field is required').isInt();
+        req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
+      }
+
+      if (req.body.address) {
+        req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
+        req.checkBody('address.district', 'Address:District field is required').notEmpty();
+        req.checkBody('address.city', 'Address:City field is required').notEmpty();
+      }
+
+      var errors = req.validationErrors();
+      var paramErrors = req.validationErrors(true);
+      if (errors) {
+        return res.badRequest(_.first(errors).msg, paramErrors);
+      }
+
+      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+        if (err) return res.serverError("Could not connect to database");
+
+        var values = [
+          req.body.gender || req.user.gender,
+          req.body.birthYear || req.user.birthYear,
+          (req.body.address && req.body.address.subdistrict) || req.user.subdistrict,
+          (req.body.address && req.body.address.district) || req.user.district,
+          (req.body.address && req.body.address.city) || req.user.city,
+          new Date(),
+          req.user.id
+        ];
+
+        client.query('\
+          UPDATE "users" \
+          SET \
+            "gender" = $1, \
+            "birthYear" = $2, \
+            "subdistrict" = $3, \
+            "district" = $4, \
+            "city" = $5, \
+            "updatedAt" = $6 \
+          WHERE id = $7 RETURNING * \
+        ', values, function(err, result) {
+          if (err) {
+            return res.serverError("Could not perform your request");
+          }
+
+          var savedUser = result.rows[0];
+          res.ok(UserService.getUserJSON(savedUser, { accessToken: accessToken.token }));
+          return;
+        });
+      });
+    });
+  },
+
   userReports: function(req, res) {
     // Check own access token first.
     AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
