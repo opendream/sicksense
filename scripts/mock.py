@@ -37,7 +37,7 @@ class MockData:
         self.max_num_users_in_province = 150
 
         # Start date.
-        self.start_date = (2014, 4, 28)
+        self.start_date = (2013, 1, 1)
 
     def start(self):
         try:
@@ -90,6 +90,7 @@ class MockData:
                 self.create_user(random.choice(districts))
             self.conn.commit()
 
+            # Store users into each province.
             self.cursor.execute("SELECT * FROM users WHERE city = '%s'" % location)
             users = self.cursor.fetchall()
             self.locations[location]['users'] = []
@@ -118,10 +119,13 @@ class MockData:
 
     def generate_reports(self):
         start_date = datetime.date(self.start_date[0], self.start_date[1], self.start_date[2])
+        # Shift date the start date to a day of weeks.
         if start_date.weekday() > 0:
             start_date = start_date - datetime.timedelta(days=start_date.weekday() + 1)
         end_date = datetime.date.today()
         days = (end_date - start_date).days + 1
+
+        # How many weeks from date range.
         num_weeks = int(math.ceil(days / 7))
 
         print '====================================================='
@@ -129,27 +133,34 @@ class MockData:
         print '====================================================='
         for i in range(num_weeks):
             date = start_date + datetime.timedelta(days=i * 7)
-            print 'Week %d : %s - %s' % (num_weeks - i, date, date + datetime.timedelta(days=7))
             self.generate_week_reports(date)
+            print 'Week %d : %s - %s' % (num_weeks - i, date, date + datetime.timedelta(days=7))
         self.conn.commit()
 
     def generate_week_reports(self, start_date):
+        # Report every province.
         for province in self.locations:
+            # User in province.
             users = self.locations[province]['users']
-            districts = self.locations[province]['districts']
             random.shuffle(users)
             num_users = len(users)
             num_users_per_week = int(math.ceil(num_users / 7.0))
+
+            # All subdistrict in province.
+            districts = self.locations[province]['districts']
+
+            # ILI rate.
             ili_rate = random.uniform(self.min_ili_percentage, self.max_ili_percentage)
             num_users_ili = int(round(num_users * ili_rate))
 
+            # Make reports 7 days.
             for i in range(7):
+                # Increase by 1 day.
                 current_date = start_date + datetime.timedelta(days=i)
-                count = 0
+
                 for j in range(num_users_per_week):
                     idx = i * num_users_per_week + j
                     if idx < num_users:
-                        count = count + 1
                         self.generate_report(current_date, users[idx],
                             random.choice(districts), idx < num_users_ili)
 
@@ -265,7 +276,7 @@ class MockData:
     def get_random_date(self):
         return '2014-06-24 18:07:08.787+07'
 
-    def format_date(self, date=None):
+    def format_date(self, date):
         return date.strftime('%Y-%m-%d 15:10:30.312+07')
 
 if __name__ == "__main__":
