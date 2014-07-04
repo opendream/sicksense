@@ -38,6 +38,7 @@ class MockData:
 
         # Start date.
         self.start_date = (2013, 1, 1)
+        self.end_date = (2014, 12, 12)
 
     def start(self):
         try:
@@ -122,7 +123,7 @@ class MockData:
         # Shift date the start date to a day of weeks.
         if start_date.weekday() > 0:
             start_date = start_date - datetime.timedelta(days=start_date.weekday() + 1)
-        end_date = datetime.date.today()
+        end_date = datetime.date(self.end_date[0], self.end_date[1], self.end_date[2])
         days = (end_date - start_date).days + 1
 
         # How many weeks from date range.
