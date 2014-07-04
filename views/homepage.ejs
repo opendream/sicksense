@@ -38,7 +38,7 @@ td:nth-child(5) {
         <th>Location</th>
         <th>More Info</th>
         <th>Symptoms</th>
-        <th>Created</th>
+        <th>Happened</th>
         <th>Created</th>
       </tr>
     </thead>
@@ -99,12 +99,7 @@ td:nth-child(5) {
             var m = moment(data);
             return m.format("YYYY/MM/DD hh:mm") + ' <br>(' + m.fromNow() + ')';
           },
-          targets: 6
-        },
-        {
-          type: 'date',
-          visible: false,
-          targets: 7
+          targets: [ 7, 6 ]
         }
       ],
       "columns": [
@@ -114,7 +109,7 @@ td:nth-child(5) {
         { "data": "location" },
         { "data": "moreInfo" },
         { "data": "symptoms" },
-        { "data": "createdAt" },
+        { "data": "startedAt" },
         { "data": "createdAt" }
       ]
     });
