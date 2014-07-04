@@ -38,7 +38,7 @@ td:nth-child(5) {
         <th>Location</th>
         <th>More Info</th>
         <th>Symptoms</th>
-        <th>Created</th>
+        <th>Happened</th>
         <th>Created</th>
       </tr>
     </thead>
@@ -48,7 +48,7 @@ td:nth-child(5) {
 <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
 <script src="//cdn.datatables.net/1.10.0/js/jquery.dataTables.js"></script>
 <script src="//cdn.datatables.net/plug-ins/28e7751dbec/integration/bootstrap/3/dataTables.bootstrap.js"></script>
-<script src="//momentjs.com/downloads/moment-with-langs.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.7.0/moment.min.js"></script>
 
 <script charset="utf-8">
   $(document).ready(function() {
@@ -99,12 +99,7 @@ td:nth-child(5) {
             var m = moment(data);
             return m.format("YYYY/MM/DD hh:mm") + ' <br>(' + m.fromNow() + ')';
           },
-          targets: 6
-        },
-        {
-          type: 'date',
-          visible: false,
-          targets: 7
+          targets: [ 7, 6 ]
         }
       ],
       "columns": [
@@ -114,7 +109,7 @@ td:nth-child(5) {
         { "data": "location" },
         { "data": "moreInfo" },
         { "data": "symptoms" },
-        { "data": "createdAt" },
+        { "data": "startedAt" },
         { "data": "createdAt" }
       ]
     });
