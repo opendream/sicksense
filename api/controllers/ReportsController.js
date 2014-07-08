@@ -194,7 +194,11 @@ module.exports = {
     var report, symptoms, userAddress, locationByUserAddress;
     ReportService.loadLocationByAddress(values.address)
       .then(function(result) {
-        values.locationByAddress = result;
+        values.location_id = result.id;
+        values.locationByAddress = {
+          latitude: result.latitude,
+          longitude: result.longitude
+        };
         return ReportService.create(values);
       })
       .then(function(_report) {

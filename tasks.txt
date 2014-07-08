@@ -1,0 +1,23 @@
+- [ ✔︎ ] create table and index
+---- [ ✔︎ ] reports_summary_by_week with index ( location_id, year, week )
+---- [ ✔︎ ] symptoms_summary_by_week with index ( symptom_id, year, week )
+
+- [ ✔︎ ] alter table and add index
+
+-- TABLE reports
+---- [ ✔︎ ] ADD COLUMNS year, week
+---- [ ✔︎ ] ADD COLUMN location_id
+---- [ ✔︎ ] ALTER subdistrict to VARCHAR
+---- [ ✔︎ ] ALTER district to VARCHAR
+---- [ ✔︎ ] ALTER province to VARCHAR
+---- [ ✔︎ ] CREATE INDEX ( id, year, week, startedAt )
+---- [ ✔︎ ] update year and week column data
+
+--- TABLE locations
+---- [ ✔︎ ] ALTER every location field to VARCHAR instead of TEXT
+---- [ ✔︎ ] CREATE INDEX ( id, province_th, province_en )
+
+- [ ✔︎ ] pseudo coding
+- [ ✔︎ ] write postgresql procedure
+- [   ] implement in ReportService
+- [   ] load test

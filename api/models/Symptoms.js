@@ -1,5 +1,7 @@
 module.exports = {
   attributes: {
-    name: "string"
+    name: "string",
+    isILI: "boolean",
+    predefined: "boolean"
   }
 };

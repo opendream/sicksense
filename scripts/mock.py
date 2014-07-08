@@ -136,7 +136,7 @@ class MockData:
             date = start_date + datetime.timedelta(days=i * 7)
             self.generate_week_reports(date)
             print 'Week %d : %s - %s' % (num_weeks - i, date, date + datetime.timedelta(days=7))
-        self.conn.commit()
+            self.conn.commit()
 
     def generate_week_reports(self, start_date):
         # Report every province.
@@ -168,7 +168,7 @@ class MockData:
     def generate_report(self, date, user, district, isILI):
         reports_columns = ('"isFine"', '"animalContact"', '"startedAt"', 'subdistrict',
             'district', 'city', '"addressLatitude"', '"addressLongitude"', 'latitude', 'longitude',
-            '"userId"', '"createdAt"', '"updatedAt"')
+            '"userId"', '"createdAt"', '"updatedAt"', '"isILI"', 'location_id', 'year', 'week')
         reports_values = []
 
         if isILI:
@@ -197,6 +197,13 @@ class MockData:
         reports_values.append(str(user['id']))
         reports_values.append(self.format_date(date))
         reports_values.append(self.format_date(date))
+        reports_values.append('t' if isILI else 'f')
+        reports_values.append(str(district['id']))
+
+        year = date.year
+        week = date.isocalendar()[1]
+        reports_values.append(str(year))
+        reports_values.append(str(week))
 
         strSql = self.get_insert_statement(self.tableReports, reports_columns, reports_values)
         self.cursor.execute(strSql)
@@ -245,9 +252,9 @@ class MockData:
         self.symptomsILI = []
         self.symptomsNotILI = []
         for record in records:
-            if record['id'] > 27:
+            if record['predefined'] == True and record['name'] != 'imfine':
                 sid = 's%d' % record['id']
-                if record['id'] in (28, 29, 33):
+                if record['isILI'] == True:
                     self.symptomsILI.append(record)
                 else:
                     self.symptomsNotILI.append(record)
