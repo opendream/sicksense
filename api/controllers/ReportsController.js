@@ -215,12 +215,12 @@ module.exports = {
       })
       .then(function(result) {
         locationByUserAddress = result;
-        report.locationByAddress = result;
       })
       .then(function() {
         return res.ok(ReportService.getReportJSON(report, {
           symptoms: symptoms,
           userAddress: userAddress,
+          locationByAddress: values.locationByAddress,
           locationByUserAddress: locationByUserAddress
         }));
       })

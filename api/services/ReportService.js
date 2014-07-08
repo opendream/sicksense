@@ -1,6 +1,7 @@
 var when = require('when');
 var pg = require('pg');
 var wkt = require('terraformer-wkt-parser');
+var moment = require('moment');
 require('date-utils');
 
 module.exports = {
@@ -25,10 +26,20 @@ function create (values) {
         return reject(error);
       }
 
+      var year = moment(values.startedAt).year();
+      var week = moment(values.startedAt).week();
+      var isILI;
+      if (typeof values.isILI == 'undefined') {
+        isILI = !_.isEmpty(_.intersection(sails.config.symptoms.ILISymptoms, values.symptoms));
+      }
+
       var preparedValues = [
         Boolean(values.isFine),
         Boolean(values.animalContact),
         new Date(values.startedAt),
+        year,
+        week,
+        values.location_id,
         values.address.subdistrict,
         values.address.district,
         values.address.city,
@@ -45,6 +56,7 @@ function create (values) {
         }),
         values.moreInfo,
         values.userId,
+        isILI,
         values.createdAt || new Date(),
         values.updatedAt || new Date()
       ];
@@ -52,11 +64,11 @@ function create (values) {
       client.query('\
         INSERT\
         INTO reports\
-          ("isFine", "animalContact", "startedAt", "subdistrict", "district", "city", \
+          ("isFine", "animalContact", "startedAt", "year", "week", "location_id", "subdistrict", "district", "city", \
            "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", \
-           "moreInfo", "userId", "createdAt", "updatedAt")\
+           "moreInfo", "userId", "isILI", "createdAt", "updatedAt")\
         VALUES\
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING * \
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
 
@@ -242,10 +254,7 @@ function loadLocationByAddress(address) {
           return reject(error);
         }
 
-        resolve({
-          latitude: result.rows[0].latitude,
-          longitude: result.rows[0].longitude
-        });
+        resolve(result.rows[0]);
       });
     });
   });
@@ -257,6 +266,7 @@ function getReportJSON(report, extra) {
   return _.assign({
     id: report.id,
     isFine: report.isFine,
+    isILI: report.isILI,
     animalContact: report.animalContact,
     startedAt: report.startedAt,
     address: {
