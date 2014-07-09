@@ -9,54 +9,71 @@ DECLARE
   ili_to_increase integer;
 
 BEGIN
-
+  finecount := 0;
+  sickcount := 0;
+  ilicount := 0;
   ili_to_increase := 0;
 
   IF TG_OP = 'INSERT' THEN
     RAISE NOTICE 'TRIGGER INSERT called on %', TG_TABLE_NAME;
 
-    SELECT COUNT(id) INTO finecount
+    SELECT id INTO finecount 
     FROM reports 
-    WHERE "isFine" = true
-          AND year = NEW.year
-          AND week = NEW.week
-          AND "userId" = NEW."userId"
-          AND location_id = NEW."location_id";
+    WHERE id != NEW.id AND
+          "isFine" = true AND 
+          year = NEW.year AND 
+          week = NEW.week AND 
+          "userId" = NEW."userId" AND 
+          location_id = NEW."location_id"
+    LIMIT 1;
 
-    SELECT COUNT(id) INTO sickcount
+    SELECT id INTO sickcount 
     FROM reports 
-    WHERE "isFine" = false
-          AND year = NEW.year
-          AND week = NEW.week
-          AND "userId" = NEW."userId"
-          AND location_id = NEW."location_id";
-
-    SELECT COUNT(id) INTO ilicount
-    FROM reports 
-    WHERE "isILI" = true
-          AND year = NEW.year
-          AND week = NEW.week
-          AND "userId" = NEW."userId"
-          AND location_id = NEW."location_id";
-
-    -- also update ili count
-    IF ilicount > 1 THEN
-      RAISE NOTICE 'DO NOTHING';
-    ELSE
-      IF NEW."isILI" = true THEN
-        RAISE NOTICE 'INCREASE ili_count';
-        ili_to_increase := 1;
-      END IF;
-    END IF;
+    WHERE id != NEW.id AND
+          "isFine" = false AND 
+          year = NEW.year AND 
+          week = NEW.week AND 
+          "userId" = NEW."userId" AND 
+          location_id = NEW."location_id"
+    LIMIT 1;
 
     RAISE NOTICE 'FINECOUNT %', finecount;
     RAISE NOTICE 'SICKCOUNT %', sickcount;
 
     IF NEW."isFine" = false THEN
+
+      SELECT id INTO ilicount
+      FROM reports 
+      WHERE id != NEW.id AND
+            "isILI" = true AND
+            year = NEW.year AND 
+            week = NEW.week AND 
+            "userId" = NEW."userId" AND 
+            location_id = NEW."location_id"
+      LIMIT 1;
+
+      -- also update ili count
+      IF ilicount != 0 THEN
+        RAISE NOTICE 'DO NOTHING';
+      ELSE
+        IF NEW."isILI" = true THEN
+          RAISE NOTICE 'INCREASE ili_count';
+          ili_to_increase := 1;
+        END IF;
+      END IF;
+
       -- IF sick then
-      IF sickcount > 1 THEN
+      IF sickcount > 0 THEN
         -- number except more than 1 show that there is already sicked report.
-        RAISE NOTICE '--> DO NOTHING';
+        IF ili_to_increase > 0 THEN
+          RAISE NOTICE '--> INCREASING ILI COUNT';
+
+          UPDATE reports_summary_by_week
+          SET ili_count = ili_count + ili_to_increase
+          WHERE location_id = NEW.location_id AND year = NEW.year AND week = NEW.week;
+        ELSE
+          RAISE NOTICE '--> DO NOTHING';
+        END IF;
       ELSE
         -- check if any sick this week, 1 mean itself, 0 will never happen.
         RAISE NOTICE '--> INCREASE sick STAT';
@@ -96,7 +113,7 @@ BEGIN
         RAISE NOTICE '--> DO NOTHING';
       ELSE
         -- else, check if there's already fine count.
-        IF finecount > 1 THEN
+        IF finecount > 0 THEN
           -- if yes, do nothing.
           RAISE NOTICE '----> DO NOTHING';
         ELSE
