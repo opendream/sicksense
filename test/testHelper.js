@@ -100,6 +100,47 @@ function createUser(values, generateAccessToken) {
 function createReport (values) {
   values = values || {};
 
+  values.isFine = _.isEmpty(values.symptoms);
+
+  values.address = _.extend({
+    subdistrict: "Samsen Nok",
+    district: "Huai Khwang",
+    city: "Bangkok"
+  }, values.address);
+
+  values.locationByAddress = _.extend({
+    latitude: 13.781730,
+    longitude: 100.545357
+  }, values.locationByAddress);
+
+  var fakeLatitude = Faker.Address.latitude();
+  var fakeLongitude = Faker.Address.longitude();
+
+  values.location = _.extend({
+    latitude: fakeLatitude,
+    longitude: fakeLongitude
+  }, values.location);
+
+  values.locationByAddress.latitude = values.locationByAddress.latitude || latitude;
+  values.locationByAddress.longitude = values.locationByAddress.longitude || longitude;
+
+  values.startedAt = new Date(values.startedAt || new Date());
+  values.createdAt = new Date(values.createdAt || new Date());
+  values.updatedAt = new Date(values.updatedAt || new Date());
+  values.moreInfo = values.moreInfo || Faker.Lorem.paragraph();
+
+  return ReportService.loadLocationByAddress(values.address)
+    .then(function (location) {
+      values.location_id = location.id;
+      return ReportService.create(values);
+    });
+}
+
+function _createReport (values) {
+  values = values || {};
+
+  values.isFine = _.isEmpty(values.symptoms);
+
   values.address = _.extend({
     subdistrict: "Samsen Nok",
     district: "Huai Khwang",
@@ -126,11 +167,20 @@ function createReport (values) {
         return reject(error);
       }
 
+      var year = moment(values.startedAt).year();
+      var week = moment(values.startedAt).week();
+      var isILI;
+      if (typeof values.isILI == 'undefined') {
+        isILI = !_.isEmpty(_.intersection(sails.config.symptoms.ILISymptoms, values.symptoms));
+      }
+
       var preparedValues = [
         _.isEmpty(values.symptoms),
         Boolean(values.animalContact),
         new Date(values.startedAt || new Date()),
-
+        year,
+        week,
+        values.location_id,
         values.address.subdistrict,
         values.address.district,
         values.address.city,
@@ -148,18 +198,19 @@ function createReport (values) {
         }),
         values.moreInfo || Faker.Lorem.paragraph(),
         values.userId,
+        isILI,
         values.createdAt || new Date(),
         values.updatedAt || new Date()
       ];
 
       client.query('\
         INSERT\
-          INTO reports\
-            ("isFine", "animalContact", "startedAt", "subdistrict", "district", "city", \
-             "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", \
-             "moreInfo", "userId", "createdAt", "updatedAt")\
-          VALUES\
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING * \
+        INTO reports\
+          ("isFine", "animalContact", "startedAt", "year", "week", "location_id", "subdistrict", "district", "city", \
+           "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", \
+           "moreInfo", "userId", "isILI", "createdAt", "updatedAt")\
+        VALUES\
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
 
@@ -220,12 +271,28 @@ function clearReportsSymptoms () {
   });
 }
 
+function clearReportsSummaryByWeek () {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      if (err) return reject(err);
+
+      client.query('DELETE FROM reports_summary_by_week', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
 function clearAll () {
   return clearUsers()
     .then(clearAccessTokens)
     .then(clearSymptoms)
     .then(clearReports)
-    .then(clearReportsSymptoms);
+    .then(clearReportsSymptoms)
+    .then(clearReportsSummaryByWeek);
 }
 
 module.exports = global.TestHelper = {
@@ -235,6 +302,7 @@ module.exports = global.TestHelper = {
   clearAccessTokens: clearAccessTokens,
   clearSymptoms: clearSymptoms,
   clearReportsSymptoms: clearReportsSymptoms,
+  clearReportsSummaryByWeek: clearReportsSummaryByWeek,
   clearReports: clearReports,
   clearAll: clearAll
 };

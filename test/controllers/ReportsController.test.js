@@ -1,14 +1,46 @@
 var request = require('supertest');
 var when = require('when');
 var pg = require('pg');
+var moment = require('moment');
 require('date-utils');
 
 describe('ReportController test', function() {
-  var user, accessToken;
+  var user, accessToken, location;
 
   before(function(done) {
     TestHelper.clearAll()
-      .then(_.bind(TestHelper.createUser, { email: "siriwat@opendream.co.th", password: "12345678", latitude: 13.781730, longitude: 100.545357 }))
+      // get location data.
+      .then(function() {
+        return when.promise(function(resolve, reject) {
+
+          pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+            if (err) return reject(err);
+
+            client.query("SELECT * FROM locations WHERE tambon_en = 'Samsen Nok' and amphoe_en = 'Huai Khwang'", function(err, result) {
+              pgDone();
+
+              if (err) return reject(err);
+
+              location = result.rows[0];
+              resolve();
+            });
+          });
+
+        });
+      })
+      .then(function() {
+        return TestHelper.createUser({
+          email: "siriwat@opendream.co.th",
+          password: "12345678",
+          address: {
+            subdistrict: location.tambon_en,
+            district: location.amphoe_en,
+            city: location.province_en
+          },
+          latitude: 13.781730,
+          longitude: 100.545357
+        });
+      })
       .then(function(_user) {
         user = _user;
 
@@ -337,6 +369,10 @@ describe('ReportController test', function() {
           res.body.meta.status.should.equal(200);
           res.body.response.id.should.be.ok;
           res.body.response.isFine.should.equal(false);
+
+          // auto.
+          res.body.response.isILI.should.equal(false);
+
           res.body.response.symptoms.should.be.Array;
           res.body.response.symptoms.indexOf('symptom_1').should.not.equal(-1);
           res.body.response.symptoms.indexOf('symptom_2').should.not.equal(-1);
@@ -382,7 +418,27 @@ describe('ReportController test', function() {
               report.addressLatitude.should.equal(13.784730);
               report.addressLongitude.should.equal(100.585747);
 
-              done();
+              // auto.
+              var year = startedAt.getFullYear();
+              var week = moment(startedAt).week();
+              report.isILI.should.equal(false);
+              report.year.should.equal(year);
+              report.week.should.equal(week);
+
+              client.query('SELECT * FROM reports_summary_by_week WHERE year = $1 AND week = $2'
+              , [year, week], function(err, result) {
+                if (err) return done(err);
+
+                result.rows.length.should.equal(1);
+                result.rows[0].year.should.equal(year);
+                result.rows[0].week.should.equal(week);
+                result.rows[0].fine.should.equal(0);
+                result.rows[0].sick.should.equal(1);
+                result.rows[0].ili_count.should.equal(0);
+
+                pgDone();
+                done();
+              });
             });
           });
         });

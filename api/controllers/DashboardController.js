@@ -16,6 +16,213 @@ module.exports = {
       return res.badRequest(_.first(errors).msg, paramErrors);
     }
 
+    var city = req.query.city || "Bangkok";
+
+    var startLastWeek = moment(new Date(req.query.date || new Date())).add('week', -1);
+
+    var lastWeekNumber = moment(startLastWeek).week();
+    var lastWeekYear= moment(startLastWeek).year();
+
+    var lastTwoWeekNumber = moment(startLastWeek).add('week', -1).week();
+    var lastTwoWeekYear = moment(startLastWeek).add('week', -1).year();
+
+    (function () {
+      var client, pgDone;
+      var data = {};
+
+      return when
+        .promise(function (resolve, reject) {
+          pg.connect(sails.config.connections.postgresql.connectionString, function (err, _client, _pgDone) {
+            if (err) return reject(err);
+
+            client = _client;
+            pgDone = _pgDone;
+            resolve();
+          });
+        })
+        .then(function () {
+          // Get report summary, last week and last two week.
+          return when.promise(function (resolve, reject) {
+            var values = [ lastWeekYear, lastWeekNumber, lastTwoWeekYear, lastTwoWeekNumber ];
+
+            var cityCriteria = '';
+            if (city && city != 'all') {
+              cityCriteria = ' AND ( lower(l.province_en) = lower($5) OR l.province_th = $5 ) ';
+              values.push(city);
+            }
+
+            var query = "\
+              SELECT \
+                location_id, year, week, fine, sick, ili_count, \
+                tambon_th, amphoe_th, province_th, tambon_en, amphoe_en, province_en, latitude, longitude \
+              FROM reports_summary_by_week s \
+                INNER JOIN locations l ON s.location_id = l.id \
+              WHERE \
+                ( \
+                  ( year = $1 AND week = $2 ) OR \
+                  ( year = $3 AND week = $4 ) \
+                ) \
+                " + cityCriteria + " \
+              ORDER BY \
+                year DESC, week DESC \
+            ";
+
+            client.query(query, values, function (err, result) {
+              if (err) return reject(err);
+              data.reportsSummary = result.rows;
+              resolve();
+            });
+          });
+        })
+        .then(function () {
+          // Prepare reports.
+          data.reportsSummaryLastWeek = [];
+          data.reportsSummaryLastTwoWeek = [];
+          
+          var iliLastWeek = 0;
+          var fineLastWeek = 0;
+          var sickLastWeek = 0;
+          var iliLastTwoWeek = 0;
+          var fineLastTwoWeek = 0;
+          var sickLastTwoWeek = 0;
+
+          _.each(data.reportsSummary, function (item) {
+            if (item.year == lastWeekYear && item.week == lastWeekNumber) {
+              data.reportsSummaryLastWeek.push({
+                subdistrict: item.tambon_en,
+                district: item.amphoe_en,
+                city: item.province_en,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                fineCount: item.fine,
+                sickCount: item.sick,
+                total: item.fine + item.sick
+              });
+              iliLastWeek += item.ili_count;
+              fineLastWeek += item.fine;
+              sickLastWeek += item.sick;
+            }
+            else {
+              data.reportsSummaryLastTwoWeek.push({
+                subdistrict: item.tambon_en,
+                district: item.amphoe_en,
+                city: item.province_en,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                fineCount: item.fine,
+                sickCount: item.sick,
+                total: item.fine + item.sick
+              });
+              iliLastTwoWeek += item.ili_count;
+              fineLastTwoWeek += item.fine;
+              sickLastTwoWeek += item.sick;
+            }
+          });
+
+          data.finePeople = fineLastWeek;
+          data.sickPeople = sickLastWeek;
+          data.numberOfReporters = fineLastWeek + sickLastWeek;
+
+          // Calculate ILI
+          data.ILI = {
+            thisWeek: ((iliLastWeek / (fineLastWeek + sickLastWeek)) * 100),
+            lastWeek: ((iliLastTwoWeek / (fineLastTwoWeek + sickLastTwoWeek)) * 100)
+          };
+          data.ILI.delta = (data.ILI.thisWeek - data.ILI.lastWeek);
+        })
+        // Get ILI log for graph.
+        .then(function() {
+          data.graphs = {};
+          return getILILogsAtDate('boe', moment(startLastWeek).startOf('week'))
+            .then(function(result) {
+              data.graphs.BOE = result;
+            })
+            .then(function() {
+              return getILILogsAtDate('sicksense', moment(startLastWeek).startOf('week'));
+            })
+            .then(function(result) {
+              data.graphs.SickSense = result;
+            });
+        })
+        .then(function() {
+          return when.promise(function(resolve, reject) {
+            var values = [ lastWeekYear, lastWeekNumber ];
+
+            var cityCriteria = '';
+            if (city && city != 'all') {
+              cityCriteria = ' AND ( lower(l.province_en) = lower($3) OR l.province_th = $3 ) ';
+              values.push(city);
+            }
+
+            var query = " \
+              SELECT s.name, COUNT(s.name) as count \
+              FROM symptoms_summary_by_week ss \
+                INNER JOIN locations l ON ss.location_id = l.id \
+                INNER JOIN symptoms s ON ss.symptom_id = s.id \
+              WHERE \
+                  ( year = $1 AND week = $2 ) " + cityCriteria + " \
+              GROUP BY s.name \
+              ORDER BY count DESC \
+            ";
+
+            data.topSymptoms = [];
+            client.query(query, values, function(err, result) {
+              if (err) return reject(err);
+
+              var sum = _.reduce(result.rows, function(x, y) {
+                return parseInt(x.count) + parseInt(y.count);
+              });
+
+              _.each(result.rows, function(item) {
+                data.topSymptoms.push({
+                  name: item.name,
+                  numberOfReports: parseInt(item.count),
+                  percentOfReports: (item.count / sum) * 100
+                });
+              });
+
+              resolve();
+              
+            });
+          });
+        })
+        .catch(function (err) {
+          sails.log.error(err);
+          res.serverError(err);
+        })
+        .finally(function () {
+          pgDone();
+          
+          res.ok({
+            reports: {
+              count: data.reportsSummaryLastWeek.length,
+              items: data.reportsSummaryLastWeek
+            },
+            ILI: data.ILI,
+            numberOfReporters: data.numberOfReporters,
+            numberOfReports: 0,
+            numberOfFinePeople: data.finePeople,
+            numberOfSickPeople: data.sickPeople,
+            percentOfFinePeople: ((data.finePeople / data.numberOfReporters) * 100),
+            percentOfSickPeople: ((data.sickPeople / data.numberOfReporters) * 100),
+            graphs: data.graphs,
+            topSymptoms: data.topSymptoms
+          });
+        });
+    })();
+  },
+
+  oldIndex: function(req, res) {
+    if (req.query.date) {
+      req.check('date', 'Field `date` is invalid').isDate();
+    }
+
+    var errors = req.validationErrors();
+    var paramErrors = req.validationErrors(true);
+    if (errors) {
+      return res.badRequest(_.first(errors).msg, paramErrors);
+    }
+
     var reports;
     var ILIThisWeek, ILILastWeek, ILIDelta;
     var numberOfReporters, numberOfReports, numberOfFinePeople, numberOfSickPeople, percentOfFinePeople, percentOfSickPeople;

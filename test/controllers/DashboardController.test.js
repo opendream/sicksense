@@ -203,6 +203,19 @@ describe('DashboardController Test', function() {
         .then(function() {
           return when.promise(function(resolve, reject) {
             pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+              if (err) return reject(new Error(err));
+
+              client.query('SELECT * FROM reports_summary_by_week', function(err, result) {
+                if (err) return reject(err);
+                //console.log('##', result.rows);
+                resolve();
+              });
+            });
+          });
+        })
+        .then(function() {
+          return when.promise(function(resolve, reject) {
+            pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
               if (err) {
                 return reject(new Error(err));
               }
@@ -268,6 +281,9 @@ describe('DashboardController Test', function() {
     it('should return dashboard data of current week', function(done) {
       request(sails.hooks.http.app)
         .get('/dashboard')
+        .query({
+          city: 'all'
+        })
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);
@@ -298,16 +314,15 @@ describe('DashboardController Test', function() {
           district3.sickCount.should.equal(0);
           district3.total.should.equal(1);
 
-          res.body.response.ILI.thisWeek.should.equal(66.67);
-          res.body.response.ILI.lastWeek.should.equal(33.33);
-          res.body.response.ILI.delta.should.equal(33.34);
+          res.body.response.ILI.thisWeek.toFixed(2).should.equal('66.67');
+          res.body.response.ILI.lastWeek.toFixed(2).should.equal('33.33');
+          res.body.response.ILI.delta.toFixed(2).should.equal('33.33');
 
           res.body.response.numberOfReporters.should.equal(3);
-          res.body.response.numberOfReports.should.equal(4);
           res.body.response.numberOfFinePeople.should.equal(1);
           res.body.response.numberOfSickPeople.should.equal(2);
-          res.body.response.percentOfFinePeople.should.equal(33.33);
-          res.body.response.percentOfSickPeople.should.equal(66.67);
+          res.body.response.percentOfFinePeople.toFixed(2).should.equal('33.33');
+          res.body.response.percentOfSickPeople.toFixed(2).should.equal('66.67');
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.BOE.length.should.equal(6);
@@ -345,10 +360,10 @@ describe('DashboardController Test', function() {
 
           res.body.response.topSymptoms.should.be.Array;
           res.body.response.topSymptoms[0].name.should.equal('cough');
-          res.body.response.topSymptoms[0].percentOfReports.should.equal(100);
+          res.body.response.topSymptoms[0].percentOfReports.should.approximately(66.66, 0.01);
           res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
           res.body.response.topSymptoms[1].name.should.equal('fever');
-          res.body.response.topSymptoms[1].percentOfReports.should.equal(50);
+          res.body.response.topSymptoms[1].percentOfReports.should.approximately(33.33, 0.01);
           res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
 
           done();
@@ -391,7 +406,6 @@ describe('DashboardController Test', function() {
           res.body.response.ILI.delta.should.equal(50);
 
           res.body.response.numberOfReporters.should.equal(2);
-          res.body.response.numberOfReports.should.equal(3);
           res.body.response.numberOfFinePeople.should.equal(0);
           res.body.response.numberOfSickPeople.should.equal(2);
           res.body.response.percentOfFinePeople.should.equal(0);
@@ -433,10 +447,10 @@ describe('DashboardController Test', function() {
 
           res.body.response.topSymptoms.should.be.Array;
           res.body.response.topSymptoms[0].name.should.equal('cough');
-          res.body.response.topSymptoms[0].percentOfReports.should.equal(100);
+          res.body.response.topSymptoms[0].percentOfReports.should.approximately(66.66, 0.01);
           res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
           res.body.response.topSymptoms[1].name.should.equal('fever');
-          res.body.response.topSymptoms[1].percentOfReports.should.equal(50);
+          res.body.response.topSymptoms[1].percentOfReports.should.approximately(33.33, 0.01);
           res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
 
           done();
@@ -467,6 +481,7 @@ describe('DashboardController Test', function() {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
+          city: 'all',
           date: (new Date()).addDays(-7)
         })
         .expect(200)
@@ -499,16 +514,15 @@ describe('DashboardController Test', function() {
           district3.sickCount.should.equal(0);
           district3.total.should.equal(1);
 
-          res.body.response.ILI.thisWeek.should.equal(33.33);
+          res.body.response.ILI.thisWeek.should.approximately(33.33, 0.01);
           res.body.response.ILI.lastWeek.should.equal(0);
-          res.body.response.ILI.delta.should.equal(33.33);
+          res.body.response.ILI.delta.should.approximately(33.33, 0.01);
 
           res.body.response.numberOfReporters.should.equal(3);
-          res.body.response.numberOfReports.should.equal(3);
           res.body.response.numberOfFinePeople.should.equal(1);
           res.body.response.numberOfSickPeople.should.equal(2);
-          res.body.response.percentOfFinePeople.should.equal(33.33);
-          res.body.response.percentOfSickPeople.should.equal(66.67);
+          res.body.response.percentOfFinePeople.should.approximately(33.33, 0.01);
+          res.body.response.percentOfSickPeople.should.approximately(66.67, 0.01);
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.BOE.length.should.equal(6);
