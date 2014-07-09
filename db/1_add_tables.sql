@@ -103,3 +103,11 @@ CREATE TABLE locations
 WITH (
   OIDS=FALSE
 );
+
+DROP TABLE reportssymptoms;
+CREATE TABLE reportssymptoms
+(
+  "reportId" integer,
+  "symptomId" integer
+);
+CREATE UNIQUE INDEX ON reportssymptoms ( "reportId", "symptomId" );

@@ -21,9 +21,6 @@ CREATE TABLE symptoms_summary_by_week
 );
 CREATE INDEX ON symptoms_summary_by_week ( location_id, symptom_id, year, week );
 
--- ADD reportssymptoms index
-CREATE INDEX ON reportssymptoms ( "reportId", "symptomId" );
-
 -- ALTER TABLE reports
 ALTER TABLE reports ADD COLUMN year smallint;
 ALTER TABLE reports ADD COLUMN week smallint;

@@ -264,9 +264,15 @@ function clearSymptoms () {
 
 function clearReportsSymptoms () {
   return when.promise(function(resolve, reject) {
-    ReportsSymptoms.destroy().exec(function(err) {
+    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
       if (err) return reject(err);
-      resolve();
+
+      client.query('DELETE FROM reportssymptoms', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
     });
   });
 }
