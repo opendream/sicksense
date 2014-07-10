@@ -132,13 +132,16 @@ module.exports = {
         })
         // Get ILI log for graph.
         .then(function() {
+          var a = moment(startLastWeek).startOf('week');
+          var b = moment(a).add('week', 5).endOf('week');
+
           data.graphs = {};
-          return getILILogsAtDate('boe', moment(startLastWeek).startOf('week'))
+          return getILILogs(client, 'boe', a, b)
             .then(function(result) {
               data.graphs.BOE = result;
             })
             .then(function() {
-              return getILILogsAtDate('sicksense', moment(startLastWeek).startOf('week'));
+              return getILILogs(client, 'sicksense', a, b);
             })
             .then(function(result) {
               data.graphs.SickSense = result;
@@ -581,87 +584,51 @@ function getFineAndSickNumbers(city, startDate, endDate) {
   });
 }
 
-function getILILogs(source, startDate, endDate, limit) {
+function getILILogs(client, source, startDate, endDate, limit) {
   limit = limit || 6;
 
   return when.promise(function(resolve, reject) {
 
-    var values = [ startDate.toJSON(), endDate.toJSON(), source, limit ];
+    var values = [ new Date(startDate).toJSON(), new Date(endDate).toJSON(), source, limit ];
 
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    client.query('\
+      SELECT * \
+      FROM ililog\
+      WHERE "date" BETWEEN $1 AND $2 \
+            AND source = $3 \
+      ORDER BY "date" \
+      LIMIT $4 \
+    ', values, function(err, result) {
+
       if (err) {
-        sails.log.error('-- BOE stat error', err);
+        sails.log.error('-- ILILOGS stat error (sql)', err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
         return reject(err);
       }
 
-      client.query('\
-        SELECT * \
-        FROM ililog\
-        WHERE "date" BETWEEN $1 AND $2 \
-              AND source = $3 \
-        LIMIT $4 \
-      ', values, function(err, result) {
-        pgDone();
+      var numberOfWeek = (endDate - startDate) / (7 * 86400000);
+      // Find different week between first existing data and actual start date.
+      var diff = (result.rows[0].date - startDate) / (7 * 86400000);
 
-        if (err) {
-          sails.log.error('-- BOE stat error (sql)', err);
-          var error = new Error("Could not connect to database");
-          error.statusCode = 500;
-          return reject(err);
-        }
+      var results = _.map(_.range(0, numberOfWeek), function(i) {
+        var item;
 
-        var rows = _.map(result.rows, function (item) {
+        if (item = result.rows[i - diff]) {
           return {
             date: item.date,
             value: item.value
           };
-        });
-
-        resolve(rows);
+        }
+        else {
+          return {
+            date: moment(startDate).add('week', i),
+            value: 0
+          };
+        }
       });
+
+      resolve(results);
     });
   });
-}
-
-function getILILogsAtDate(source, date) {
-  date = date || new Date();
-
-  var dateObj;
-  if (typeof date == 'string') {
-    dateObj = new Date(Date.parse(date));
-  }
-  else {
-    dateObj = new Date(date);
-  }
-  dateObj.clearTime();
-
-  var firstDay = moment(dateObj).day('Sunday');
-
-  return when
-    .map(_.range(0, 6), function (i) {
-      var a = moment(firstDay).add('week', i).toDate();
-      var b = moment(a).add('day', 6).toDate();
-      return getILILogs(source, a, b);
-    })
-    .then(function(rows) {
-      return when.promise(function(resolve, reject) {
-        var results = [];
-
-        _.each(rows, function(row, i) {
-          if (_.isEmpty(row)) {
-            results.push({
-              date: moment(firstDay).add('week', i).toDate(),
-              value: 0
-            });
-          }
-          else {
-            results.push(row[0]);
-          }
-        });
-
-        resolve(results);
-      });
-    });
 }
