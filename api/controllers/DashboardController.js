@@ -172,15 +172,15 @@ module.exports = {
             client.query(query, values, function(err, result) {
               if (err) return reject(err);
 
-              var sum = _.reduce(result.rows, function(x, y) {
-                return parseInt(x.count) + parseInt(y.count);
+              var sum = _.reduce(_.pluck(result.rows, 'count'), function(x, y) {
+                return parseInt(x) + parseInt(y);
               });
 
               _.each(result.rows, function(item) {
                 data.topSymptoms.push({
                   name: item.name,
                   numberOfReports: parseInt(item.count),
-                  percentOfReports: (item.count / sum) * 100
+                  percentOfReports: (parseInt(item.count) / sum) * 100
                 });
               });
 
@@ -609,7 +609,8 @@ function getILILogs(client, source, startDate, endDate, limit) {
 
       var numberOfWeek = (endDate - startDate) / (7 * 86400000);
       // Find different week between first existing data and actual start date.
-      var diff = (result.rows[0].date - startDate) / (7 * 86400000);
+      var firstDate = (result.rows[0] && result.rows[0].date) || startDate;
+      var diff = (firstDate - startDate) / (7 * 86400000);
 
       var results = _.map(_.range(0, numberOfWeek), function(i) {
         var item;
