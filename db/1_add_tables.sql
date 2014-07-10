@@ -1,3 +1,5 @@
+CREATE EXTENSION postgis;
+
 -- Table: users
 
 DROP TABLE users;

@@ -156,7 +156,7 @@ CREATE OR REPLACE FUNCTION "update_symptoms_summary_for_dashboard"() RETURNS tri
 $BODY$
 
 DECLARE
-  report_row RECORD;
+  report_location_id integer;
   symptom_count integer;
 
 BEGIN
@@ -164,41 +164,25 @@ BEGIN
   IF TG_OP = 'INSERT' THEN
     RAISE NOTICE 'TRIGGER INSERT called on %', TG_TABLE_NAME;
 
-    SELECT * INTO report_row
+    SELECT location_id INTO report_location_id
     FROM reports
     WHERE id = NEW."reportId";
+    
+    -- INCREASE SYMPTOM COUNT
+    RAISE NOTICE 'INCREASE';
 
-    SELECT COUNT(rs.id) INTO symptom_count
-    FROM reportssymptoms rs
-         INNER JOIN reports r ON r.id = rs."reportId"
-    WHERE r."userId" = report_row."userId" AND
-          rs."symptomId" = NEW."symptomId" AND
-          year = report_row.year AND
-          week = report_row.week;
-
-    IF symptom_count > 1 THEN
-      -- IF FOUND DO NOTHING
-      RAISE NOTICE 'FOUND %', symptom_count;
-    ELSE
-      -- ELSE INCREASE SYMPTOM COUNT
-      RAISE NOTICE 'NOT FOUND, INCREASE';
-
-      WITH "update_symptoms_summary" AS (
-        UPDATE symptoms_summary_by_week
-        SET count = count + 1
-        WHERE location_id = report_row.location_id AND
-              symptom_id = NEW."symptomId" AND
-              year = report_row.year AND
-              week = report_row.week
-        RETURNING *
-      )
-      INSERT INTO symptoms_summary_by_week (location_id, symptom_id, year, week, count)
-      SELECT report_row.location_id, NEW."symptomId", report_row.year, report_row.week, 1
-      WHERE NOT EXISTS ( SELECT * FROM "update_symptoms_summary" );
-
-    END IF;
-
-    RAISE NOTICE 'SYMPTOM ID is %', NEW."symptomId";
+    WITH "update_symptoms_summary" AS (
+      UPDATE symptoms_summary_by_week
+      SET count = count + 1
+      WHERE location_id = report_location_id AND
+            symptom_id = NEW."symptomId" AND
+            year = report_row.year AND
+            week = report_row.week
+      RETURNING *
+    )
+    INSERT INTO symptoms_summary_by_week (location_id, symptom_id, year, week, count)
+    SELECT report_location_id, NEW."symptomId", report_row.year, report_row.week, 1
+    WHERE NOT EXISTS ( SELECT * FROM "update_symptoms_summary" );
 
   END IF;
 
