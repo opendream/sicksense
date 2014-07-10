@@ -81,7 +81,7 @@ module.exports = {
           // Prepare reports.
           data.reportsSummaryLastWeek = [];
           data.reportsSummaryLastTwoWeek = [];
-          
+
           var iliLastWeek = 0;
           var fineLastWeek = 0;
           var sickLastWeek = 0;
@@ -128,8 +128,8 @@ module.exports = {
 
           // Calculate ILI
           data.ILI = {
-            thisWeek: ((iliLastWeek / (fineLastWeek + sickLastWeek)) * 100),
-            lastWeek: ((iliLastTwoWeek / (fineLastTwoWeek + sickLastTwoWeek)) * 100)
+            thisWeek: ((iliLastWeek / (fineLastWeek + sickLastWeek)) * 100) || 0,
+            lastWeek: ((iliLastTwoWeek / (fineLastTwoWeek + sickLastTwoWeek)) * 100) || 0
           };
           data.ILI.delta = (data.ILI.thisWeek - data.ILI.lastWeek);
         })
@@ -189,7 +189,7 @@ module.exports = {
               });
 
               resolve();
-              
+
             });
           });
         })
@@ -200,7 +200,7 @@ module.exports = {
         .finally(function () {
           // console.log('-: finished topSymptoms', Date.now() - startTime);
           pgDone();
-          
+
           if (isError) {
             res.serverError("Could not perform your request");
           }
@@ -215,8 +215,8 @@ module.exports = {
               numberOfReports: 0,
               numberOfFinePeople: data.finePeople,
               numberOfSickPeople: data.sickPeople,
-              percentOfFinePeople: ((data.finePeople / data.numberOfReporters) * 100),
-              percentOfSickPeople: ((data.sickPeople / data.numberOfReporters) * 100),
+              percentOfFinePeople: ((data.finePeople / data.numberOfReporters) * 100) || 0,
+              percentOfSickPeople: ((data.sickPeople / data.numberOfReporters) * 100) || 0,
               graphs: data.graphs,
               topSymptoms: data.topSymptoms
             });
