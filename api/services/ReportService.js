@@ -1,5 +1,4 @@
 var when = require('when');
-var pg = require('pg');
 var wkt = require('terraformer-wkt-parser');
 var moment = require('moment');
 require('date-utils');

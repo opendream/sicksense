@@ -1,4 +1,4 @@
-var pg = require('pg');
+
 var hat = require('hat');
 var wkt = require('terraformer-wkt-parser');
 var passgen = require('password-hash-and-salt');

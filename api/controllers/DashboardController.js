@@ -1,5 +1,4 @@
 /*jshint multistr: true */
-var pg = require('pg');
 var when = require('when');
 var moment = require('moment');
 require('date-utils');
@@ -29,6 +28,9 @@ module.exports = {
     (function () {
       var client, pgDone;
       var data = {};
+      var isError = false;
+
+      // var startTime = Date.now();
 
       return when
         .promise(function (resolve, reject) {
@@ -41,6 +43,7 @@ module.exports = {
           });
         })
         .then(function () {
+          // console.log('-: connect pg', Date.now() - startTime);
           // Get report summary, last week and last two week.
           return when.promise(function (resolve, reject) {
             var values = [ lastWeekYear, lastWeekNumber, lastTwoWeekYear, lastTwoWeekNumber ];
@@ -53,8 +56,7 @@ module.exports = {
 
             var query = "\
               SELECT \
-                location_id, year, week, fine, sick, ili_count, \
-                tambon_th, amphoe_th, province_th, tambon_en, amphoe_en, province_en, latitude, longitude \
+                location_id, year, week, fine, sick, ili_count, tambon_en, amphoe_en, province_en, latitude, longitude \
               FROM reports_summary_by_week s \
                 INNER JOIN locations l ON s.location_id = l.id \
               WHERE \
@@ -75,6 +77,7 @@ module.exports = {
           });
         })
         .then(function () {
+          //console.log('-: finished query reports_summary_by_week', Date.now() - startTime);
           // Prepare reports.
           data.reportsSummaryLastWeek = [];
           data.reportsSummaryLastTwoWeek = [];
@@ -148,6 +151,7 @@ module.exports = {
             });
         })
         .then(function() {
+          //console.log('-: finished get ILILogs', Date.now() - startTime);
           return when.promise(function(resolve, reject) {
             var values = [ lastWeekYear, lastWeekNumber ];
 
@@ -191,26 +195,33 @@ module.exports = {
         })
         .catch(function (err) {
           sails.log.error(err);
-          res.serverError(err);
+          if (err) isError = err;
         })
         .finally(function () {
+          // console.log('-: finished topSymptoms', Date.now() - startTime);
           pgDone();
           
-          res.ok({
-            reports: {
-              count: data.reportsSummaryLastWeek.length,
-              items: data.reportsSummaryLastWeek
-            },
-            ILI: data.ILI,
-            numberOfReporters: data.numberOfReporters,
-            numberOfReports: 0,
-            numberOfFinePeople: data.finePeople,
-            numberOfSickPeople: data.sickPeople,
-            percentOfFinePeople: ((data.finePeople / data.numberOfReporters) * 100),
-            percentOfSickPeople: ((data.sickPeople / data.numberOfReporters) * 100),
-            graphs: data.graphs,
-            topSymptoms: data.topSymptoms
-          });
+          if (isError) {
+            res.serverError("Could not perform your request");
+          }
+          else {
+            res.ok({
+              reports: {
+                count: data.reportsSummaryLastWeek.length,
+                items: data.reportsSummaryLastWeek
+              },
+              ILI: data.ILI,
+              numberOfReporters: data.numberOfReporters,
+              numberOfReports: 0,
+              numberOfFinePeople: data.finePeople,
+              numberOfSickPeople: data.sickPeople,
+              percentOfFinePeople: ((data.finePeople / data.numberOfReporters) * 100),
+              percentOfSickPeople: ((data.sickPeople / data.numberOfReporters) * 100),
+              graphs: data.graphs,
+              topSymptoms: data.topSymptoms
+            });
+            // console.log('-: finished request.', Date.now() - startTime);
+          }
         });
     })();
   },

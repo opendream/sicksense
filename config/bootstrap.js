@@ -10,8 +10,12 @@
  */
 var when = require('when');
 var _ = require('lodash');
+var pg = require('pg');
 
 module.exports.bootstrap = function(cb) {
+
+  pg.defaults.poolSize = sails.config.connections.postgresql.poolSize || 50;
+  global['pg'] = pg;
 
   // It's very important to trigger this callack method when you are finished
   // with the bootstrap!  (otherwise your server will never lift, since it's waiting on the bootstrap)

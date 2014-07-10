@@ -1,4 +1,3 @@
-var pg = require('pg');
 
 module.exports = function(req, res, next) {
   var accessToken;

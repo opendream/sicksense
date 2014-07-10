@@ -210,12 +210,10 @@ class MockData:
         reportId = self.cursor.fetchone()[0]
 
         # ReportsSymptom.
-        rs_columns = ('"reportId"', '"symptomId"', '"createdAt"', '"updatedAt"')
+        rs_columns = ('"reportId"', '"symptomId"')
         rs_values = []
         rs_values.append(str(reportId))
         rs_values.append(str(symptomId))
-        rs_values.append(self.format_date(date))
-        rs_values.append(self.format_date(date))
         strSql = self.get_insert_statement(self.tableReportsSymptoms, rs_columns, rs_values)
         self.cursor.execute(strSql)
 
@@ -232,7 +230,7 @@ class MockData:
             print 'DatabaseError: %s' % e
 
     def get_insert_statement(self, tableName, columns, values):
-        return "INSERT INTO %s (%s) VALUES ('%s') RETURNING id" % (
+        return "INSERT INTO %s (%s) VALUES ('%s') RETURNING *" % (
             tableName, ','.join(columns), "','".join(values)
         )
 

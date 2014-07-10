@@ -1,4 +1,4 @@
-var pg = require('pg');
+
 var when = require('when');
 
 /**
