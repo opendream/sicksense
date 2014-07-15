@@ -35,7 +35,7 @@ function create (values) {
       var preparedValues = [
         Boolean(values.isFine),
         Boolean(values.animalContact),
-        new Date(values.startedAt),
+        moment(values.startedAt).toJSON(),
         year,
         week,
         values.location_id,
