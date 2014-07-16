@@ -52,6 +52,11 @@ module.exports.routes = {
   'post /reports': {
     controller: 'reports',
     action: 'create'
+  },
+  
+  'get /dashboard/now': {
+    controller: 'dashboard',
+    action: 'now'
   }
 
 
