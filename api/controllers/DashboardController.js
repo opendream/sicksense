@@ -7,13 +7,23 @@ module.exports = {
   now: function(req, res) {
     var city = req.query.city || "Bangkok";
     var date = moment(req.query.date || new Date());
-    
+
     return dashboardProcess(req, res, city, date);
   },
-  
+
   index: function(req, res) {
     if (req.query.date) {
       req.check('date', 'Field `date` is invalid').isDate();
+    }
+    if (req.query.latitude) {
+      req.check('latitude', 'Field `latitude` is not valid').isFloat();
+      req.check('latitude', 'Field `latitude` field is out of valid range').isBetween(-90, 90);
+      req.sanitize('latitude').toFloat();
+    }
+    if (req.query.longitude) {
+      req.check('longitude', 'Field `longitude` field is not valid').isFloat();
+      req.check('longitude', 'Field `longitude` field is out of valid range').isBetween(-180, 180);
+      req.sanitize('longitude').toFloat();
     }
 
     var errors = req.validationErrors();
@@ -22,8 +32,30 @@ module.exports = {
       return res.badRequest(_.first(errors).msg, paramErrors);
     }
 
-    var city = req.query.city || "Bangkok";
     var date = moment(req.query.date || new Date()).add('week', -1);
+    var city = req.query.city;
+    var latitude;
+    var longitude;
+
+    if (!city && !(req.query.latitude || req.query.longitude)) {
+      city = "Bangkok";
+    }
+    else if (!city && req.query.latitude && req.query.longitude) {
+      latitude = req.query.latitude;
+      longitude = req.query.longitude;
+
+      return LocationService.findCityByLatLng(latitude, longitude)
+        .then(function (location) {
+          if (!location) {
+            city = 'Bangkok';
+          }
+          else {
+            city = location.province_en;
+          }
+
+          return dashboardProcess(req, res, city, date);
+        });
+    }
 
     return dashboardProcess(req, res, city, date);
   },
@@ -35,7 +67,7 @@ function dashboardProcess(req, res, city, date) {
   var isError = false;
 
   // var startTime = Date.now();
-  
+
   var startLastWeek = moment(date);
 
   var lastWeekNumber = moment(startLastWeek).week();
