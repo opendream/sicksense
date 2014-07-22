@@ -1,10 +1,11 @@
 SET client_encoding = 'UTF8';
 
+DROP TABLE accesstoken;
 CREATE TABLE accesstoken (
     token text,
     "userId" text,
     expired timestamp with time zone,
-    id integer NOT NULL,
+    id serial NOT NULL,
     "createdAt" timestamp with time zone,
     "updatedAt" timestamp with time zone
 );

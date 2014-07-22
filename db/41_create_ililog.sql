@@ -1,12 +1,13 @@
 SET client_encoding = 'UTF8';
 
+DROP TABLE ililog;
 CREATE TABLE IF NOT EXISTS ililog (
     source text,
     date timestamp with time zone,
     year integer,
     week integer,
     value double precision,
-    id integer NOT NULL,
+    id serial NOT NULL,
     "createdAt" timestamp with time zone,
     "updatedAt" timestamp with time zone
 );
@@ -14,4 +15,4 @@ CREATE TABLE IF NOT EXISTS ililog (
 ALTER TABLE ONLY ililog
     ADD CONSTRAINT ililog_pkey PRIMARY KEY (id);
 
-CREATE INDEX ililog_source_date_year_week_idx ON ililog USING btree (source, date, year, week);
+CREATE INDEX ON ililog USING btree (source, date, year, week);
