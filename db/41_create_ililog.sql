@@ -1,6 +1,6 @@
 SET client_encoding = 'UTF8';
 
-CREATE TABLE ililog IF NOT EXISTS (
+CREATE TABLE IF NOT EXISTS ililog (
     source text,
     date timestamp with time zone,
     year integer,
