@@ -5,8 +5,53 @@ require('date-utils');
 
 module.exports = {
   now: function(req, res) {
-    var city = req.query.city || "Bangkok";
-    var date = moment(req.query.date || new Date());
+    if (req.query.latitude) {
+      req.check('latitude', 'Field `latitude` is not valid').isFloat();
+      req.check('latitude', 'Field `latitude` field is out of valid range').isBetween(-90, 90);
+      req.sanitize('latitude').toFloat();
+    }
+    if (req.query.longitude) {
+      req.check('longitude', 'Field `longitude` field is not valid').isFloat();
+      req.check('longitude', 'Field `longitude` field is out of valid range').isBetween(-180, 180);
+      req.sanitize('longitude').toFloat();
+    }
+
+    var errors = req.validationErrors();
+    var paramErrors = req.validationErrors(true);
+    if (errors) {
+      return res.badRequest(_.first(errors).msg, paramErrors);
+    }
+
+    var date = moment(req.query.date || new Date());var city = req.query.city;
+    var city = req.query.city;
+    var latitude;
+    var longitude;
+
+    if (!city && !(req.query.latitude || req.query.longitude)) {
+      city = "Bangkok";
+    }
+    else if (!city && req.query.latitude && req.query.longitude) {
+      latitude = req.query.latitude;
+      longitude = req.query.longitude;
+
+      return LocationService.findCityByLatLng(latitude, longitude)
+        .then(function (location) {
+          if (!location) {
+            city = 'Bangkok';
+          }
+          else {
+            city = location.province_en;
+            extraData = {
+              location: {
+                province_en: location.province_en,
+                province_th: location.province_th
+              }
+            };
+          }
+
+          return dashboardProcess(req, res, city, date, extraData);
+        });
+    }
 
     return dashboardProcess(req, res, city, date);
   },
@@ -46,14 +91,22 @@ module.exports = {
 
       return LocationService.findCityByLatLng(latitude, longitude)
         .then(function (location) {
+          var extraData = {};
+
           if (!location) {
             city = 'Bangkok';
           }
           else {
             city = location.province_en;
+            extraData = {
+              location: {
+                province_en: location.province_en,
+                province_th: location.province_th
+              }
+            };
           }
 
-          return dashboardProcess(req, res, city, date);
+          return dashboardProcess(req, res, city, date, extraData);
         });
     }
 
@@ -61,7 +114,7 @@ module.exports = {
   },
 };
 
-function dashboardProcess(req, res, city, date) {
+function dashboardProcess(req, res, city, date, extraData) {
   var client, pgDone;
   var data = {};
   var isError = false;
@@ -250,7 +303,7 @@ function dashboardProcess(req, res, city, date) {
         res.serverError("Could not perform your request");
       }
       else {
-        res.ok({
+        res.ok(_.extend({
           reports: {
             count: data.reportsSummaryLastWeek.length,
             items: data.reportsSummaryLastWeek
@@ -264,7 +317,7 @@ function dashboardProcess(req, res, city, date) {
           percentOfSickPeople: ((data.sickPeople / data.numberOfReporters) * 100) || 0,
           graphs: data.graphs,
           topSymptoms: data.topSymptoms
-        });
+        }, extraData));
         // console.log('-: finished request.', Date.now() - startTime);
       }
     });
