@@ -1,4 +1,4 @@
-DROP TABLE reports_summary_by_week IF EXISTS;
+DROP TABLE reports_summary_by_week;
 CREATE TABLE reports_summary_by_week
 (
   location_id integer,
@@ -10,7 +10,7 @@ CREATE TABLE reports_summary_by_week
 );
 CREATE INDEX ON reports_summary_by_week ( location_id, year, week );
 
-DROP TABLE symptoms_summary_by_week IF EXISTS;
+DROP TABLE symptoms_summary_by_week;
 CREATE TABLE symptoms_summary_by_week
 (
   location_id integer,
