@@ -1,5 +1,5 @@
-DROP TABLE reports_summary_by_week;
-CREATE TABLE reports_summary_by_week
+DROP TABLE reports_summary_by_week IF EXISTS;
+CREATE TABLE reports_summary_by_week IF NOT EXISTS
 (
   location_id integer,
   year smallint,
@@ -10,8 +10,8 @@ CREATE TABLE reports_summary_by_week
 );
 CREATE INDEX ON reports_summary_by_week ( location_id, year, week );
 
-DROP TABLE symptoms_summary_by_week;
-CREATE TABLE symptoms_summary_by_week
+DROP TABLE symptoms_summary_by_week IF EXISTS;
+CREATE TABLE symptoms_summary_by_week IF NOT EXISTS
 (
   location_id integer,
   symptom_id integer,
@@ -34,6 +34,7 @@ CREATE INDEX ON reports ( location_id );
 UPDATE reports SET year = EXTRACT(YEAR FROM "startedAt"), week = EXTRACT(WEEK FROM "startedAt");
 
 -- ALTER TABLE locations
+ALTER TABLE locations ADD COLUMN zipcode varchar(5);
 ALTER TABLE locations ALTER COLUMN code TYPE varchar(255);
 ALTER TABLE locations ALTER COLUMN tambon_th TYPE varchar(255);
 ALTER TABLE locations ALTER COLUMN tambon_en TYPE varchar(255);
