@@ -5,7 +5,7 @@ CREATE TABLE notifications (
     "published" timestamp with time zone,
     "body" text NOT NULL,
     "is_custom_sql" BOOLEAN NOT NULL DEFAULT 'f',
-    "gender" smallint DEFAULT 0,
+    "gender" varchar(10) DEFAULT 'all',
     "age_start" smallint DEFAULT 0,
     "age_stop" smallint DEFAULT 120,
     "province" varchar(100),
