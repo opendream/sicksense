@@ -53,11 +53,30 @@ module.exports.routes = {
     controller: 'reports',
     action: 'create'
   },
-  
+
   'get /dashboard/now': {
     controller: 'dashboard',
     action: 'now'
-  }
+  },
+
+  'get /notifications': {
+    controller: 'notifications',
+    action: 'index'
+  },
+
+  'post /notifications': {
+    controller: 'notifications',
+    action: 'create'
+  },
+
+  'post /notifications/:notification_id/delete': {
+    controller: 'notifications',
+    action: 'destroy'
+  },
+  'delete /notifications/:notification_id': {
+    controller: 'notifications',
+    action: 'destroy'
+  },
 
 
   // If a request to a URL doesn't match any of the custom routes above,
