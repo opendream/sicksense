@@ -1,3 +1,8 @@
+var STATUS = {
+  'pending': 0,
+  'sent': 1,
+  'fail': 3
+};
 
 module.exports = {
   index: index,
@@ -6,7 +11,74 @@ module.exports = {
 };
 
 function index(req, res) {
+  validate();
+  run();
 
+  function run() {
+    params = _.extend({
+      limit: 10,
+      offset: 0
+    }, req.query);
+
+    pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
+      var notifications = [];
+      var count = 0;
+
+      if (err) {
+        sails.log.error(err);
+        return res.serverError('Server error', err);
+      }
+
+      var values = [ params.limit, params.offset ];
+      client.query("\
+        SELECT \
+          published, body, gender, age_start, age_stop, province, status, \"createdAt\", \"updatedAt\" \
+        FROM \
+          notifications \
+        ORDER BY \"createdAt\" DESC \
+        LIMIT $1 \
+        OFFSET $2 \
+      ", values, function (err, result) {
+        if (err) {
+          sails.log.error(err);
+          return res.serverError('Server error', err);
+        }
+
+        notifications = result.rows;
+
+        client.query("SELECT count(id) as count FROM notifications", [], function (err, result) {
+          pgDone();
+
+          if (err) {
+            sails.log.error(err);
+            return res.serverError('Server error', err);
+          }
+
+          res.ok({
+            notifications: {
+              count: result.rows[0].count,
+              items: notifications
+            }
+          });
+        });
+      });
+    });
+  }
+
+  function validate() {
+    if (req.query.limit) {
+      req.checkQuery('limit', '`limit` field is not valid').isInt();
+    }
+    if (req.query.offset) {
+      req.checkQuery('offset', '`offset` field is not valid').isInt();
+    }
+
+    var errors = req.validationErrors();
+    var paramErrors = req.validationErrors(true);
+    if (errors) {
+      return res.badRequest(_.first(errors).msg, paramErrors);
+    }
+  }
 }
 
 function create(req, res) {
@@ -17,17 +89,12 @@ function create(req, res) {
     pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
       if (err) {
         sails.log.error(err);
-        res.serverError("Could not connection to the database", err);
-        return;
+        return res.serverError("Server error", err);
       }
 
       var queryData = queryBuilder(req.body);
       client.query(queryData.query, queryData.values, function (err, result) {
-        if (err) {
-          sails.log.error(err);
-          res.serverError("Server error", err);
-          return;
-        }
+        if (err) return res.serverError("Server error", err);
 
         var values = [
           req.body.published,
@@ -35,7 +102,7 @@ function create(req, res) {
           req.body.gender,
           req.body.age_start,
           req.body.age_stop,
-          req.body.province,
+          req.body.city,
           JSON.stringify({
             users: result.rows
           }),
@@ -50,10 +117,11 @@ function create(req, res) {
           VALUES \
           ( $1, $2, $3, $4, $5, $6, $7, $8, $9 ) RETURNING * \
         ", values, function (err, result) {
+          pgDone();
+
           if (err) {
             sails.log.error(err);
-            res.serverError("Server error", err);
-            return;
+            return res.serverError("Server error", err);
           }
 
           if (!req.body.published) {
@@ -62,7 +130,7 @@ function create(req, res) {
           }
 
           res.ok({
-            notification: result.rows[0]
+            notification: NotificationsService.getJSON(result.rows[0])
           });
         });
       });
@@ -107,7 +175,6 @@ function create(req, res) {
     if (!_.isEmpty(wheres)) {
       query += " WHERE " + wheres.join(' AND ');
     }
-    console.log(wheres, values);
 
     return {
       query: query,
