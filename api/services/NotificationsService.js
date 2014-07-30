@@ -1,5 +1,12 @@
+var STATUS = {
+  'pending': 0,
+  'sent': 1,
+  'fail': 2,
+  'deleted': 3
+};
 
 module.exports = {
+  STATUS: STATUS,
   getJSON: getJSON
 };
 
