@@ -1,8 +1,3 @@
-var STATUS = {
-  'pending': 0,
-  'sent': 1,
-  'fail': 3
-};
 
 module.exports = {
   index: index,
@@ -32,7 +27,7 @@ function index(req, res) {
       var values = [ params.limit, params.offset ];
       client.query("\
         SELECT \
-          published, body, gender, age_start, age_stop, province, status, \"createdAt\", \"updatedAt\" \
+          id, published, body, gender, age_start, age_stop, province, status, \"createdAt\", \"updatedAt\" \
         FROM \
           notifications \
         ORDER BY \"createdAt\" DESC \
@@ -211,5 +206,54 @@ function create(req, res) {
 }
 
 function destroy(req, res) {
+  if (req.notification) {
+    pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
+      if (err) {
+        sails.log.error(err);
+        return res.serverError("Server error", err);
+      }
 
+      var query;
+      var values;
+
+      if (!req.query.permanent) {
+        query = "UPDATE notifications SET status = $1 WHERE id = $2";
+        values = [
+          NotificationsService.STATUS.deleted,
+          req.notification.id
+        ];
+        client.query(query, values, function (err, result) {
+          if (err) {
+            sails.log.error(err);
+            return res.serverError("Server error", err);
+          }
+
+          req.notification.status = NotificationsService.STATUS.deleted;
+          res.ok({
+            notification: req.notification
+          });
+        });
+      }
+      else {
+        query = "DELETE FROM notifications WHERE id = $1";
+        values = [
+          req.notification.id
+        ];
+        client.query(query, values, function (err, result) {
+          if (err) {
+            sails.log.error(err);
+            return res.serverError("Server error", err);
+          }
+
+          req.notification.status = NotificationsService.STATUS.deleted;
+          res.ok({
+            notification: req.notification
+          });
+        });
+      }
+    });
+  }
+  else {
+    res.notFound("Notification not found");
+  }
 }
