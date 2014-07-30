@@ -57,7 +57,8 @@ function create (values) {
         values.userId,
         isILI,
         values.createdAt || new Date(),
-        values.updatedAt || new Date()
+        values.updatedAt || new Date(),
+        values.platform || 'ios'
       ];
 
       client.query('\
@@ -65,9 +66,9 @@ function create (values) {
         INTO reports\
           ("isFine", "animalContact", "startedAt", "year", "week", "location_id", "subdistrict", "district", "city", \
            "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", \
-           "moreInfo", "userId", "isILI", "createdAt", "updatedAt")\
+           "moreInfo", "userId", "isILI", "createdAt", "updatedAt", "platform")\
         VALUES\
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) RETURNING * \
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
 
@@ -282,7 +283,8 @@ function getReportJSON(report, extra) {
       latitude: report.latitude
     },
     moreInfo: report.moreInfo,
-    createdAt: report.createdAt
+    createdAt: report.createdAt,
+    platform: report.platform
   }, extra);
 }
 

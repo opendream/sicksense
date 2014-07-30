@@ -89,6 +89,7 @@ describe('UserController test', function() {
           res.body.response.location.latitude.should.equal(13.1135);
           res.body.response.location.longitude.should.equal(105.0014);
           res.body.response.accessToken.should.be.ok;
+          res.body.response.platform.should.equal('ios');
 
           // Keep in variable so it can later user.
           user = res.body.response;
@@ -116,6 +117,20 @@ describe('UserController test', function() {
             );
           });
         });
+    });
+
+    it('should set default platform to `ios`', function (done) {
+      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+        if (err) return done(new Error(err));
+
+        client.query("SELECT platform FROM users WHERE id = $1", [ user.id ], function (err, result) {
+          pgDone();
+          if (err) return done(new Error(err));
+
+          result.rows[0].platform.should.equal('ios');
+          done();
+        });
+      });
     });
 
     it('should not allow to create with existing email', function(done) {
@@ -175,7 +190,8 @@ describe('UserController test', function() {
               subdistrict: "Suan Luang",
               district: "Amphoe Krathum Baen",
               city: "Samut Sakhon"
-            }
+            },
+            platform: 'android'
           })
           .expect(200)
           .end(function(err, res) {
@@ -188,6 +204,7 @@ describe('UserController test', function() {
             res.body.response.address.subdistrict.should.equal('Suan Luang');
             res.body.response.address.district.should.equal('Amphoe Krathum Baen');
             res.body.response.address.city.should.equal('Samut Sakhon');
+            res.body.response.platform.should.equal('android');
 
             done();
           });

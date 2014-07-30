@@ -34,6 +34,10 @@ module.exports = {
     req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
     req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
 
+    if (req.body.platform) {
+      req.sanitize('platform').trim();
+    }
+
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
     if (errors) {
@@ -61,7 +65,9 @@ module.exports = {
           ]
         }),
         new Date(),
-        new Date()
+        new Date(),
+        // platform at the time register.
+        data.platform || 'ios'
       ];
 
       save(values);
@@ -75,9 +81,9 @@ module.exports = {
           INSERT \
           INTO "users" ( \
             "email", "password", "tel", "gender", "birthYear", "subdistrict", "district", \
-            "city", "latitude", "longitude", "geom", "createdAt", "updatedAt" \
+            "city", "latitude", "longitude", "geom", "createdAt", "updatedAt", "platform" \
           ) \
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING * \
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING * \
         ', values, function(err, result) {
           done();
 
@@ -154,6 +160,7 @@ module.exports = {
           (req.body.address && req.body.address.district) || req.user.district,
           (req.body.address && req.body.address.city) || req.user.city,
           new Date(),
+          req.body.platform || 'ios',
           req.user.id
         ];
 
@@ -165,10 +172,12 @@ module.exports = {
             "subdistrict" = $3, \
             "district" = $4, \
             "city" = $5, \
-            "updatedAt" = $6 \
-          WHERE id = $7 RETURNING * \
+            "updatedAt" = $6, \
+            "platform" = $7 \
+          WHERE id = $8 RETURNING * \
         ', values, function(err, result) {
           if (err) {
+            sails.log.error(err);
             return res.serverError("Could not perform your request");
           }
 

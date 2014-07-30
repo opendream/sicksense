@@ -93,6 +93,7 @@ function getUserJSON (user, extra) {
     location: {
       longitude: user.longitude,
       latitude: user.latitude
-    }
+    },
+    platform: user.platform
   }, extra);
 }

@@ -360,7 +360,8 @@ describe('ReportController test', function() {
           },
           moreInfo: "Symptoms of H1N1 swine flu are like regular flu symptoms and include fever, \
           cough, sore throat, runny nose, body aches, headache, chills, and fatigue. Many people\
-           with swine flu have had diarrhea and vomiting."
+           with swine flu have had diarrhea and vomiting.",
+          platform: 'android'
         })
         .expect(200)
         .end(function(err, res) {
@@ -398,6 +399,8 @@ describe('ReportController test', function() {
 
           // Must hide privacy data.
           res.body.response.should.not.have.properties([ 'userId' ]);
+
+          res.body.response.platform.should.equal('android');
 
           // Also check in DB too.
           pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
