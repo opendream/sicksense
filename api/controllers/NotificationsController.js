@@ -147,7 +147,7 @@ function create(req, res) {
 
     var query = " SELECT email FROM users ";
 
-    if (params.gender != 'all') {
+    if (params.gender != 'all' || params.gender !== null) {
       wheres.push(" gender = $" + index++);
       values.push(params.gender);
     }
