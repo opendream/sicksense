@@ -30,7 +30,8 @@ module.exports.policies = {
   },
 
   'NotificationsController': {
-    destroy: [ 'loadNotification' ]
+    '*': [ 'sharedToken' ],
+    destroy: [ 'sharedToken', 'loadNotification' ]
   },
 
 	// Here's an example of mapping some policies to run before
