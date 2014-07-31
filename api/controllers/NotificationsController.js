@@ -139,7 +139,6 @@ function create(req, res) {
               notification: NotificationsService.getJSON(result.rows[0])
             });
           });
-
         });
       });
     });
