@@ -101,9 +101,29 @@ module.exports = {
           var savedUser = result.rows[0];
 
           // Then generate accessToken.
+          var accessToken;
           AccessTokenService.refresh(savedUser.id)
-            .then(function(accessToken) {
-              res.ok(UserService.getUserJSON(savedUser, { accessToken: accessToken.token }));
+            .then(function(_accessToken) {
+              accessToken = _accessToken;
+
+              if (req.body.deviceToken === '') {
+                return UserService.removeDefaultUserDevice(savedUser);
+              }
+              else if (req.body.deviceToken) {
+                return UserService.setDevice(savedUser, { id: req.body.deviceToken });
+              }
+            })
+            .then(function() {
+              return UserService.getDefaultDevice(savedUser)
+                .then(function (device) {
+                  var extra = {
+                    accessToken: accessToken.token
+                  };
+                  if (device) {
+                    extra.deviceToken = device.id;
+                  }
+                  res.ok(UserService.getUserJSON(savedUser, extra));
+                });
             })
             .catch(function(err) {
               sails.log.error(err);
@@ -176,14 +196,39 @@ module.exports = {
             "platform" = $7 \
           WHERE id = $8 RETURNING * \
         ', values, function(err, result) {
+          pgDone();
+
           if (err) {
             sails.log.error(err);
             return res.serverError("Could not perform your request");
           }
 
+          var promise = when.resolve();
+
           var savedUser = result.rows[0];
-          res.ok(UserService.getUserJSON(savedUser, { accessToken: accessToken.token }));
-          return;
+
+          if (req.body.deviceToken === '') {
+            promise = UserService.removeDefaultUserDevice(savedUser);
+          }
+          else if (req.body.deviceToken) {
+            promise = UserService.clearDevices(req.user)
+              .then(function () {
+                return UserService.setDevice(savedUser, { id: req.body.deviceToken });
+              });
+          }
+
+          promise.then(function () {
+            UserService.getDefaultDevice(savedUser)
+              .then(function (device) {
+                var extra = {
+                  accessToken: accessToken.token
+                };
+                if (device) {
+                  extra.deviceToken = device.id;
+                }
+                res.ok(UserService.getUserJSON(savedUser, extra));
+              });
+          });
         });
       });
     });

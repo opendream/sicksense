@@ -9,6 +9,10 @@ module.exports = {
       type: "string",
       required: true
     },
+    deviceId: {
+      type: "string",
+      required: false
+    },
     expired: "datetime"
   }
 };
