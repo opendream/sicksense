@@ -1,3 +1,4 @@
+var when = require('when');
 
 module.exports = {
   index: index,
@@ -122,14 +123,23 @@ function create(req, res) {
             return res.serverError("Server error", err);
           }
 
+          var promise = when.resolve(result.rows[0]);
+
           if (!req.body.published) {
             // Send now.
-            NotificationsService.push(result.rows[0]);
+            promise = NotificationsService.push(result.rows[0]);
           }
 
-          res.ok({
-            notification: NotificationsService.getJSON(result.rows[0])
+          promise.then(function (notification) {
+            res.ok({
+              notification: NotificationsService.getJSON(notification)
+            });
+          }).catch(function (err) {
+            res.ok({
+              notification: NotificationsService.getJSON(result.rows[0])
+            });
           });
+
         });
       });
     });
