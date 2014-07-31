@@ -59,7 +59,6 @@ function update(table, data, conditions) {
 
     pgconnect()
       .then(function (conn) {
-        console.log('--', query, values);
         conn.client.query(query, values, function (err, result) {
           conn.done();
 

@@ -89,7 +89,10 @@ function create(req, res) {
 
       var queryData = queryBuilder(req.body);
       client.query(queryData.query, queryData.values, function (err, result) {
-        if (err) return res.serverError("Server error", err);
+        if (err) {
+          sails.log.error(err);
+          return res.serverError("Server error", err);
+        }
 
         var values = [
           req.body.published,
@@ -121,7 +124,7 @@ function create(req, res) {
 
           if (!req.body.published) {
             // Send now.
-            // NoticationsService.send(result.rows[0].id);
+            NotificationsService.push(result.rows[0]);
           }
 
           res.ok({
@@ -141,13 +144,15 @@ function create(req, res) {
       city: null
     }, params);
 
-    var wheres = [];
+    var wheres = [ ' d.id IS NOT NULL ' ];
     var values = [];
     var index = 1;
 
-    var query = " SELECT email FROM users ";
+    var query = "\
+      SELECT u.id as user_id, d.id as device_id, d.platform \
+      FROM users u INNER JOIN devices d ON u.id::varchar = d.user_id ";
 
-    if (params.gender != 'all' || params.gender !== null) {
+    if (params.gender != 'all' && (params.gender && params.gender !== null)) {
       wheres.push(" gender = $" + index++);
       values.push(params.gender);
     }
