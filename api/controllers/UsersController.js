@@ -34,7 +34,7 @@ module.exports = {
     req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
     req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
 
-    if (req.body.platform) {
+    if (req.body.platform || req.query.platform) {
       req.sanitize('platform').trim();
     }
 
@@ -67,7 +67,7 @@ module.exports = {
         new Date(),
         new Date(),
         // platform at the time register.
-        data.platform || 'ios'
+        data.platform || req.query.platform || 'ios'
       ];
 
       save(values);
@@ -160,7 +160,7 @@ module.exports = {
           (req.body.address && req.body.address.district) || req.user.district,
           (req.body.address && req.body.address.city) || req.user.city,
           new Date(),
-          req.body.platform || 'ios',
+          req.body.platform || req.query.platform || 'ios',
           req.user.id
         ];
 
