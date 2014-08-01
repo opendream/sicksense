@@ -13,38 +13,33 @@ var apn = require('apn');
 module.exports = {
   STATUS: STATUS,
   getJSON: getJSON,
-  push: push
+  push: push,
+  getAPNService: getAPNService
 };
 
-function getAPNService() {
+var getAPNService = function () {
 
-  var apnService = new apn.connection({
-    cert: sails.config.apn.cert,
-    key: sails.config.apn.key,
-    retryLimit: sails.config.apn.retryLimit
-  });
+  var apnService;
 
-  return apnService;
+  return function (options, newInstant) {
+    var defaults = {
+      cert: sails.config.apn.cert,
+      key: sails.config.apn.key,
+      retryLimit: sails.config.apn.retryLimit
+    };
 
-  /**
-   * TODO:
-   */
-  // apnService.on('transmitted', function (notification, device) {
-  //   var notification_id = notification.payload.notification_id;
-  //
-  //   var updates = [
-  //     { field: 'status = $', value: NotificationsService.STATUS.sent }
-  //   ];
-  //
-  //   var conditions = [
-  //     { field: 'id = $', value: notification_id },
-  //     { field: 'status <> $', value: NotificationsService.STATUS.deleted },
-  //     { field: 'status <> $', value: NotificationsService.STATUS.sent }
-  //   ];
-  //
-  //   DBService.update('notifications', updates, conditions);
-  // });
-}
+    if (newInstant) {
+      return new apn.connection(_.extend(defaults, options));
+    }
+    else {
+
+      if (!apnService) {
+        apnService = new apn.connection(_.extend(defaults, options));
+      }
+      return apnService;
+    }
+  };
+}();
 
 function getJSON(notification, extra) {
   extra = extra || {};
@@ -79,9 +74,16 @@ function push(notification) {
     });
 }
 
-function pushIOS(notification) {
+function pushIOS(notification, tag) {
+  tag = tag || '';
 
   var devices = _.pluck(_.filter(notification.crondata.users, { platform: 'ios' }), 'device_id');
+  if (_.isEmpty(devices)) {
+    return updateStatus(notification, STATUS.sent)
+      .then(function (notification) {
+        return when.resolve(notification);
+      });
+  }
 
   return when.promise(function (resolve, reject) {
     var note = new apn.notification();
@@ -89,14 +91,14 @@ function pushIOS(notification) {
     note.setAlertText(notification.body);
     note.payload.notification_id = notification.id;
 
-    var apnService = getAPNService();
+    var apnService = getAPNService({}, true);
 
     apnService.on('transmissionError', function (errCode, notification, device) {
       if (errCode == 8) {
 
         var device_id = (device.token && device.token.toString('binary')) || device.toString();
 
-        sails.log.info('[Notification] can not send message to device:', device_id, '.. removing.');
+        sails.log.info('[Notification] ' + tag + ' can not send message to device:', device_id, '.. removing.');
 
         DBService.delete('devices', [
           { field: 'id = $', value: device_id }
@@ -105,6 +107,8 @@ function pushIOS(notification) {
     });
 
     apnService.on('error', function (err) {
+      sails.log.error('[Notification] ' + tag + ' Connection error', err);
+
       updateStatus(notification, STATUS.pending)
         .then(function () {
           reject(err);
@@ -112,6 +116,8 @@ function pushIOS(notification) {
     });
 
     apnService.on('socketError', function (err) {
+      sails.log.error('[Notification] ' + tag + ' ANPS socket error', err);
+
       updateStatus(notification, STATUS.pending)
         .then(function () {
           reject(err);
@@ -119,6 +125,8 @@ function pushIOS(notification) {
     });
 
     apnService.on('timeout', function () {
+      sails.log.error('[Notification] ' + tag + ' ANPS connection timeout');
+
       updateStatus(notification, STATUS.pending)
         .then(function () {
           reject(new Error("APNS timeout"));
@@ -126,6 +134,8 @@ function pushIOS(notification) {
     });
 
     apnService.on('connected', function () {
+      sails.log.info('[Notification] ' + tag + ' connected with APNS');
+
       updateStatus(notification, STATUS.sent)
         .then(function (result) {
           resolve(result.rows[0]);
