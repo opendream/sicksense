@@ -190,7 +190,7 @@ module.exports = {
       district: req.user.district,
       city: req.user.city
     };
-    values.platform = req.body.platform || req.user.platform;
+    values.platform = req.body.platform || req.query.platform || req.user.platform;
 
     var report, symptoms, userAddress, locationByUserAddress;
     ReportService.loadLocationByAddress(values.address)
