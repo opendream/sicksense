@@ -9,6 +9,7 @@ var STATUS = {
 };
 
 var apn = require('apn');
+var gcm = require('node-gcm');
 
 module.exports = {
   STATUS: STATUS,
@@ -37,6 +38,24 @@ var getAPNService = function () {
         apnService = new apn.connection(_.extend(defaults, options));
       }
       return apnService;
+    }
+  };
+}();
+
+var getGCMService = function () {
+  var gcmService;
+
+  return function (options, newInstant) {
+    var defaults = _.extend(sails.config.gcm, options);
+
+    if (newInstant) {
+      return new gcm.Sender(defaults.key);
+    }
+    else {
+      if (!gcmService) {
+        gcmService = new gcm.Sender(defaults.key);
+      }
+      return gcmService;
     }
   };
 }();
@@ -71,6 +90,9 @@ function push(notification) {
   return updateStatus(notification, STATUS.processing)
     .then(function () {
       return pushIOS(notification);
+    })
+    .then(function () {
+      return pushAndroid(notification);
     });
 }
 
@@ -143,5 +165,38 @@ function pushIOS(notification, tag) {
     });
 
     apnService.pushNotification(note, devices);
+  });
+}
+
+function pushAndroid(notification, tag) {
+  tag = tag || '';
+
+  var devices = _.pluck(_.filter(notification.crondata.users, { platform: 'android' }), 'device_id');
+  if (_.isEmpty(devices)) {
+    return updateStatus(notification, STATUS.sent)
+      .then(function (notification) {
+        return when.resolve(notification);
+      });
+  }
+
+  return when.promise(function (resolve, reject) {
+    var gcmService = getGCMService({}, true);
+
+    var message = new gcm.Message(sails.config.gcm.options);
+    message.addDataWithKeyValue('message', notification.body);
+
+    gcmService.send(message, devices, sails.config.retries, function (err, result) {
+      if (err) {
+        sails.log.error('[Notification] ' + tag + ' error connected with GCM', err);
+        return reject(err);
+      }
+
+      updateStatus(notification, STATUS.sent)
+        .then(function (result) {
+          sails.log.info('[Notification] ' + tag + ' sent to GCM');
+
+          resolve(result.rows[0]);
+        });
+    });
   });
 }
