@@ -16,6 +16,23 @@ module.exports.bootstrap = function(cb) {
 
   pg.defaults.poolSize = sails.config.connections.postgresql.poolSize || 50;
   global['pg'] = pg;
+  global['pgconnect'] = function (cb) {
+    return when.promise(function (resolve, reject) {
+      pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, done) {
+        if (cb) {
+          cb(err, client, done);
+        }
+        else {
+          if (err) return reject(err);
+
+          resolve({
+            client: client,
+            done: done
+          });
+        }
+      });
+    });
+  };
 
   // It's very important to trigger this callack method when you are finished
   // with the bootstrap!  (otherwise your server will never lift, since it's waiting on the bootstrap)

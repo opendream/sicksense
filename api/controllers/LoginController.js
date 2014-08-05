@@ -1,3 +1,4 @@
+var when = require('when');
 
 module.exports = {
 
@@ -30,7 +31,30 @@ module.exports = {
           return UserService.getAccessToken(client, user.id, true);
         })
         .then(function(accessToken) {
-          res.ok(UserService.getUserJSON(user, { accessToken: accessToken.token }));
+          var promise = when.resolve();
+
+          if (req.body.deviceToken === '') {
+            promise = UserService.removeDefaultUserDevice(user);
+          }
+          else if (req.body.deviceToken) {
+            promise = UserService.clearDevices(req.user)
+              .then(function () {
+                return UserService.setDevice(user, { id: req.body.deviceToken });
+              });
+          }
+
+          promise.then(function () {
+            UserService.getDefaultDevice(user)
+              .then(function (device) {
+                var extra = {
+                  accessToken: accessToken.token
+                };
+                if (device) {
+                  extra.deviceToken = device.id;
+                }
+                res.ok(UserService.getUserJSON(user, extra));
+              });
+          });
         })
         .catch(function(err) {
           if (err.statusCode == 403) {

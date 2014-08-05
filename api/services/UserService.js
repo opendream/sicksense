@@ -5,7 +5,12 @@ module.exports = {
   getUserByEmailPassword: getUserByEmailPassword,
   getAccessToken: getAccessToken,
   getUserByID: getUserByID,
-  getUserJSON: getUserJSON
+  getUserJSON: getUserJSON,
+  getDevices: getDevices,
+  getDefaultDevice: getDefaultDevice,
+  setDevice: setDevice,
+  clearDevices: clearDevices,
+  removeDefaultUserDevice: removeDefaultUserDevice
 };
 
 function getUserByEmailPassword(client, email, password) {
@@ -96,4 +101,182 @@ function getUserJSON (user, extra) {
     },
     platform: user.platform
   }, extra);
+}
+
+function setDevice(user, device) {
+  // Find if this device already linked with someone.
+  var existingDevice;
+
+  return when.promise(function (resolve, reject) {
+    return pgconnect()
+      .then(function (conn) {
+        return when.promise(function (resolve, reject) {
+          var query = "SELECT * FROM devices WHERE id = $1";
+          var values = [ device.id ];
+
+          conn.client.query(query, values, function (err, result) {
+            conn.done();
+
+            if (err) return reject(err);
+
+            existingDevice = result.rows[0];
+            resolve();
+          });
+        });
+      })
+      .then(function () {
+        if (existingDevice) {
+          device.user_id = user.id;
+          device = _.extend(existingDevice, device);
+
+          // Do update.
+          var updates = _.map(_.keys(device), function (key) {
+            return {
+              field: '"' + key + '" = $',
+              value: device[key]
+            };
+          });
+          var conditions = [
+            { field: 'id = $', value: device.id }
+          ];
+
+          return DBService.update('devices', updates, conditions);
+        }
+        else {
+          device = _.extend({
+            platform: 'ios',
+            subscribePushNoti: true,
+            subscribePushNotiType: 0
+          }, device);
+
+          // Do insert
+          var data = [
+            { field: 'id',                      value: device.id },
+            { field: 'platform',                value: device.platform },
+            { field: 'user_id',                 value: user.id },
+            { field: 'subscribe_pushnoti',      value: device.subscribePushNoti },
+            { field: 'subscribe_pushnoti_type', value: device.subscribePushNotiType },
+            { field: '"createdAt"',             value: new Date() },
+            { field: '"updatedAt"',             value: new Date() }
+          ];
+
+          return DBService.insert('devices', data);
+        }
+      })
+      .then(function (result) {
+        resolve(result.rows[0]);
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+  });
+}
+
+function removeDefaultUserDevice(user) {
+  return getDevices(user)
+    .then(function (devices) {
+      return removeDevice(devices[0].id);
+    });
+}
+
+function removeDevice(device_id) {
+  return when.promise(function (resolve, reject) {
+    return DBService.delete('devices', [
+      { field: 'id = $', value: device_id }
+    ])
+    .then(function (result) {
+      resolve(result.rows[0]);
+    })
+    .catch(function (err) {
+      reject(err);
+    });
+  });
+}
+
+function clearDevices(user) {
+  return DBService.delete('devices', [
+    { field: 'user_id = $', value: user.id }
+  ]);
+}
+
+function getDevices(user) {
+  return when.promise(function (resolve, reject) {
+
+    pgconnect()
+      .then(function (conn) {
+        conn.client.query("SELECT * FROM devices WHERE user_id = $1", [ user.id ], function (err, result) {
+          if (err) return reject(err);
+
+          resolve(result.rows);
+        });
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+
+  });
+}
+
+function getDefaultDevice(user) {
+  return getDevices(user)
+    .then(function (devices) {
+      return when.promise(function (resolve) {
+        resolve(devices[0]);
+      });
+    });
+}
+
+function getDevice(device_id) {
+  return when.promise(function (resolve, reject) {
+
+    pgconnect()
+      .then(function (conn) {
+        conn.client.query("SELECT * FROM devices WHERE id = $1", [ device_id ], function (err, result) {
+          if (err) return reject(err);
+
+          resolve(result.rows[0]);
+        });
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+
+  });
+}
+
+function subscribePushNoti(user, device_id) {
+  return setSubscribePushNoti(user, device_id, true);
+}
+
+function unsubscribePushNoti(user, device_id) {
+  return setSubscribePushNoti(user, device_id, false);
+}
+
+function setSubscribePushNoti(user, device_id, subscribe) {
+  return when.promise(function (resolve, reject) {
+    var updates = [
+      { field: 'subscribe_pushnoti', value: !!subscribe }
+    ];
+
+    var conditions = [
+      { field: 'id', value: device_id }
+    ];
+
+    DBService.update('devices', updates, conditions)
+      .then(function (result) {
+        resolve(result.rows[0]);
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+  });
+}
+
+function setDefaultDeviceSubscribePushNoti(user, subscribe) {
+  return getDevices(user)
+    .then(function (devices) {
+      if (devices[0].id) {
+        return setSubscribePushNoti(user, devices[0].id, subscribe);
+      }
+    });
 }
