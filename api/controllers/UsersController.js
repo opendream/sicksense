@@ -25,14 +25,16 @@ module.exports = {
     req.checkBody('address.district', 'Address:District field is required').notEmpty();
     req.checkBody('address.city', 'Address:City field is required').notEmpty();
 
-    req.sanitize('location.latitude').toFloat();
-    req.sanitize('location.longitude').toFloat();
-    req.checkBody('location.latitude', 'Location:Latitude field is required').notEmpty();
-    req.checkBody('location.latitude', 'Location:Latitude field is not valid').isFloat();
-    req.checkBody('location.latitude', 'Location:Latitude field is not valid').isBetween(-90, 90);
-    req.checkBody('location.longitude', 'Location:Longitude field is required').notEmpty();
-    req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
-    req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
+    if (req.body.location) {
+      req.sanitize('location.latitude').toFloat();
+      req.sanitize('location.longitude').toFloat();
+      req.checkBody('location.latitude', 'Location:Latitude field is required').notEmpty();
+      req.checkBody('location.latitude', 'Location:Latitude field is not valid').isFloat();
+      req.checkBody('location.latitude', 'Location:Latitude field is not valid').isBetween(-90, 90);
+      req.checkBody('location.longitude', 'Location:Longitude field is required').notEmpty();
+      req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
+      req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
+    }
 
     if (req.body.platform || req.query.platform) {
       req.sanitize('platform').trim();
@@ -45,6 +47,21 @@ module.exports = {
     }
 
     var data = req.body;
+    if (!data.location) {
+      data.location = {};
+    }
+    else {
+      data.location.latitude = parseFloat(data.location.latitude);
+      data.location.longitude = parseFloat(data.location.longitude);
+      data.point = 'SRID=4326;' + wkt.convert({
+        type: "Point",
+        coordinates: [
+          data.location.longitude,
+          data.location.latitude
+        ]
+      });
+    }
+
     passgen(data.password).hash(sails.config.session.secret, function(err, hashedPassword) {
       var values = [
         data.email,
@@ -57,13 +74,7 @@ module.exports = {
         data.address.city,
         data.location.latitude,
         data.location.longitude,
-        'SRID=4326;' + wkt.convert({
-          type: "Point",
-          coordinates: [
-            data.location.latitude,
-            data.location.longitude
-          ]
-        }),
+        data.point,
         new Date(),
         new Date(),
         // platform at the time register.
