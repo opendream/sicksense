@@ -1,5 +1,6 @@
 
 var hat = require('hat');
+var rack = hat.rack(512, 36);
 var wkt = require('terraformer-wkt-parser');
 var passgen = require('password-hash-and-salt');
 var when = require('when');
@@ -96,7 +97,6 @@ module.exports = {
           ) \
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING * \
         ', values, function(err, result) {
-          done();
 
           if (err) {
             if (err.detail.match(/Key \(email\).*already exists/)) {
@@ -133,7 +133,34 @@ module.exports = {
                   if (device) {
                     extra.deviceToken = device.id;
                   }
-                  res.ok(UserService.getUserJSON(savedUser, extra));
+
+                  if (req.body.subscribe) {
+                    var subscription_values = [
+                      savedUser.id,
+                      rack(),
+                      '8:00',
+                      new Date(),
+                      new Date()
+                    ];
+                    client.query('\
+                      INSERT INTO email_subscription (\
+                        "userId", "token", "notifyTime", "createdAt", "updatedAt"\
+                      )\
+                      VALUES ($1, $2, $3, $4, $5)\
+                    ', subscription_values, function(err, result) {
+                      done();
+
+                      if (err) {
+                        return res.serverError("Could not perform your subscribe request");
+                      }
+
+                      res.ok(UserService.getUserJSON(savedUser, extra));
+                    });
+                  }
+                  else {
+                    done();
+                    res.ok(UserService.getUserJSON(savedUser, extra));
+                  }
                 });
             })
             .catch(function(err) {
