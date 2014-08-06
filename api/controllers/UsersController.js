@@ -99,7 +99,7 @@ module.exports = {
         ', values, function(err, result) {
 
           if (err) {
-            if (err.detail.match(/Key \(email\).*already exists/)) {
+            if (err.detail && err.detail.match(/Key \(email\).*already exists/)) {
               res.conflict("This e-mail is already registered, please login or try another e-mail");
             }
             else {
