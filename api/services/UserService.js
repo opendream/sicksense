@@ -144,7 +144,7 @@ function setDevice(user, device) {
         }
         else {
           device = _.extend({
-            platform: 'ios',
+            platform: 'doctormeios',
             subscribePushNoti: true,
             subscribePushNotiType: 0
           }, device);

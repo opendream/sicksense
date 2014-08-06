@@ -129,7 +129,7 @@ function push(notification) {
 function pushIOS(notification, tag) {
   tag = tag || '';
 
-  var devices = _.pluck(_.filter(notification.crondata.users, { platform: 'ios' }), 'device_id');
+  var devices = _.pluck(_.filter(notification.crondata.users, { platform: 'doctormeios' }), 'device_id');
   if (_.isEmpty(devices)) {
     return updateStatus(notification, STATUS.sent)
       .then(function (notification) {
@@ -201,7 +201,7 @@ function pushIOS(notification, tag) {
 function pushAndroid(notification, tag) {
   tag = tag || '';
 
-  var devices = _.pluck(_.filter(notification.crondata.users, { platform: 'android' }), 'device_id');
+  var devices = _.pluck(_.filter(notification.crondata.users, { platform: 'doctormeandroid' }), 'device_id');
   if (_.isEmpty(devices)) {
     return updateStatus(notification, STATUS.sent)
       .then(function (notification) {
