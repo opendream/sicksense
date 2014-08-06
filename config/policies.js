@@ -27,7 +27,12 @@ module.exports.policies = {
   'UsersController': {
     update: 'tokenAuth',
     userReports: 'tokenAuth'
-  }
+  },
+
+  'NotificationsController': {
+    '*': [ 'sharedToken' ],
+    destroy: [ 'sharedToken', 'loadNotification' ]
+  },
 
 	// Here's an example of mapping some policies to run before
   // a controller and its actions

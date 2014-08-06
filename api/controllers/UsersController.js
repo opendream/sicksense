@@ -1,5 +1,6 @@
 
 var hat = require('hat');
+var rack = hat.rack(512, 36);
 var wkt = require('terraformer-wkt-parser');
 var passgen = require('password-hash-and-salt');
 var when = require('when');
@@ -25,14 +26,16 @@ module.exports = {
     req.checkBody('address.district', 'Address:District field is required').notEmpty();
     req.checkBody('address.city', 'Address:City field is required').notEmpty();
 
-    req.sanitize('location.latitude').toFloat();
-    req.sanitize('location.longitude').toFloat();
-    req.checkBody('location.latitude', 'Location:Latitude field is required').notEmpty();
-    req.checkBody('location.latitude', 'Location:Latitude field is not valid').isFloat();
-    req.checkBody('location.latitude', 'Location:Latitude field is not valid').isBetween(-90, 90);
-    req.checkBody('location.longitude', 'Location:Longitude field is required').notEmpty();
-    req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
-    req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
+    if (req.body.location) {
+      req.sanitize('location.latitude').toFloat();
+      req.sanitize('location.longitude').toFloat();
+      req.checkBody('location.latitude', 'Location:Latitude field is required').notEmpty();
+      req.checkBody('location.latitude', 'Location:Latitude field is not valid').isFloat();
+      req.checkBody('location.latitude', 'Location:Latitude field is not valid').isBetween(-90, 90);
+      req.checkBody('location.longitude', 'Location:Longitude field is required').notEmpty();
+      req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
+      req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
+    }
 
     if (req.body.platform || req.query.platform) {
       req.sanitize('platform').trim();
@@ -45,6 +48,21 @@ module.exports = {
     }
 
     var data = req.body;
+    if (!data.location) {
+      data.location = {};
+    }
+    else {
+      data.location.latitude = parseFloat(data.location.latitude);
+      data.location.longitude = parseFloat(data.location.longitude);
+      data.point = 'SRID=4326;' + wkt.convert({
+        type: "Point",
+        coordinates: [
+          data.location.longitude,
+          data.location.latitude
+        ]
+      });
+    }
+
     passgen(data.password).hash(sails.config.session.secret, function(err, hashedPassword) {
       var values = [
         data.email,
@@ -57,13 +75,7 @@ module.exports = {
         data.address.city,
         data.location.latitude,
         data.location.longitude,
-        'SRID=4326;' + wkt.convert({
-          type: "Point",
-          coordinates: [
-            data.location.latitude,
-            data.location.longitude
-          ]
-        }),
+        data.point,
         new Date(),
         new Date(),
         // platform at the time register.
@@ -85,10 +97,9 @@ module.exports = {
           ) \
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING * \
         ', values, function(err, result) {
-          done();
 
           if (err) {
-            if (err.detail.match(/Key \(email\).*already exists/)) {
+            if (err.detail && err.detail.match(/Key \(email\).*already exists/)) {
               res.conflict("This e-mail is already registered, please login or try another e-mail");
             }
             else {
@@ -101,9 +112,56 @@ module.exports = {
           var savedUser = result.rows[0];
 
           // Then generate accessToken.
+          var accessToken;
           AccessTokenService.refresh(savedUser.id)
-            .then(function(accessToken) {
-              res.ok(UserService.getUserJSON(savedUser, { accessToken: accessToken.token }));
+            .then(function(_accessToken) {
+              accessToken = _accessToken;
+
+              if (req.body.deviceToken === '') {
+                return UserService.removeDefaultUserDevice(savedUser);
+              }
+              else if (req.body.deviceToken) {
+                return UserService.setDevice(savedUser, { id: req.body.deviceToken });
+              }
+            })
+            .then(function() {
+              return UserService.getDefaultDevice(savedUser)
+                .then(function (device) {
+                  var extra = {
+                    accessToken: accessToken.token
+                  };
+                  if (device) {
+                    extra.deviceToken = device.id;
+                  }
+
+                  if (req.body.subscribe) {
+                    var subscription_values = [
+                      savedUser.id,
+                      rack(),
+                      '8:00',
+                      new Date(),
+                      new Date()
+                    ];
+                    client.query('\
+                      INSERT INTO email_subscription (\
+                        "userId", "token", "notifyTime", "createdAt", "updatedAt"\
+                      )\
+                      VALUES ($1, $2, $3, $4, $5)\
+                    ', subscription_values, function(err, result) {
+                      done();
+
+                      if (err) {
+                        return res.serverError("Could not perform your subscribe request");
+                      }
+
+                      res.ok(UserService.getUserJSON(savedUser, extra));
+                    });
+                  }
+                  else {
+                    done();
+                    res.ok(UserService.getUserJSON(savedUser, extra));
+                  }
+                });
             })
             .catch(function(err) {
               sails.log.error(err);
@@ -176,14 +234,39 @@ module.exports = {
             "platform" = $7 \
           WHERE id = $8 RETURNING * \
         ', values, function(err, result) {
+          pgDone();
+
           if (err) {
             sails.log.error(err);
             return res.serverError("Could not perform your request");
           }
 
+          var promise = when.resolve();
+
           var savedUser = result.rows[0];
-          res.ok(UserService.getUserJSON(savedUser, { accessToken: accessToken.token }));
-          return;
+
+          if (req.body.deviceToken === '') {
+            promise = UserService.removeDefaultUserDevice(savedUser);
+          }
+          else if (req.body.deviceToken) {
+            promise = UserService.clearDevices(req.user)
+              .then(function () {
+                return UserService.setDevice(savedUser, { id: req.body.deviceToken });
+              });
+          }
+
+          promise.then(function () {
+            UserService.getDefaultDevice(savedUser)
+              .then(function (device) {
+                var extra = {
+                  accessToken: accessToken.token
+                };
+                if (device) {
+                  extra.deviceToken = device.id;
+                }
+                res.ok(UserService.getUserJSON(savedUser, extra));
+              });
+          });
         });
       });
     });

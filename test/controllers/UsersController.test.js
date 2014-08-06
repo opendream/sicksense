@@ -42,8 +42,7 @@ describe('UserController test', function() {
 
           res.body.meta.invalidFields.should.have.properties([
             'email', 'password', 'gender', 'birthYear',
-            'address.subdistrict', 'address.district', 'address.city',
-            'location.latitude', 'location.longitude'
+            'address.subdistrict', 'address.district', 'address.city'
           ]);
 
           res.body.meta.invalidFields.should.not.have.properties('tel');
@@ -115,6 +114,71 @@ describe('UserController test', function() {
                 });
               }
             );
+          });
+        });
+    });
+
+    it('should save new record without location', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "siriwat1@opendream.co.th",
+          password: "12345678",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {
+            subdistrict: "Samsen-Nok",
+            district: "Huay Kwang",
+            city: "Bangkok"
+          }
+        })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should subscribe if subscribe is sent', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "siriwat2@opendream.co.th",
+          password: "12345678",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {
+            subdistrict: "Samsen-Nok",
+            district: "Huay Kwang",
+            city: "Bangkok"
+          },
+          subscribe: true
+        })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+            if (err) return done(new Error(err));
+
+            var userId = res.body.response.id;
+            client.query("SELECT * FROM email_subscription WHERE \"userId\" = $1", [ userId ], function(err, result) {
+              pgDone();
+              if (err) return done(new Error(err));
+
+              result.rowCount.should.equal(1);
+              result.rows[0].userId.should.equal(userId.toString());
+              result.rows[0].token.should.not.empty;
+              result.rows[0].notifyTime.should.equal('8:00');
+              result.rows[0].createdAt.should.be.ok;
+              result.rows[0].updatedAt.should.be.ok;
+              done();
+            });
           });
         });
     });
