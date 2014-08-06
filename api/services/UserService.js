@@ -175,7 +175,12 @@ function setDevice(user, device) {
 function removeDefaultUserDevice(user) {
   return getDevices(user)
     .then(function (devices) {
-      return removeDevice(devices[0].id);
+      if (devices.length > 0) {
+        return removeDevice(devices[0].id);
+      }
+      else {
+        return when.resolve();
+      }
     });
 }
 
