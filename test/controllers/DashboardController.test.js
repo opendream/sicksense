@@ -278,11 +278,31 @@ describe('DashboardController Test', function() {
         .catch(done);
     });
 
-    it('should return dashboard data of current week', function(done) {
+    it('should return dashboard data without pin(reports) if not specify', function(done) {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
           city: 'all'
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.should.have.properties([
+            'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
+          ]);
+          res.body.response.should.not.have.properties([ 'reports' ]);
+
+          done();
+        });
+    });
+
+    it('should return dashboard data of current week', function(done) {
+      request(sails.hooks.http.app)
+        .get('/dashboard')
+        .query({
+          city: 'all',
+          includeReports: true
         })
         .expect(200)
         .end(function(err, res) {
@@ -374,7 +394,8 @@ describe('DashboardController Test', function() {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
-          city: "Bangkok"
+          city: "Bangkok",
+          includeReports: true
         })
         .expect(200)
         .end(function(err, res) {
@@ -461,7 +482,8 @@ describe('DashboardController Test', function() {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
-          city: "Bangkok"
+          city: "Bangkok",
+          includeReports: true
         })
         .expect(200)
         .end(function(err, res) {
@@ -482,7 +504,8 @@ describe('DashboardController Test', function() {
         .get('/dashboard')
         .query({
           city: 'all',
-          date: (new Date()).addDays(-7)
+          date: (new Date()).addDays(-7),
+          includeReports: true
         })
         .expect(200)
         .end(function(err, res) {
