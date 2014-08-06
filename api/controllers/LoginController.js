@@ -39,7 +39,10 @@ module.exports = {
           else if (req.body.deviceToken) {
             promise = UserService.clearDevices(req.user)
               .then(function () {
-                return UserService.setDevice(user, { id: req.body.deviceToken });
+                return UserService.setDevice(user, {
+                  id: req.body.deviceToken,
+                  platform: req.body.platform || req.query.platform || user.platform
+                });
               });
           }
 
