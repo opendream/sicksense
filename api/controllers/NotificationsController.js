@@ -135,6 +135,7 @@ function create(req, res) {
               notification: NotificationsService.getJSON(notification)
             });
           }).catch(function (err) {
+            sails.log.error('[NotificationController]', err);
             res.ok({
               notification: NotificationsService.getJSON(result.rows[0])
             });

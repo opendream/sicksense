@@ -1,4 +1,5 @@
 var when = require('when');
+var parallel = require('when/parallel');
 
 var STATUS = {
   'pending': 0,
@@ -87,13 +88,42 @@ function updateStatus(notification, status) {
 }
 
 function push(notification) {
-  return updateStatus(notification, STATUS.processing)
-    .then(function () {
-      return pushIOS(notification);
-    })
-    .then(function () {
-      return pushAndroid(notification);
-    });
+  return when.promise(function (resolve, reject) {
+    updateStatus(notification, STATUS.processing)
+      .then(function () {
+        return parallel(
+          pushIOS(notification),
+          pushAndroid(notification
+        ));
+      })
+      .then(function () {
+        pgconnect()
+          .then(function (conn) {
+            conn.client.query("SELECT * FROM notifications WHERE id = $1", [ notification.id ], function (err, result) {
+              conn.done();
+
+              if (err) {
+                sails.log.error('[Notification]', err);
+                return resolve(notification);
+              }
+
+              resolve(result.rows[0]);
+            });
+          })
+          .catch(function (err) {
+            if (err) {
+              sails.log.error('[Notification]', err);
+              return;
+            }
+
+            resolve(notification);
+          });
+      })
+      .catch(function (err) {
+        sails.log.error('[Notification]', err);
+        resolve(notification);
+      });
+  });
 }
 
 function pushIOS(notification, tag) {
