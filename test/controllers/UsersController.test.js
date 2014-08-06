@@ -88,7 +88,7 @@ describe('UserController test', function() {
           res.body.response.location.latitude.should.equal(13.1135);
           res.body.response.location.longitude.should.equal(105.0014);
           res.body.response.accessToken.should.be.ok;
-          res.body.response.platform.should.equal('ios');
+          res.body.response.platform.should.equal('doctormeios');
 
           // Keep in variable so it can later user.
           user = res.body.response;
@@ -183,7 +183,7 @@ describe('UserController test', function() {
         });
     });
 
-    it('should set default platform to `ios`', function (done) {
+    it('should set default platform to `doctormeios`', function (done) {
       pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
         if (err) return done(new Error(err));
 
@@ -191,7 +191,7 @@ describe('UserController test', function() {
           pgDone();
           if (err) return done(new Error(err));
 
-          result.rows[0].platform.should.equal('ios');
+          result.rows[0].platform.should.equal('doctormeios');
           done();
         });
       });
@@ -255,7 +255,7 @@ describe('UserController test', function() {
               district: "Amphoe Krathum Baen",
               city: "Samut Sakhon"
             },
-            platform: 'android'
+            platform: 'doctormeandroid'
           })
           .expect(200)
           .end(function(err, res) {
@@ -268,7 +268,7 @@ describe('UserController test', function() {
             res.body.response.address.subdistrict.should.equal('Suan Luang');
             res.body.response.address.district.should.equal('Amphoe Krathum Baen');
             res.body.response.address.city.should.equal('Samut Sakhon');
-            res.body.response.platform.should.equal('android');
+            res.body.response.platform.should.equal('doctormeandroid');
 
             done();
           });

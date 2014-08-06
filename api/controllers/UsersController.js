@@ -79,7 +79,7 @@ module.exports = {
         new Date(),
         new Date(),
         // platform at the time register.
-        data.platform || req.query.platform || 'ios'
+        data.platform || req.query.platform || 'doctormeios'
       ];
 
       save(values);
@@ -218,7 +218,7 @@ module.exports = {
           (req.body.address && req.body.address.district) || req.user.district,
           (req.body.address && req.body.address.city) || req.user.city,
           new Date(),
-          req.body.platform || req.query.platform || 'ios',
+          req.body.platform || req.query.platform || 'doctormeios',
           req.user.id
         ];
 

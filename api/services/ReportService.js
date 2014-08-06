@@ -67,7 +67,7 @@ function create (values) {
         isILI,
         values.createdAt || new Date(),
         values.updatedAt || new Date(),
-        values.platform || 'ios'
+        values.platform || 'doctormeios'
       ];
 
       client.query('\
