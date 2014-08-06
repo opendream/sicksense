@@ -9,6 +9,7 @@
     "opendream"
   ],
   "dependencies": {
+    "apn": "^1.6.0",
     "date-utils": "^1.2.15",
     "ejs": "~0.8.4",
     "grunt": "0.4.2",
@@ -35,7 +36,9 @@
     "sails-postgresql": "^0.10.0-rc3",
     "terraformer-wkt-parser": "^1.0.0",
     "when": "^3.2.1",
-    "xml2js": "^0.4.4"
+    "xml2js": "^0.4.4",
+    "lodash": "~2.4.1",
+    "express-validator": "~2.3.0"
   },
   "devDependencies": {
     "Faker": "^0.7.2",

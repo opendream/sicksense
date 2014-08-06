@@ -286,7 +286,6 @@ describe('ReportController test', function() {
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
-            res.body.meta.invalidFields.location.match(/location.*is required/);
             done();
           });
       });
@@ -298,7 +297,6 @@ describe('ReportController test', function() {
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
-            res.body.meta.invalidFields.location.match(/location.*is required/);
 
             request(sails.hooks.http.app)
               .post('/reports')
@@ -324,7 +322,6 @@ describe('ReportController test', function() {
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
-            res.body.meta.invalidFields.location.match(/location.*is required/);
 
             request(sails.hooks.http.app)
               .post('/reports')
@@ -342,6 +339,28 @@ describe('ReportController test', function() {
               });
           });
       });
+    });
+
+    it('should create new report if no location sent', function(done) {
+      var startedAt = (new Date()).addDays(-3);
+      request(sails.hooks.http.app)
+        .post('/reports')
+        .query({ accessToken: accessToken.token })
+        .send({
+          isFine: false,
+          symptoms: [ "symptom_1", "symptom_2" ],
+          animalContact: true,
+          startedAt: startedAt,
+          moreInfo: "Symptoms of H1N1 swine flu are like regular flu symptoms and include fever, \
+          cough, sore throat, runny nose, body aches, headache, chills, and fatigue. Many people\
+           with swine flu have had diarrhea and vomiting.",
+          platform: 'android'
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
     });
 
     it('should create new report if pass validation', function(done) {

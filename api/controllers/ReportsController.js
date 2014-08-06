@@ -167,7 +167,6 @@ module.exports = {
     req.checkBody('startedAt', 'Field `startedAt` is required').notEmpty();
     req.checkBody('startedAt', 'Field `startedAt` is not valid').isDate();
 
-    req.checkBody('location', 'Field `location` is required').hasValue();
     if (req.body.location) {
       req.checkBody('location.latitude', 'Field `location.latitude` is required').notEmpty();
       req.checkBody('location.latitude', 'Location:Latitude field is not valid').isFloat();

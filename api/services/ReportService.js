@@ -32,6 +32,21 @@ function create (values) {
         isILI = !_.isEmpty(_.intersection(sails.config.symptoms.ILISymptoms, values.symptoms));
       }
 
+      if (!values.location) {
+        values.location = {};
+      }
+      else {
+        values.location.latitude = parseFloat(values.location.latitude);
+        values.location.longitude = parseFloat(values.location.longitude);
+        values.point = 'SRID=4326;' + wkt.convert({
+          type: "Point",
+          coordinates: [
+            values.location.longitude,
+            values.location.latitude
+          ]
+        });
+      }
+
       var preparedValues = [
         Boolean(values.isFine),
         Boolean(values.animalContact),
@@ -44,15 +59,9 @@ function create (values) {
         values.address.city,
         values.locationByAddress.latitude,
         values.locationByAddress.longitude,
-        parseFloat(values.location.latitude),
-        parseFloat(values.location.longitude),
-        'SRID=4326;' + wkt.convert({
-          type: "Point",
-          coordinates: [
-            values.location.longitude,
-            values.location.latitude
-          ]
-        }),
+        values.location.latitude,
+        values.location.longitude,
+        values.point,
         values.moreInfo,
         values.userId,
         isILI,
