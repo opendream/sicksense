@@ -4,6 +4,11 @@ var when = require('when');
 
 describe('UserController test', function() {
 
+  before(function(done) {
+    MailService.subscribe = when.resolve;
+    done();
+  });
+
   describe('[POST] /users', function() {
     var user;
 
@@ -173,7 +178,6 @@ describe('UserController test', function() {
 
               result.rowCount.should.equal(1);
               result.rows[0].userId.should.equal(userId.toString());
-              result.rows[0].token.should.not.empty;
               result.rows[0].notifyTime.should.equal('8:00');
               result.rows[0].createdAt.should.be.ok;
               result.rows[0].updatedAt.should.be.ok;
