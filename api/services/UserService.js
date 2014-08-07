@@ -5,6 +5,7 @@ module.exports = {
   getUserByEmailPassword: getUserByEmailPassword,
   getAccessToken: getAccessToken,
   getUserByID: getUserByID,
+  getUserByEmail: getUserByEmail,
   getUserJSON: getUserJSON,
   getDevices: getDevices,
   getDefaultDevice: getDefaultDevice,
@@ -45,6 +46,17 @@ function getUserByID(client, id) {
     client.query('SELECT * FROM users WHERE id=$1::int', [ id ], function(err, result) {
       if (err) return reject(err);
       if (result.rows.length === 0) return reject(new Error("User not found"));
+
+      resolve(result.rows[0]);
+    });
+  });
+}
+
+function getUserByEmail(client, email) {
+  return when.promise(function(resolve, reject) {
+    client.query('SELECT * FROM users WHERE email=$1', [ email ], function(err, result) {
+      if (err) return reject(err);
+      if (result.rows.length === 0) return reject(new Error('User not found'));
 
       resolve(result.rows[0]);
     });
