@@ -44,6 +44,11 @@ module.exports.routes = {
     action: 'update'
   },
 
+  'get /users/:id': {
+    controller: 'users',
+    action: 'getUser'
+  },
+
   'get /users/:id/reports': {
     controller: 'users',
     action: 'userReports'

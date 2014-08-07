@@ -26,7 +26,8 @@ module.exports.policies = {
 
   'UsersController': {
     update: 'tokenAuth',
-    userReports: 'tokenAuth'
+    userReports: 'tokenAuth',
+    getUser: 'tokenAuth'
   },
 
   'NotificationsController': {

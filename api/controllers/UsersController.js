@@ -361,6 +361,23 @@ module.exports = {
         });
       });
     });
+  },
+
+  getUser: function(req, res) {
+    // Check own access token first.
+    AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
+      if (err) {
+        sails.log.error(err);
+        return res.accessToken(new Error("Could not perform your request"));
+      }
+
+      if (!accessToken || accessToken.userId != req.params.id) {
+        return res.forbidden(new Error("You can not get another user's reports"));
+      }
+
+      var user = UserService.getUserJSON(req.user);
+      res.ok(user);
+    });
   }
 
 };
