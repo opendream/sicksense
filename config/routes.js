@@ -88,6 +88,11 @@ module.exports.routes = {
     action: 'pushnoti'
   },
 
+  'post /email/hooks': {
+    controller: 'emailsubscriptions',
+    action: 'hooks'
+  }
+
   // If a request to a URL doesn't match any of the custom routes above,
   // it is matched against Sails route blueprints.  See `config/blueprints.js`
   // for configuration options and examples.
