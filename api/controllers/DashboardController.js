@@ -114,6 +114,10 @@ module.exports = {
   },
 };
 
+function toPercent(value, max) {
+  return parseFloat( (((value / max) * 100) || 0 ).toFixed(2, 10) );
+}
+
 function dashboardProcess(req, res, city, date, extraData) {
   var client, pgDone;
   var data = {};
@@ -226,8 +230,8 @@ function dashboardProcess(req, res, city, date, extraData) {
 
       // Calculate ILI
       data.ILI = {
-        thisWeek: ((iliLastWeek / (fineLastWeek + sickLastWeek)) * 100) || 0,
-        lastWeek: ((iliLastTwoWeek / (fineLastTwoWeek + sickLastTwoWeek)) * 100) || 0
+        thisWeek: toPercent(iliLastWeek, fineLastWeek + sickLastWeek),
+        lastWeek: toPercent(iliLastTwoWeek, fineLastTwoWeek + sickLastTwoWeek)
       };
       data.ILI.delta = (data.ILI.thisWeek - data.ILI.lastWeek);
     })
@@ -303,6 +307,9 @@ function dashboardProcess(req, res, city, date, extraData) {
         res.serverError("Could not perform your request");
       }
       else {
+        var percentOfFinePeople = toPercent(data.finePeople, data.numberOfReporters);
+        var percentOfSickPeople = 100.00 - percentOfFinePeople;
+
         res.ok(_.extend({
           reports: {
             count: data.reportsSummaryLastWeek.length,
@@ -313,8 +320,8 @@ function dashboardProcess(req, res, city, date, extraData) {
           numberOfReports: 0,
           numberOfFinePeople: data.finePeople,
           numberOfSickPeople: data.sickPeople,
-          percentOfFinePeople: ((data.finePeople / data.numberOfReporters) * 100) || 0,
-          percentOfSickPeople: ((data.sickPeople / data.numberOfReporters) * 100) || 0,
+          percentOfFinePeople: percentOfFinePeople,
+          percentOfSickPeople: percentOfSickPeople,
           graphs: data.graphs,
           topSymptoms: data.topSymptoms
         }, extraData));

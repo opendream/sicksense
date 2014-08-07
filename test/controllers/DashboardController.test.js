@@ -314,15 +314,15 @@ describe('DashboardController Test', function() {
           district3.sickCount.should.equal(0);
           district3.total.should.equal(1);
 
-          res.body.response.ILI.thisWeek.toFixed(2).should.equal('66.67');
-          res.body.response.ILI.lastWeek.toFixed(2).should.equal('33.33');
-          res.body.response.ILI.delta.toFixed(2).should.equal('33.33');
+          res.body.response.ILI.thisWeek.toString().should.equal('66.67');
+          res.body.response.ILI.lastWeek.toString().should.equal('33.33');
+          res.body.response.ILI.delta.toString().should.equal('33.34');
 
           res.body.response.numberOfReporters.should.equal(3);
           res.body.response.numberOfFinePeople.should.equal(1);
           res.body.response.numberOfSickPeople.should.equal(2);
-          res.body.response.percentOfFinePeople.toFixed(2).should.equal('33.33');
-          res.body.response.percentOfSickPeople.toFixed(2).should.equal('66.67');
+          res.body.response.percentOfFinePeople.toString().should.equal('33.33');
+          res.body.response.percentOfSickPeople.toString().should.equal('66.67');
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.BOE.length.should.equal(6);
@@ -523,6 +523,9 @@ describe('DashboardController Test', function() {
           res.body.response.numberOfSickPeople.should.equal(2);
           res.body.response.percentOfFinePeople.should.approximately(33.33, 0.01);
           res.body.response.percentOfSickPeople.should.approximately(66.67, 0.01);
+
+          (res.body.response.percentOfFinePeople + res.body.response.percentOfSickPeople)
+            .should.equal(100.00);
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.BOE.length.should.equal(6);
