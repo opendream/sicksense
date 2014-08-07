@@ -8,82 +8,53 @@ var when = require('when');
 module.exports = {
 
   create: function(req, res) {
-    req.checkBody('email', 'E-mail field is required').notEmpty();
-    req.checkBody('email', 'E-mail field is not valid').isEmail();
+    validate()
+      .then(function () {
+        run();
+      })
+      .catch(function (err) {
+        // do nothing
+      });
 
-    req.checkBody('password', 'Password field is required').notEmpty();
-    req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+    function run() {
+      var data = req.body;
+      if (!data.location) {
+        data.location = {};
+      }
+      else {
+        data.location.latitude = parseFloat(data.location.latitude);
+        data.location.longitude = parseFloat(data.location.longitude);
+        data.point = 'SRID=4326;' + wkt.convert({
+          type: "Point",
+          coordinates: [
+            data.location.longitude,
+            data.location.latitude
+          ]
+        });
+      }
 
-    req.checkBody('gender', 'Gender field is required').notEmpty();
-    req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
-
-    req.sanitize('birthYear').toInt();
-    req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
-    req.checkBody('birthYear', 'Birth Year field is required').isInt();
-    req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
-
-    req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
-    req.checkBody('address.district', 'Address:District field is required').notEmpty();
-    req.checkBody('address.city', 'Address:City field is required').notEmpty();
-
-    if (req.body.location) {
-      req.sanitize('location.latitude').toFloat();
-      req.sanitize('location.longitude').toFloat();
-      req.checkBody('location.latitude', 'Location:Latitude field is required').notEmpty();
-      req.checkBody('location.latitude', 'Location:Latitude field is not valid').isFloat();
-      req.checkBody('location.latitude', 'Location:Latitude field is not valid').isBetween(-90, 90);
-      req.checkBody('location.longitude', 'Location:Longitude field is required').notEmpty();
-      req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
-      req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
-    }
-
-    if (req.body.platform || req.query.platform) {
-      req.sanitize('platform').trim();
-    }
-
-    var errors = req.validationErrors();
-    var paramErrors = req.validationErrors(true);
-    if (errors) {
-      return res.badRequest(_.first(errors).msg, paramErrors);
-    }
-
-    var data = req.body;
-    if (!data.location) {
-      data.location = {};
-    }
-    else {
-      data.location.latitude = parseFloat(data.location.latitude);
-      data.location.longitude = parseFloat(data.location.longitude);
-      data.point = 'SRID=4326;' + wkt.convert({
-        type: "Point",
-        coordinates: [
+      passgen(data.password).hash(sails.config.session.secret, function(err, hashedPassword) {
+        var values = [
+          data.email,
+          hashedPassword,
+          data.tel,
+          data.gender,
+          data.birthYear,
+          data.address.subdistrict,
+          data.address.district,
+          data.address.city,
+          data.location.latitude,
           data.location.longitude,
-          data.location.latitude
-        ]
+          data.point,
+          new Date(),
+          new Date(),
+          // platform at the time register.
+          req.body.platform || req.query.platform || 'doctormeios'
+        ];
+
+        save(values);
       });
     }
-
-    passgen(data.password).hash(sails.config.session.secret, function(err, hashedPassword) {
-      var values = [
-        data.email,
-        hashedPassword,
-        data.tel,
-        data.gender,
-        data.birthYear,
-        data.address.subdistrict,
-        data.address.district,
-        data.address.city,
-        data.location.latitude,
-        data.location.longitude,
-        data.point,
-        new Date(),
-        new Date(),
-        // platform at the time register.
-        req.body.platform || req.query.platform || 'doctormeios'
-      ];
-
-      save(values);
-    });
 
     function save(values) {
       pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, done) {
@@ -175,43 +146,92 @@ module.exports = {
         });
       });
     }
+
+    function validate() {
+      return when.promise(function (resolve, reject) {
+        req.checkBody('email', 'E-mail field is required').notEmpty();
+        req.checkBody('email', 'E-mail field is not valid').isEmail();
+
+        req.checkBody('password', 'Password field is required').notEmpty();
+        req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+
+        req.checkBody('gender', 'Gender field is required').notEmpty();
+        req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
+
+        req.sanitize('birthYear').toInt();
+        req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
+        req.checkBody('birthYear', 'Birth Year field is required').isInt();
+        req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
+
+        req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
+        req.checkBody('address.district', 'Address:District field is required').notEmpty();
+        req.checkBody('address.city', 'Address:City field is required').notEmpty();
+
+        if (req.body.location) {
+          req.sanitize('location.latitude').toFloat();
+          req.sanitize('location.longitude').toFloat();
+          req.checkBody('location.latitude', 'Location:Latitude field is required').notEmpty();
+          req.checkBody('location.latitude', 'Location:Latitude field is not valid').isFloat();
+          req.checkBody('location.latitude', 'Location:Latitude field is not valid').isBetween(-90, 90);
+          req.checkBody('location.longitude', 'Location:Longitude field is required').notEmpty();
+          req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
+          req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
+        }
+
+        if (req.body.platform || req.query.platform) {
+          req.sanitize('platform').trim();
+        }
+
+        var errors = req.validationErrors();
+        var paramErrors = req.validationErrors(true);
+        if (errors) {
+          res.badRequest(_.first(errors).msg, paramErrors);
+          return reject(errors);
+        }
+
+        // Then verify user address.
+        LocationService.getLocationByAddress(req.body.address)
+          .then(function () {
+            resolve();
+          })
+          .catch(function (err) {
+            res.badRequest(err, {
+              address: {
+                msg: err
+              }
+            });
+            return reject(err);
+          });
+      });
+    }
   },
 
   update: function(req, res) {
+    var accessToken;
+
     // Check own access token first.
-    AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
+    AccessToken.findOneByToken(req.query.accessToken).exec(function(err, _accessToken) {
       if (err) {
         sails.log.error(err);
         return res.accessToken(new Error("Could not perform your request"));
       }
 
+      accessToken = _accessToken;
+
       if (!accessToken || accessToken.userId != req.params.id) {
         return res.forbidden(new Error("Can not save to other profile"));
       }
 
-      if (req.body.gender) {
-        req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
-      }
+      validate()
+        .then(function () {
+          run();
+        })
+        .catch(function (err) {
+          // do nothing
+        });
+    });
 
-      if (req.body.birthYear) {
-        req.sanitize('birthYear').toInt();
-        req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
-        req.checkBody('birthYear', 'Birth Year field is required').isInt();
-        req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
-      }
-
-      if (req.body.address) {
-        req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
-        req.checkBody('address.district', 'Address:District field is required').notEmpty();
-        req.checkBody('address.city', 'Address:City field is required').notEmpty();
-      }
-
-      var errors = req.validationErrors();
-      var paramErrors = req.validationErrors(true);
-      if (errors) {
-        return res.badRequest(_.first(errors).msg, paramErrors);
-      }
-
+    function run() {
       pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
         if (err) return res.serverError("Could not connect to database");
 
@@ -276,7 +296,48 @@ module.exports = {
           });
         });
       });
-    });
+    }
+
+    function validate() {
+      return when.promise(function (resolve, reject) {
+        if (req.body.gender) {
+          req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
+        }
+
+        if (req.body.birthYear) {
+          req.sanitize('birthYear').toInt();
+          req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
+          req.checkBody('birthYear', 'Birth Year field is required').isInt();
+          req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
+        }
+
+        if (req.body.address) {
+          req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
+          req.checkBody('address.district', 'Address:District field is required').notEmpty();
+          req.checkBody('address.city', 'Address:City field is required').notEmpty();
+        }
+
+        var errors = req.validationErrors();
+        var paramErrors = req.validationErrors(true);
+        if (errors) {
+          return res.badRequest(_.first(errors).msg, paramErrors);
+        }
+
+        // Then verify user address.
+        LocationService.getLocationByAddress(req.body.address)
+          .then(function () {
+            resolve();
+          })
+          .catch(function (err) {
+            res.badRequest(err, {
+              address: {
+                msg: err
+              }
+            });
+            return reject(err);
+          });
+      });
+    }
   },
 
   userReports: function(req, res) {
