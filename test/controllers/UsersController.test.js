@@ -338,6 +338,55 @@ describe('UserController test', function() {
 
   });
 
+  describe('[GET] /users/:id', function() {
+    var user, accessToken;
+
+    before(function(done) {
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function(_user) {
+          user = _user;
+          accessToken = user.accessToken;
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should require accessToken', function(done) {
+      request(sails.hooks.http.app)
+        .get('/users/' + user.id)
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should return user', function(done) {
+      request(sails.hooks.http.app)
+        .get('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.id.should.equal(user.id);
+
+          done();
+        });
+    });
+
+  });
+
   describe('[GET] /users/:id/reports', function() {
     var user, accessToken, anotherAccessToken;
 
