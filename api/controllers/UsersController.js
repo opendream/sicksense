@@ -79,7 +79,7 @@ module.exports = {
         new Date(),
         new Date(),
         // platform at the time register.
-        data.platform || req.query.platform || 'doctormeios'
+        req.body.platform || req.query.platform || 'doctormeios'
       ];
 
       save(values);
@@ -121,7 +121,10 @@ module.exports = {
                 return UserService.removeDefaultUserDevice(savedUser);
               }
               else if (req.body.deviceToken) {
-                return UserService.setDevice(savedUser, { id: req.body.deviceToken });
+                return UserService.setDevice(savedUser, {
+                  id: req.body.deviceToken,
+                  platform: req.body.platform || req.query.platform || savedUser.platform
+                });
               }
             })
             .then(function() {
@@ -151,6 +154,7 @@ module.exports = {
                       done();
 
                       if (err) {
+                        sails.log.error(err);
                         return res.serverError("Could not perform your subscribe request");
                       }
 
@@ -251,7 +255,10 @@ module.exports = {
           else if (req.body.deviceToken) {
             promise = UserService.clearDevices(req.user)
               .then(function () {
-                return UserService.setDevice(savedUser, { id: req.body.deviceToken });
+                return UserService.setDevice(savedUser, {
+                  id: req.body.deviceToken,
+                  platform: req.body.platform || req.query.platform || savedUser.platform
+                });
               });
           }
 

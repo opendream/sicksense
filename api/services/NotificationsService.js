@@ -140,8 +140,9 @@ function pushIOS(notification, tag) {
   return when.promise(function (resolve, reject) {
     var note = new apn.notification();
 
-    note.setAlertText(notification.body);
+    note.payload = { aps: { link: notification.link } };
     note.payload.notification_id = notification.id;
+    note.setAlertText(notification.body);
 
     var apnService = getAPNService({}, true);
 
@@ -214,6 +215,7 @@ function pushAndroid(notification, tag) {
 
     var message = new gcm.Message(sails.config.gcm.options);
     message.addDataWithKeyValue('message', notification.body);
+    message.addDataWithKeyValue('link', notification.link);
 
     gcmService.send(message, devices, sails.config.retries, function (err, result) {
       if (err) {

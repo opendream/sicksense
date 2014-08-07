@@ -95,52 +95,50 @@ function create(req, res) {
           return res.serverError("Server error", err);
         }
 
-        var values = [
-          req.body.published,
-          req.body.body,
-          req.body.gender,
-          req.body.age_start,
-          req.body.age_stop,
-          req.body.city,
-          JSON.stringify({
-            users: result.rows
-          }),
-          new Date(),
-          new Date()
+        var data = [
+          { field: 'published', value: req.body.publised },
+          { field: 'body', value: req.body.body },
+          { field: 'link', value: req.body.link },
+          { field: 'gender', value: req.body.gender },
+          { field: 'age_start', value: req.body.age_start },
+          { field: 'age_stop', value: req.body.age_stop },
+          { field: 'province', value: req.body.city },
+          {
+            field: 'crondata',
+            value: JSON.stringify({
+              users: result.rows
+            })
+          },
+          { field: '"createdAt"', value: new Date() },
+          { field: '"updatedAt"', value: new Date() }
         ];
 
-        client.query("\
-          INSERT INTO notifications \
-          ( published, body, gender, \
-            age_start, age_stop, province, crondata, \"createdAt\", \"updatedAt\" ) \
-          VALUES \
-          ( $1, $2, $3, $4, $5, $6, $7, $8, $9 ) RETURNING * \
-        ", values, function (err, result) {
-          pgDone();
+        DBService.insert('notifications', data)
+          .then(function (result) {
+            var promise = when.resolve(result.rows[0]);
 
-          if (err) {
+            if (!req.body.published) {
+              // Send now.
+              promise = NotificationsService.push(result.rows[0]);
+            }
+
+            promise
+              .then(function (notification) {
+                res.ok({
+                  notification: NotificationsService.getJSON(notification)
+                });
+              })
+              .catch(function (err) {
+                sails.log.error('[NotificationController]', err);
+                res.ok({
+                  notification: NotificationsService.getJSON(result.rows[0])
+                });
+              });
+          })
+          .catch(function (err) {
             sails.log.error(err);
             return res.serverError("Server error", err);
-          }
-
-          var promise = when.resolve(result.rows[0]);
-
-          if (!req.body.published) {
-            // Send now.
-            promise = NotificationsService.push(result.rows[0]);
-          }
-
-          promise.then(function (notification) {
-            res.ok({
-              notification: NotificationsService.getJSON(notification)
-            });
-          }).catch(function (err) {
-            sails.log.error('[NotificationController]', err);
-            res.ok({
-              notification: NotificationsService.getJSON(result.rows[0])
-            });
           });
-        });
       });
     });
   }
