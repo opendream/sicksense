@@ -17,7 +17,6 @@
  * The same command-line arguments are supported, e.g.:
  * `node app.js --silent --port=80 --prod`
  */
-require('look').start();
 
 // Ensure a "sails" can be located:
 var sails;

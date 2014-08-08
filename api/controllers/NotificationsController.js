@@ -7,8 +7,7 @@ module.exports = {
 };
 
 function index(req, res) {
-  validate();
-  run();
+  if (validate()) run();
 
   function run() {
     params = _.extend({
@@ -72,14 +71,16 @@ function index(req, res) {
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
     if (errors) {
-      return res.badRequest(_.first(errors).msg, paramErrors);
+      res.badRequest(_.first(errors).msg, paramErrors);
+      return false;
     }
+
+    return true;
   }
 }
 
 function create(req, res) {
-  validate();
-  run();
+  if (validate()) run();
 
   function run() {
     pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
@@ -213,8 +214,11 @@ function create(req, res) {
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
     if (errors) {
-      return res.badRequest(_.first(errors).msg, paramErrors);
+      res.badRequest(_.first(errors).msg, paramErrors);
+      return false;
     }
+
+    return true;
   }
 }
 
