@@ -19,7 +19,7 @@
 module.exports = function badRequest(err, invalidFields, viewOrRedirect) {
   invalidFields = invalidFields || {};
   _.each(invalidFields, function(value, key) {
-    invalidFields[key] = value.msg;
+    invalidFields[key] = value.msg.toString();
   });
 
   // Get access to `req` & `res`
@@ -55,7 +55,7 @@ module.exports = function badRequest(err, invalidFields, viewOrRedirect) {
     meta: {
       status: 400,
       errorType: "Bad Request",
-      errorMessage: err,
+      errorMessage: err.toString(),
       invalidFields: invalidFields
     }
   };

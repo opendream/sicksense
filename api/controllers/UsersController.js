@@ -195,6 +195,9 @@ module.exports = {
             resolve();
           })
           .catch(function (err) {
+            if (err.toString().match('not found')) {
+              err = "Address field is not valid. Address not found";
+            }
             res.badRequest(err, {
               address: {
                 msg: err
@@ -329,6 +332,9 @@ module.exports = {
             resolve();
           })
           .catch(function (err) {
+            if (err.toString().match('not found')) {
+              err = "Address field is not valid. Address not found";
+            }
             res.badRequest(err, {
               address: {
                 msg: err
