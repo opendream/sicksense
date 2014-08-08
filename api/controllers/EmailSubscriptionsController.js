@@ -34,6 +34,29 @@ module.exports = {
         else {
             return res.forbidden('Unknown event: ' + eventName);
         }
+    },
+
+    send: function(req, res) {
+        var settings = sails.config.mailgun;
+        var mailgun = MailService.getInstance();
+        var email = settings.mailingList + '@' + settings.domain;
+        var template = MailService.getTemplate();
+        var params = {
+            from: settings.from,
+            to: email,
+            subject: settings.subjects[Math.floor(Math.random() * settings.subjects.length)],
+            text: template.text,
+            html: template.html
+        };
+
+        sails.log.info('Send email notification at ' + new Date());
+        mailgun.messages().send(params, function(err, resp) {
+            if (err) return sails.log.warn(err);
+            sails.log.info(resp.message);
+            return res.ok({
+                message: resp.message
+            });
+        });
     }
 
 };

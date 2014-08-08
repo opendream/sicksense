@@ -8,11 +8,14 @@ module.exports = {
             apiKey: settings.apiKey,
             domain: settings.domain
         });
-        return mailgun.lists(settings.mailingList + '@' + settings.domain);
+
+        return mailgun;
     },
 
     subscribe: function(email, subscribed) {
-        var list = MailService.getInstance()
+        var mailgun = MailService.getInstance();
+        var list = mailgun.lists(settings.mailingList + '@' + settings.domain);
+
         list.members().create({
             subscribed: true,
             address: email
@@ -32,6 +35,13 @@ module.exports = {
                 sails.log.info(resp.message);
             }
         });
+    },
+
+    getTemplate: function() {
+        return {
+            text: 'Title test %mailing_list_unsubscribe_url%',
+            html: '<h2>Title</h2><br />test %mailing_list_unsubscribe_url%'
+        };
     }
 
 };

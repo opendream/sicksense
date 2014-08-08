@@ -49,10 +49,6 @@ module.exports = {
         .then(function() {
             MailService.subscribe(user.email, 'no');
         });
-    },
-
-    send: function() {
-
     }
 
 };

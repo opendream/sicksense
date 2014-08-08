@@ -91,6 +91,11 @@ module.exports.routes = {
   'post /email/hooks': {
     controller: 'emailsubscriptions',
     action: 'hooks'
+  },
+
+  'get /email/send': {
+    controller: 'emailsubscriptions',
+    action: 'send'
   }
 
   // If a request to a URL doesn't match any of the custom routes above,

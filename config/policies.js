@@ -36,7 +36,8 @@ module.exports.policies = {
   },
 
     'EmailSubscriptionsController': {
-        'hooks': 'mailgunToken'
+        'hooks': 'mailgunToken',
+        'send': 'mailgunToken',
     }
 
 	// Here's an example of mapping some policies to run before

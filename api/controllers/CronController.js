@@ -51,6 +51,14 @@ module.exports = {
         res.serverError("Server error", err);
       });
 
+  },
+
+  emailnoti: function (req, res) {
+    // select all notification that has not been sent and not deleted.
+    pgconnect()
+      .then(function (conn) {
+        EmailSubscriptionsService.send();
+      });
   }
 
 };
