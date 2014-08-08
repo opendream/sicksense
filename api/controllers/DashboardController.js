@@ -23,7 +23,7 @@ module.exports = {
       return res.badRequest(_.first(errors).msg, paramErrors);
     }
 
-    var date = moment(req.query.date || new Date());var city = req.query.city;
+    var date = moment(req.query.date || new Date());
     var city = req.query.city;
     var latitude;
     var longitude;
@@ -142,6 +142,9 @@ function dashboardProcess(req, res, city, date, extraData) {
       });
     })
     .then(function () {
+      if (!req.query.includeReports) {
+        return when.resolve();
+      }
       // console.log('-: connect pg', Date.now() - startTime);
       // Get report summary, last week and last two week.
       return when.promise(function (resolve, reject) {
@@ -306,6 +309,8 @@ function dashboardProcess(req, res, city, date, extraData) {
       // console.log('-: finished topSymptoms', Date.now() - startTime);
       pgDone();
 
+      var returnData;
+
       if (isError) {
         res.serverError("Could not perform your request");
       }
@@ -313,11 +318,7 @@ function dashboardProcess(req, res, city, date, extraData) {
         var percentOfFinePeople = UtilityService.toPercent(data.finePeople, data.numberOfReporters);
         var percentOfSickPeople = 100.00 - percentOfFinePeople;
 
-        res.ok(_.extend({
-          reports: {
-            count: data.reportsSummaryLastWeek.length,
-            items: data.reportsSummaryLastWeek
-          },
+        returnData = {
           ILI: data.ILI,
           numberOfReporters: data.numberOfReporters,
           numberOfReports: 0,
@@ -327,7 +328,16 @@ function dashboardProcess(req, res, city, date, extraData) {
           percentOfSickPeople: percentOfSickPeople,
           graphs: data.graphs,
           topSymptoms: data.topSymptoms
-        }, extraData));
+        };
+
+        if (req.query.includeReports) {
+          returnData.reports = {
+            count: data.reportsSummaryLastWeek.length,
+            items: data.reportsSummaryLastWeek
+          };
+        }
+
+        res.ok(_.extend(returnData, extraData));
         // console.log('-: finished request.', Date.now() - startTime);
       }
     });
