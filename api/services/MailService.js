@@ -1,4 +1,5 @@
 var Mailgun = require('mailgun-js');
+var fs = require('fs');
 var settings = sails.config.mailgun;
 
 module.exports = {
@@ -37,10 +38,28 @@ module.exports = {
         });
     },
 
+    send: function(subject, body, from, to, html) {
+        var mailgun = MailService.getInstance();
+        var params = {
+            from: from,
+            to: to,
+            subject: subject,
+            text: body,
+            html: html,
+            'recipient-variables': '{}'
+        };
+        return mailgun.messages().send(params)
+        .then(function(resp) {
+            sails.log.info(resp.message);
+        }, function(err) {
+            sails.log.info(err);
+        });
+    },
+
     getTemplate: function() {
         return {
-            text: 'Title test %mailing_list_unsubscribe_url%',
-            html: '<h2>Title</h2><br />test %mailing_list_unsubscribe_url%'
+            text: fs.readFileSync('./assets/templates/email.txt', { encoding: 'UTF8' }),
+            html: fs.readFileSync('./assets/templates/email.html', { encoding: 'UTF8' })
         };
     }
 

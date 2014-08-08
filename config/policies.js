@@ -38,6 +38,10 @@ module.exports.policies = {
     'EmailSubscriptionsController': {
         'hooks': 'mailgunToken',
         'send': 'mailgunToken',
+    },
+
+    'CronController': {
+        '*': [ 'sharedToken' ]
     }
 
 	// Here's an example of mapping some policies to run before

@@ -88,6 +88,11 @@ module.exports.routes = {
     action: 'pushnoti'
   },
 
+  'get /cron/email_notification': {
+    controller: 'cron',
+    action: 'email_notification'
+  },
+
   'post /email/hooks': {
     controller: 'emailsubscriptions',
     action: 'hooks'
