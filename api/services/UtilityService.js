@@ -11,6 +11,7 @@ function refinePercent(items, field) {
 
   if (aggregatedPercent != 100) {
     _.last(items)[field] += 100 - aggregatedPercent;
+    _.last(items)[field] = parseFloat(_.last(items)[field].toFixed(2));
   }
 
   return items;
