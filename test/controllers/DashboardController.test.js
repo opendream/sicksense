@@ -360,10 +360,10 @@ describe('DashboardController Test', function() {
 
           res.body.response.topSymptoms.should.be.Array;
           res.body.response.topSymptoms[0].name.should.equal('cough');
-          res.body.response.topSymptoms[0].percentOfReports.should.approximately(66.66, 0.01);
+          res.body.response.topSymptoms[0].percentOfReports.should.equal(66.67);
           res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
           res.body.response.topSymptoms[1].name.should.equal('fever');
-          res.body.response.topSymptoms[1].percentOfReports.should.approximately(33.33, 0.01);
+          res.body.response.topSymptoms[1].percentOfReports.should.equal(33.33);
           res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
 
           done();
@@ -447,10 +447,10 @@ describe('DashboardController Test', function() {
 
           res.body.response.topSymptoms.should.be.Array;
           res.body.response.topSymptoms[0].name.should.equal('cough');
-          res.body.response.topSymptoms[0].percentOfReports.should.approximately(66.66, 0.01);
+          res.body.response.topSymptoms[0].percentOfReports.should.equal(66.67);
           res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
           res.body.response.topSymptoms[1].name.should.equal('fever');
-          res.body.response.topSymptoms[1].percentOfReports.should.approximately(33.33, 0.01);
+          res.body.response.topSymptoms[1].percentOfReports.should.equal(33.33);
           res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
 
           done();
@@ -572,4 +572,5 @@ describe('DashboardController Test', function() {
         });
     });
   });
+
 });

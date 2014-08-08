@@ -4,6 +4,7 @@ var moment = require('moment');
 require('date-utils');
 
 module.exports = {
+
   now: function(req, res) {
     if (req.query.latitude) {
       req.check('latitude', 'Field `latitude` is not valid').isFloat();
@@ -113,10 +114,6 @@ module.exports = {
     return dashboardProcess(req, res, city, date);
   },
 };
-
-function toPercent(value, max) {
-  return parseFloat( (((value / max) * 100) || 0 ).toFixed(2, 10) );
-}
 
 function dashboardProcess(req, res, city, date, extraData) {
   var client, pgDone;
@@ -230,8 +227,8 @@ function dashboardProcess(req, res, city, date, extraData) {
 
       // Calculate ILI
       data.ILI = {
-        thisWeek: toPercent(iliLastWeek, fineLastWeek + sickLastWeek),
-        lastWeek: toPercent(iliLastTwoWeek, fineLastTwoWeek + sickLastTwoWeek)
+        thisWeek: UtilityService.toPercent(iliLastWeek, fineLastWeek + sickLastWeek),
+        lastWeek: UtilityService.toPercent(iliLastTwoWeek, fineLastTwoWeek + sickLastTwoWeek)
       };
       data.ILI.delta = (data.ILI.thisWeek - data.ILI.lastWeek);
     })
@@ -283,12 +280,18 @@ function dashboardProcess(req, res, city, date, extraData) {
           });
 
           _.each(result.rows, function(item) {
+            item.count = parseInt(item.count);
+
+            var percent = UtilityService.toPercent(item.count, sum);
+
             data.topSymptoms.push({
               name: item.name,
-              numberOfReports: parseInt(item.count),
-              percentOfReports: (parseInt(item.count) / sum) * 100
+              numberOfReports: item.count,
+              percentOfReports: percent
             });
           });
+
+          data.topSymptoms = UtilityService.refinePercent(data.topSymptoms, 'percentOfReports');
 
           resolve();
 
@@ -307,7 +310,7 @@ function dashboardProcess(req, res, city, date, extraData) {
         res.serverError("Could not perform your request");
       }
       else {
-        var percentOfFinePeople = toPercent(data.finePeople, data.numberOfReporters);
+        var percentOfFinePeople = UtilityService.toPercent(data.finePeople, data.numberOfReporters);
         var percentOfSickPeople = 100.00 - percentOfFinePeople;
 
         res.ok(_.extend({
@@ -364,7 +367,7 @@ function getILILogs(client, source, startDate, endDate, limit) {
         if (item = result.rows[i - diff]) {
           return {
             date: item.date,
-            value: item.value
+            value: UtilityService.toPercent(item.value, 100)
           };
         }
         else {
