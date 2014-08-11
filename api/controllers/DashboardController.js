@@ -230,7 +230,7 @@ function dashboardProcess(req, res, city, date, extraData) {
         thisWeek: UtilityService.toPercent(iliLastWeek, fineLastWeek + sickLastWeek),
         lastWeek: UtilityService.toPercent(iliLastTwoWeek, fineLastTwoWeek + sickLastTwoWeek)
       };
-      data.ILI.delta = (data.ILI.thisWeek - data.ILI.lastWeek);
+      data.ILI.delta = UtilityService.toPercent(data.ILI.thisWeek - data.ILI.lastWeek);
     })
     // Get ILI log for graph.
     .then(function() {
@@ -313,7 +313,7 @@ function dashboardProcess(req, res, city, date, extraData) {
       }
       else {
         var percentOfFinePeople = UtilityService.toPercent(data.finePeople, data.numberOfReporters);
-        var percentOfSickPeople = 100.00 - percentOfFinePeople;
+        var percentOfSickPeople = UtilityService.toPercent(100.00 - percentOfFinePeople);
 
         returnData = {
           ILI: data.ILI,

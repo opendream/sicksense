@@ -1,4 +1,5 @@
 function toPercent(value, max) {
+  max = max || 100;
   return parseFloat( (((value / max) * 100) || 0 ).toFixed(2, 10) );
 }
 
