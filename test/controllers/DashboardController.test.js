@@ -293,6 +293,19 @@ describe('DashboardController Test', function() {
           ]);
           res.body.response.should.not.have.properties([ 'reports' ]);
 
+          res.body.response.ILI.thisWeek.toString().should.equal('66.67');
+          res.body.response.ILI.lastWeek.toString().should.equal('33.33');
+          res.body.response.ILI.delta.toString().should.equal('33.34');
+
+          res.body.response.numberOfReporters.should.equal(3);
+          res.body.response.numberOfFinePeople.should.equal(1);
+          res.body.response.numberOfSickPeople.should.equal(2);
+          res.body.response.percentOfFinePeople.toString().should.equal('33.33');
+          res.body.response.percentOfSickPeople.toString().should.equal('66.67');
+
+          res.body.response.graphs.BOE.should.be.Array;
+          res.body.response.graphs.BOE.length.should.equal(6);
+
           done();
         });
     });

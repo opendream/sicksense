@@ -142,9 +142,6 @@ function dashboardProcess(req, res, city, date, extraData) {
       });
     })
     .then(function () {
-      if (!req.query.includeReports) {
-        return when.resolve();
-      }
       // console.log('-: connect pg', Date.now() - startTime);
       // Get report summary, last week and last two week.
       return when.promise(function (resolve, reject) {
