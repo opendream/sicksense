@@ -141,6 +141,9 @@ module.exports = {
             .catch(function(err) {
               sails.log.error(err);
               res.serverError(new Error("Registration is success but cannot automatically login. Please login manually."));
+            })
+            .finally(function() {
+              done();
             });
 
         });
