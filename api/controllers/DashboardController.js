@@ -294,7 +294,7 @@ function dashboardProcess(req, res, city, date, extraData) {
             });
           });
 
-          data.topSymptoms = UtilityService.refinePercent(data.topSymptoms, 'percentOfReports');
+          data.topSymptoms = UtilityService.refinePercent(data.topSymptoms, 'percentOfReports', 0.02);
 
           resolve();
 
