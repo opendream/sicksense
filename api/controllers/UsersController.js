@@ -138,31 +138,12 @@ module.exports = {
                   }
 
                   if (req.body.subscribe) {
-                    var subscription_values = [
-                      savedUser.id,
-                      rack(),
-                      '8:00',
-                      new Date(),
-                      new Date()
-                    ];
-                    client.query('\
-                      INSERT INTO email_subscription (\
-                        "userId", "token", "notifyTime", "createdAt", "updatedAt"\
-                      )\
-                      VALUES ($1, $2, $3, $4, $5)\
-                    ', subscription_values, function(err, result) {
-                      done();
-
-                      if (err) {
-                        sails.log.error(err);
-                        return res.serverError("Could not perform your subscribe request");
-                      }
-
-                      res.ok(UserService.getUserJSON(savedUser, extra));
-                    });
+                    EmailSubscriptionsService.subscribe(client, savedUser)
+                      .then(function() {
+                        res.ok(UserService.getUserJSON(savedUser, extra));
+                      });
                   }
                   else {
-                    done();
                     res.ok(UserService.getUserJSON(savedUser, extra));
                   }
                 });
@@ -170,6 +151,9 @@ module.exports = {
             .catch(function(err) {
               sails.log.error(err);
               res.serverError(new Error("Registration is success but cannot automatically login. Please login manually."));
+            })
+            .finally(function() {
+              done();
             });
 
         });

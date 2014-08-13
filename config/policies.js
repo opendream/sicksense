@@ -35,6 +35,15 @@ module.exports.policies = {
     destroy: [ 'sharedToken', 'loadNotification' ]
   },
 
+    'EmailSubscriptionsController': {
+        'hooks': 'mailgunToken',
+        'send': 'mailgunToken',
+    },
+
+    'CronController': {
+        '*': [ 'sharedToken' ]
+    }
+
 	// Here's an example of mapping some policies to run before
   // a controller and its actions
 	// RabbitController: {

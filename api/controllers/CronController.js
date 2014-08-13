@@ -51,6 +51,33 @@ module.exports = {
         res.serverError("Server error", err);
       });
 
+  },
+
+  email_notification: function (req, res) {
+      EmailSubscriptionsService.getEmailsToNotify()
+        .then(function(rows) {
+          var maxEmails = 1;
+          var emails = _.pluck(rows, 'email');
+          var numEmails = emails.length;
+          var numRounds = Math.ceil(numEmails / maxEmails);
+          var subjects = sails.config.mailgun.subjects;
+          var from = sails.config.mailgun.from;
+          var template = MailService.getTemplate();
+
+          when.map(_.range(0, numRounds), function(i) {
+            var to = emails.splice(0, maxEmails);
+            var subject = subjects[Math.floor(Math.random() * subjects.length)];
+            return MailService.send(subject, template.text, from, to, template.html);
+          })
+          .then(function() {
+            return res.ok({
+              message: 'Messages have been sent.'
+            });
+          });
+        })
+        .catch(function(error) {
+          return res.serverError("Could not perform request");
+        });
   }
 
 };

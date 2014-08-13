@@ -1,0 +1,9 @@
+Thanks for participating in Flu Near You! Many of you are asking "why should I continue filling out the weekly surveys if the flu season is over?" Flu Near You runs year-round for one reason: a new "flu-like" infection can appear at any time.
+
+Remember the coronavirus in 2002 that spread to eight countries called SARS? Today, the world is at risk from the Middle Eastern Respiratory Syndrome--also a coronavirus--and called MERS-CoV because it was first detected in Saudi Arabia in 2012. Two cases have spread to the United States in 2014 with several countries now tracking infections. And lets not forget new strains of influenza like the 'swine flu' of 2009 which appeared in North America in May--as the flu season here was just ending.
+
+คุณสบายดีไหมจ๊ะ ?
+* สบายดี คลิก https://www.sicksense.org/report.html?isFine=1
+* มีอาการ คลิก https://www.sicksense.org/report.html?isFine=0
+
+หากคุณไม่ต้องการรับอีเมลแจ้งเตือน กรุณาคลิก %unsubscribe_url%
