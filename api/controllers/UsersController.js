@@ -311,21 +311,26 @@ module.exports = {
         }
 
         // Then verify user address.
-        LocationService.getLocationByAddress(req.body.address)
-          .then(function () {
-            resolve();
-          })
-          .catch(function (err) {
-            if (err.toString().match('not found')) {
-              err = "Address field is not valid. Address not found";
-            }
-            res.badRequest(err, {
-              address: {
-                msg: err
+        if (req.body.address) {
+          LocationService.getLocationByAddress(req.body.address)
+            .then(function () {
+              resolve();
+            })
+            .catch(function (err) {
+              if (err.toString().match('not found')) {
+                err = "Address field is not valid. Address not found";
               }
+              res.badRequest(err, {
+                address: {
+                  msg: err
+                }
+              });
+              return reject(err);
             });
-            return reject(err);
-          });
+        }
+        else {
+          resolve();
+        }
       });
     }
   },
