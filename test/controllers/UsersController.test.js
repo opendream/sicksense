@@ -206,8 +206,8 @@ describe('UserController test', function() {
               if (err) return done(new Error(err));
 
               result.rowCount.should.equal(1);
-              result.rows[0].userId.should.equal(userId.toString());
-              result.rows[0].notifyTime.should.equal('8:00');
+              result.rows[0].userId.should.equal(userId);
+              result.rows[0].notifyTime.substr(0, 8).should.equal('08:00:00');
               result.rows[0].createdAt.should.be.ok;
               result.rows[0].updatedAt.should.be.ok;
               done();

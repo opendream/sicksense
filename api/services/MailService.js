@@ -1,10 +1,12 @@
 var Mailgun = require('mailgun-js');
 var fs = require('fs');
-var settings = sails.config.mailgun;
+
 
 module.exports = {
 
     getInstance: function() {
+        var settings = sails.config.mailgun;
+
         var mailgun = new Mailgun({
             apiKey: settings.apiKey,
             domain: settings.domain
@@ -14,6 +16,8 @@ module.exports = {
     },
 
     subscribe: function(email, subscribed) {
+        var settings = sails.config.mailgun;
+        
         var mailgun = MailService.getInstance();
         var list = mailgun.lists(settings.mailingList + '@' + settings.domain);
 
