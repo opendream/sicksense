@@ -131,6 +131,17 @@ describe('DashboardController Test', function() {
             startedAt: currentDate
           });
         })
+        // user1 this week with non-sicksense symptoms
+        .then(function() {
+          return TestHelper.createReport({
+            address: report1.address,
+            locationByAddress: report1.locationByAddress,
+            isFine: false,
+            symptoms: [ 'homesick' ],
+            userId: user1.id,
+            startedAt: currentDate
+          });
+        })
         // user1 this week second time.
         .then(function() {
           return TestHelper.createReport({
@@ -392,6 +403,7 @@ describe('DashboardController Test', function() {
           res.body.response.graphs.SickSense[5].value.should.equal(14.00);
 
           res.body.response.topSymptoms.should.be.Array;
+          res.body.response.topSymptoms.length.should.equal(2); // exclude non-sicksense report.
           res.body.response.topSymptoms[0].name.should.equal('cough');
           res.body.response.topSymptoms[0].percentOfReports.should.equal(66.67);
           res.body.response.topSymptoms[0].numberOfReports.should.equal(2);

@@ -47,6 +47,11 @@ function create (values) {
         });
       }
 
+      // Check if sicksense report from pre-defined symptoms. We don't count these non-sicsense
+      // reports in the stat or graph.
+      values.is_sicksense = isSicksenseReport(values);
+
+
       var preparedValues = [
         Boolean(values.isFine),
         Boolean(values.animalContact),
@@ -67,7 +72,8 @@ function create (values) {
         isILI,
         values.createdAt || new Date(),
         values.updatedAt || new Date(),
-        values.platform || 'doctormeios'
+        values.platform || 'doctormeios',
+        values.is_sicksense
       ];
 
       client.query('\
@@ -75,9 +81,9 @@ function create (values) {
         INTO reports\
           ("isFine", "animalContact", "startedAt", "year", "week", "location_id", "subdistrict", "district", "city", \
            "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", \
-           "moreInfo", "userId", "isILI", "createdAt", "updatedAt", "platform")\
+           "moreInfo", "userId", "isILI", "createdAt", "updatedAt", "platform", "is_sicksense")\
         VALUES\
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING * \
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
 
@@ -376,4 +382,13 @@ function getILI(city, startDate, endDate) {
       });
     });
   });
+}
+
+function isSicksenseReport(report) {
+  // It is sicksense report if `isFine` is true.
+  return report.isFine || ! _(report.symptoms)
+            .intersection(
+              _.pluck(sails.config.symptoms.items, 'slug')
+            )
+            .isEmpty();
 }

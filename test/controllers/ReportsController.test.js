@@ -370,7 +370,7 @@ describe('ReportController test', function() {
         .query({ accessToken: accessToken.token })
         .send({
           isFine: false,
-          symptoms: [ "symptom_1", "symptom_2" ],
+          symptoms: [ "diarrhea", "jointache" ],
           animalContact: true,
           startedAt: startedAt,
           location: {
@@ -394,8 +394,8 @@ describe('ReportController test', function() {
           res.body.response.isILI.should.equal(false);
 
           res.body.response.symptoms.should.be.Array;
-          res.body.response.symptoms.indexOf('symptom_1').should.not.equal(-1);
-          res.body.response.symptoms.indexOf('symptom_2').should.not.equal(-1);
+          res.body.response.symptoms.indexOf('diarrhea').should.not.equal(-1);
+          res.body.response.symptoms.indexOf('jointache').should.not.equal(-1);
           res.body.response.animalContact.should.equal(true);
           (new Date(res.body.response.startedAt)).getTime().should.equal(startedAt.getTime());
 

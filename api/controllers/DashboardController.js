@@ -266,6 +266,7 @@ function dashboardProcess(req, res, city, date, extraData) {
             INNER JOIN locations l ON ss.location_id = l.id \
             INNER JOIN symptoms s ON ss.symptom_id = s.id \
           WHERE \
+              is_sicksense = true AND \
               ( year = $1 AND week = $2 ) " + cityCriteria + " \
           GROUP BY s.name \
           ORDER BY count DESC \
