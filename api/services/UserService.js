@@ -222,6 +222,7 @@ function getDevices(user) {
     pgconnect()
       .then(function (conn) {
         conn.client.query("SELECT * FROM devices WHERE user_id = $1", [ user.id ], function (err, result) {
+          conn.done();
           if (err) return reject(err);
 
           resolve(result.rows);

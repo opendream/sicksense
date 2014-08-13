@@ -278,11 +278,44 @@ describe('DashboardController Test', function() {
         .catch(done);
     });
 
-    it('should return dashboard data of current week', function(done) {
+    it('should return dashboard data without pin(reports) if not specify', function(done) {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
           city: 'all'
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.should.have.properties([
+            'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
+          ]);
+          res.body.response.should.not.have.properties([ 'reports' ]);
+
+          res.body.response.ILI.thisWeek.toString().should.equal('66.67');
+          res.body.response.ILI.lastWeek.toString().should.equal('33.33');
+          res.body.response.ILI.delta.toString().should.equal('33.34');
+
+          res.body.response.numberOfReporters.should.equal(3);
+          res.body.response.numberOfFinePeople.should.equal(1);
+          res.body.response.numberOfSickPeople.should.equal(2);
+          res.body.response.percentOfFinePeople.toString().should.equal('33.33');
+          res.body.response.percentOfSickPeople.toString().should.equal('66.67');
+
+          res.body.response.graphs.BOE.should.be.Array;
+          res.body.response.graphs.BOE.length.should.equal(6);
+
+          done();
+        });
+    });
+
+    it('should return dashboard data of current week', function(done) {
+      request(sails.hooks.http.app)
+        .get('/dashboard')
+        .query({
+          city: 'all',
+          includeReports: true
         })
         .expect(200)
         .end(function(err, res) {
@@ -314,15 +347,15 @@ describe('DashboardController Test', function() {
           district3.sickCount.should.equal(0);
           district3.total.should.equal(1);
 
-          res.body.response.ILI.thisWeek.toFixed(2).should.equal('66.67');
-          res.body.response.ILI.lastWeek.toFixed(2).should.equal('33.33');
-          res.body.response.ILI.delta.toFixed(2).should.equal('33.33');
+          res.body.response.ILI.thisWeek.toString().should.equal('66.67');
+          res.body.response.ILI.lastWeek.toString().should.equal('33.33');
+          res.body.response.ILI.delta.toString().should.equal('33.34');
 
           res.body.response.numberOfReporters.should.equal(3);
           res.body.response.numberOfFinePeople.should.equal(1);
           res.body.response.numberOfSickPeople.should.equal(2);
-          res.body.response.percentOfFinePeople.toFixed(2).should.equal('33.33');
-          res.body.response.percentOfSickPeople.toFixed(2).should.equal('66.67');
+          res.body.response.percentOfFinePeople.toString().should.equal('33.33');
+          res.body.response.percentOfSickPeople.toString().should.equal('66.67');
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.BOE.length.should.equal(6);
@@ -360,10 +393,10 @@ describe('DashboardController Test', function() {
 
           res.body.response.topSymptoms.should.be.Array;
           res.body.response.topSymptoms[0].name.should.equal('cough');
-          res.body.response.topSymptoms[0].percentOfReports.should.approximately(66.66, 0.01);
+          res.body.response.topSymptoms[0].percentOfReports.should.equal(66.67);
           res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
           res.body.response.topSymptoms[1].name.should.equal('fever');
-          res.body.response.topSymptoms[1].percentOfReports.should.approximately(33.33, 0.01);
+          res.body.response.topSymptoms[1].percentOfReports.should.equal(33.33);
           res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
 
           done();
@@ -374,7 +407,8 @@ describe('DashboardController Test', function() {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
-          city: "Bangkok"
+          city: "Bangkok",
+          includeReports: true
         })
         .expect(200)
         .end(function(err, res) {
@@ -447,10 +481,10 @@ describe('DashboardController Test', function() {
 
           res.body.response.topSymptoms.should.be.Array;
           res.body.response.topSymptoms[0].name.should.equal('cough');
-          res.body.response.topSymptoms[0].percentOfReports.should.approximately(66.66, 0.01);
+          res.body.response.topSymptoms[0].percentOfReports.should.equal(66.67);
           res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
           res.body.response.topSymptoms[1].name.should.equal('fever');
-          res.body.response.topSymptoms[1].percentOfReports.should.approximately(33.33, 0.01);
+          res.body.response.topSymptoms[1].percentOfReports.should.equal(33.33);
           res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
 
           done();
@@ -461,7 +495,8 @@ describe('DashboardController Test', function() {
       request(sails.hooks.http.app)
         .get('/dashboard')
         .query({
-          city: "Bangkok"
+          city: "Bangkok",
+          includeReports: true
         })
         .expect(200)
         .end(function(err, res) {
@@ -482,7 +517,8 @@ describe('DashboardController Test', function() {
         .get('/dashboard')
         .query({
           city: 'all',
-          date: (new Date()).addDays(-7)
+          date: (new Date()).addDays(-7),
+          includeReports: true
         })
         .expect(200)
         .end(function(err, res) {
@@ -523,6 +559,9 @@ describe('DashboardController Test', function() {
           res.body.response.numberOfSickPeople.should.equal(2);
           res.body.response.percentOfFinePeople.should.approximately(33.33, 0.01);
           res.body.response.percentOfSickPeople.should.approximately(66.67, 0.01);
+
+          (res.body.response.percentOfFinePeople + res.body.response.percentOfSickPeople)
+            .should.equal(100.00);
 
           res.body.response.graphs.BOE.should.be.Array;
           res.body.response.graphs.BOE.length.should.equal(6);
@@ -569,4 +608,5 @@ describe('DashboardController Test', function() {
         });
     });
   });
+
 });

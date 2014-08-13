@@ -4,6 +4,7 @@ var moment = require('moment');
 require('date-utils');
 
 module.exports = {
+
   now: function(req, res) {
     if (req.query.latitude) {
       req.check('latitude', 'Field `latitude` is not valid').isFloat();
@@ -22,7 +23,7 @@ module.exports = {
       return res.badRequest(_.first(errors).msg, paramErrors);
     }
 
-    var date = moment(req.query.date || new Date());var city = req.query.city;
+    var date = moment(req.query.date || new Date());
     var city = req.query.city;
     var latitude;
     var longitude;
@@ -226,10 +227,10 @@ function dashboardProcess(req, res, city, date, extraData) {
 
       // Calculate ILI
       data.ILI = {
-        thisWeek: ((iliLastWeek / (fineLastWeek + sickLastWeek)) * 100) || 0,
-        lastWeek: ((iliLastTwoWeek / (fineLastTwoWeek + sickLastTwoWeek)) * 100) || 0
+        thisWeek: UtilityService.toPercent(iliLastWeek, fineLastWeek + sickLastWeek),
+        lastWeek: UtilityService.toPercent(iliLastTwoWeek, fineLastTwoWeek + sickLastTwoWeek)
       };
-      data.ILI.delta = (data.ILI.thisWeek - data.ILI.lastWeek);
+      data.ILI.delta = UtilityService.toPercent(data.ILI.thisWeek - data.ILI.lastWeek);
     })
     // Get ILI log for graph.
     .then(function() {
@@ -279,12 +280,18 @@ function dashboardProcess(req, res, city, date, extraData) {
           });
 
           _.each(result.rows, function(item) {
+            item.count = parseInt(item.count);
+
+            var percent = UtilityService.toPercent(item.count, sum);
+
             data.topSymptoms.push({
               name: item.name,
-              numberOfReports: parseInt(item.count),
-              percentOfReports: (parseInt(item.count) / sum) * 100
+              numberOfReports: item.count,
+              percentOfReports: percent
             });
           });
+
+          data.topSymptoms = UtilityService.refinePercent(data.topSymptoms, 'percentOfReports', 0.02);
 
           resolve();
 
@@ -299,25 +306,35 @@ function dashboardProcess(req, res, city, date, extraData) {
       // console.log('-: finished topSymptoms', Date.now() - startTime);
       pgDone();
 
+      var returnData;
+
       if (isError) {
         res.serverError("Could not perform your request");
       }
       else {
-        res.ok(_.extend({
-          reports: {
-            count: data.reportsSummaryLastWeek.length,
-            items: data.reportsSummaryLastWeek
-          },
+        var percentOfFinePeople = UtilityService.toPercent(data.finePeople, data.numberOfReporters);
+        var percentOfSickPeople = UtilityService.toPercent(100.00 - percentOfFinePeople);
+
+        returnData = {
           ILI: data.ILI,
           numberOfReporters: data.numberOfReporters,
           numberOfReports: 0,
           numberOfFinePeople: data.finePeople,
           numberOfSickPeople: data.sickPeople,
-          percentOfFinePeople: ((data.finePeople / data.numberOfReporters) * 100) || 0,
-          percentOfSickPeople: ((data.sickPeople / data.numberOfReporters) * 100) || 0,
+          percentOfFinePeople: percentOfFinePeople,
+          percentOfSickPeople: percentOfSickPeople,
           graphs: data.graphs,
           topSymptoms: data.topSymptoms
-        }, extraData));
+        };
+
+        if (req.query.includeReports) {
+          returnData.reports = {
+            count: data.reportsSummaryLastWeek.length,
+            items: data.reportsSummaryLastWeek
+          };
+        }
+
+        res.ok(_.extend(returnData, extraData));
         // console.log('-: finished request.', Date.now() - startTime);
       }
     });
@@ -357,7 +374,7 @@ function getILILogs(client, source, startDate, endDate, limit) {
         if (item = result.rows[i - diff]) {
           return {
             date: item.date,
-            value: item.value
+            value: UtilityService.toPercent(item.value, 100)
           };
         }
         else {

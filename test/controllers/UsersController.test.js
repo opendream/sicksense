@@ -56,6 +56,35 @@ describe('UserController test', function() {
         });
     });
 
+    it('should validate user address', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "siriwat-not-real@opendream.co.th",
+          password: "12345678",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {
+            subdistrict: "Tak",
+            district: "Huay Kwang",
+            city: "Bangkok"
+          },
+          location: {
+            latitude: 13.1135,
+            longitude: 105.0014
+          }
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'address' ]);
+
+          done();
+        });
+    });
+
     it('should save new record', function(done) {
       request(sails.hooks.http.app)
         .post('/users')
@@ -66,8 +95,8 @@ describe('UserController test', function() {
           gender: "male",
           birthYear: 1986,
           address: {
-            subdistrict: "Samsen-Nok",
-            district: "Huay Kwang",
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
             city: "Bangkok"
           },
           location: {
@@ -87,8 +116,8 @@ describe('UserController test', function() {
           res.body.response.tel.should.equal("0841291342");
           res.body.response.gender.should.equal("male");
           res.body.response.birthYear.should.equal(1986);
-          res.body.response.address.subdistrict.should.equal("Samsen-Nok");
-          res.body.response.address.district.should.equal("Huay Kwang");
+          res.body.response.address.subdistrict.should.equal("Samsen Nok");
+          res.body.response.address.district.should.equal("Huai Khwang");
           res.body.response.address.city.should.equal("Bangkok");
           res.body.response.location.latitude.should.equal(13.1135);
           res.body.response.location.longitude.should.equal(105.0014);
@@ -133,8 +162,8 @@ describe('UserController test', function() {
           gender: "male",
           birthYear: 1986,
           address: {
-            subdistrict: "Samsen-Nok",
-            district: "Huay Kwang",
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
             city: "Bangkok"
           }
         })
@@ -157,8 +186,8 @@ describe('UserController test', function() {
           gender: "male",
           birthYear: 1986,
           address: {
-            subdistrict: "Samsen-Nok",
-            district: "Huay Kwang",
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
             city: "Bangkok"
           },
           subscribe: true
@@ -211,8 +240,8 @@ describe('UserController test', function() {
           gender: "male",
           birthYear: 1986,
           address: {
-            subdistrict: "Samsen-Nok",
-            district: "Huay Kwang",
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
             city: "Bangkok"
           },
           location: {
@@ -241,6 +270,38 @@ describe('UserController test', function() {
           .expect(403)
           .end(function(err, res) {
             if (err) return done(new Error(err));
+            done();
+          });
+      });
+
+      it('should validate user address', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users/' + user.id)
+          .query({
+            accessToken: user.accessToken
+          })
+          .send({
+            email: "siriwat-not-real@opendream.co.th",
+            password: "12345678",
+            tel: "0841291342",
+            gender: "male",
+            birthYear: 1986,
+            address: {
+              subdistrict: "Tak",
+              district: "Huay Kwang",
+              city: "Bangkok"
+            },
+            location: {
+              latitude: 13.1135,
+              longitude: 105.0014
+            }
+          })
+          .expect(400)
+          .end(function(err, res) {
+            if (err) return done(err);
+
+            res.body.meta.invalidFields.should.have.properties([ 'address' ]);
+
             done();
           });
       });
