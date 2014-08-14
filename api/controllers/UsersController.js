@@ -78,7 +78,7 @@ module.exports = {
               res.conflict("This e-mail is already registered, please login or try another e-mail");
             }
             else {
-              res.serverError("Could not perform your request");
+              res.serverError("Could not perform your request", err);
             }
 
             return;
