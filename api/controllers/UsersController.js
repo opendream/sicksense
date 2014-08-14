@@ -18,7 +18,7 @@ module.exports = {
 
     function run() {
       var data = req.body;
-      if (!data.location) {
+      if (_.isEmpty(data.location)) {
         data.location = {};
       }
       else {
@@ -154,13 +154,13 @@ module.exports = {
           req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
         }
 
-        if (req.body.address) {
+        if (!_.isEmpty(req.body.address)) {
           req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
           req.checkBody('address.district', 'Address:District field is required').notEmpty();
           req.checkBody('address.city', 'Address:City field is required').notEmpty();
         }
 
-        if (req.body.location) {
+        if (!_.isEmpty(req.body.location)) {
           req.sanitize('location.latitude').toFloat();
           req.sanitize('location.longitude').toFloat();
           req.checkBody('location.latitude', 'Location:Latitude field is required').notEmpty();
@@ -182,7 +182,7 @@ module.exports = {
           return reject(errors);
         }
 
-        if (req.body.address) {
+        if (!_.isEmpty(req.body.address)) {
           // Then verify user address.
           LocationService.getLocationByAddress(req.body.address)
             .then(function () {
@@ -272,19 +272,19 @@ module.exports = {
             value: req.body.birthYear
           });
         }
-        if (req.body.address && req.body.address.subdistrict) {
+        if (!_.isEmpty(req.body.address) && req.body.address.subdistrict) {
           data.push({
             field: '"subdistrict" = $',
             value: req.body.address.subdistrict
           });
         }
-        if (req.body.address && req.body.address.district) {
+        if (!_.isEmpty(req.body.address) && req.body.address.district) {
           data.push({
             field: '"district" = $',
             value: req.body.address.district
           });
         }
-        if (req.body.address && req.body.address.city) {
+        if (!_.isEmpty(req.body.address) && req.body.address.city) {
           data.push({
             field: '"city" = $',
             value: req.body.address.city
@@ -360,7 +360,7 @@ module.exports = {
           req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
         }
 
-        if (req.body.address) {
+        if (!_.isEmpty(req.body.address)) {
           req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
           req.checkBody('address.district', 'Address:District field is required').notEmpty();
           req.checkBody('address.city', 'Address:City field is required').notEmpty();
@@ -375,7 +375,7 @@ module.exports = {
         var promise = when.resolve();
 
         // Then verify user address.
-        if (req.body.address) {
+        if (!_.isEmpty(req.body.address)) {
           promise = promise.then(function () {
             return when.promise(function (resolve, reject) {
 

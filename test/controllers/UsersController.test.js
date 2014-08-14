@@ -191,6 +191,72 @@ describe('UserController test', function() {
         });
     });
 
+    it('should save new record with empty location', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "siriwat3@opendream.co.th",
+          password: "12345678",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
+            city: "Bangkok"
+          },
+          location: {}
+        })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should save new record with empty address', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "siriwat4@opendream.co.th",
+          password: "12345678",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {}
+        })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should save new record with empty address and location', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "siriwat5@opendream.co.th",
+          password: "12345678",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {},
+          location: {}
+        })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          done();
+        });
+    });
+
     it('should subscribe if subscribe is sent', function(done) {
       request(sails.hooks.http.app)
         .post('/users')
