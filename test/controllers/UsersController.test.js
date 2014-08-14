@@ -389,7 +389,7 @@ describe('UserController test', function() {
           })
           .send({
             // allow update to own e-mail
-            email: "siriwat@opendream.co.th"
+            email: "siriwat+updated-email@opendream.co.th"
           })
           .expect(200)
           .end(function(err, res) {
@@ -411,6 +411,33 @@ describe('UserController test', function() {
                 res.body.meta.errorType.should.equal('Conflict');
                 res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
 
+                done();
+              });
+          });
+      });
+
+      it('should allow user to update password', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users/' + user.id)
+          .query({
+            accessToken: user.accessToken
+          })
+          .send({
+            password: "1qaz2wsx"
+          })
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+
+            request(sails.hooks.http.app)
+              .post('/login')
+              .send({
+                email: "siriwat+updated-email@opendream.co.th",
+                password: "1qaz2wsx"
+              })
+              .expect(200)
+              .end(function (err, res) {
+                if (err) return done(new Error(err));
                 done();
               });
           });

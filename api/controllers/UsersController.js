@@ -225,84 +225,130 @@ module.exports = {
 
       validate()
         .then(function () {
-          run();
+          if (req.body.password) {
+            passgen(req.body.password).hash(sails.config.session.secret, function(err, hashedPassword) {
+              run(hashedPassword);
+            });
+          }
+          else {
+            run();
+          }
         })
         .catch(function (err) {
           // do nothing
+          sails.log.error(err);
         });
     });
 
-    function run() {
+    function run(hashedPassword) {
       pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
         if (err) return res.serverError("Could not connect to database");
 
-        var values = [
-          req.body.gender || req.user.gender,
-          req.body.birthYear || req.user.birthYear,
-          (req.body.address && req.body.address.subdistrict) || req.user.subdistrict,
-          (req.body.address && req.body.address.district) || req.user.district,
-          (req.body.address && req.body.address.city) || req.user.city,
-          new Date(),
-          req.body.platform || req.query.platform || req.user.platform || 'doctormeios',
-          req.body.email || req.user.email,
-          req.user.id
+        var data = [
+          { field: '"updatedAt" = $', value: new Date() }
         ];
 
-        client.query('\
-          UPDATE "users" \
-          SET \
-            "gender" = $1, \
-            "birthYear" = $2, \
-            "subdistrict" = $3, \
-            "district" = $4, \
-            "city" = $5, \
-            "updatedAt" = $6, \
-            "platform" = $7, \
-            "email" = $8 \
-          WHERE id = $9 RETURNING * \
-        ', values, function(err, result) {
-          pgDone();
+        if (req.body.email) {
+          data.push({
+            field: '"email" = $',
+            value: req.body.email
+          });
+        }
+        if (hashedPassword) {
+          data.push({
+            field: '"password" = $',
+            value: hashedPassword
+          });
+        }
+        if (req.body.gender) {
+          data.push({
+            field: '"gender" = $',
+            value: req.body.gender
+          });
+        }
+        if (req.body.birthYear) {
+          data.push({
+            field: '"birthYear" = $',
+            value: req.body.birthYear
+          });
+        }
+        if (req.body.address && req.body.address.subdistrict) {
+          data.push({
+            field: '"subdistrict" = $',
+            value: req.body.address.subdistrict
+          });
+        }
+        if (req.body.address && req.body.address.district) {
+          data.push({
+            field: '"district" = $',
+            value: req.body.address.district
+          });
+        }
+        if (req.body.address && req.body.address.city) {
+          data.push({
+            field: '"city" = $',
+            value: req.body.address.city
+          });
+        }
+        if (req.body.platform || req.query.platform) {
+          data.push({
+            field: '"platform" = $',
+            value: req.body.platform || req.query.platform
+          });
+        }
 
-          if (err) {
+        var conditions = [
+          { field: 'id = $', value: req.user.id }
+        ];
+
+        DBService.update('users', data, conditions)
+          .then(function (users) {
+
+            var promise = when.resolve();
+
+            var savedUser = users.rows[0];
+
+            if (req.body.deviceToken === '') {
+              promise = UserService.removeDefaultUserDevice(savedUser);
+            }
+            else if (req.body.deviceToken) {
+              promise = UserService.clearDevices(req.user)
+                .then(function () {
+                  return UserService.setDevice(savedUser, {
+                    id: req.body.deviceToken,
+                    platform: req.body.platform || req.query.platform || savedUser.platform
+                  });
+                });
+            }
+
+            promise.then(function () {
+              UserService.getDefaultDevice(savedUser)
+                .then(function (device) {
+                  var extra = {
+                    accessToken: accessToken.token
+                  };
+                  if (device) {
+                    extra.deviceToken = device.id;
+                  }
+                  res.ok(UserService.getUserJSON(savedUser, extra));
+                });
+            });
+
+          }) // end then()
+          .catch(function (err) {
             sails.log.error(err);
             return res.serverError("Could not perform your request");
-          }
-
-          var promise = when.resolve();
-
-          var savedUser = result.rows[0];
-
-          if (req.body.deviceToken === '') {
-            promise = UserService.removeDefaultUserDevice(savedUser);
-          }
-          else if (req.body.deviceToken) {
-            promise = UserService.clearDevices(req.user)
-              .then(function () {
-                return UserService.setDevice(savedUser, {
-                  id: req.body.deviceToken,
-                  platform: req.body.platform || req.query.platform || savedUser.platform
-                });
-              });
-          }
-
-          promise.then(function () {
-            UserService.getDefaultDevice(savedUser)
-              .then(function (device) {
-                var extra = {
-                  accessToken: accessToken.token
-                };
-                if (device) {
-                  extra.deviceToken = device.id;
-                }
-                res.ok(UserService.getUserJSON(savedUser, extra));
-              });
-          });
-        });
+          }); // end DBService.update()
       });
     }
 
     function validate() {
       return when.promise(function (resolve, reject) {
+
+        if (req.body.password) {
+          req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+        }
+
         if (req.body.gender) {
           req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
         }
