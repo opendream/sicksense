@@ -33,6 +33,10 @@ module.exports = {
         });
       }
 
+      if (!data.address) {
+        data.address = {};
+      }
+
       passgen(data.password).hash(sails.config.session.secret, function(err, hashedPassword) {
         var values = [
           data.email,
@@ -139,17 +143,22 @@ module.exports = {
         req.checkBody('password', 'Password field is required').notEmpty();
         req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
 
-        req.checkBody('gender', 'Gender field is required').notEmpty();
-        req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
+        if (req.body.gender) {
+          req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
+        }
 
-        req.sanitize('birthYear').toInt();
-        req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
-        req.checkBody('birthYear', 'Birth Year field is required').isInt();
-        req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
+        if (req.body.birthYear) {
+          req.sanitize('birthYear').toInt();
+          req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
+          req.checkBody('birthYear', 'Birth Year field is required').isInt();
+          req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
+        }
 
-        req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
-        req.checkBody('address.district', 'Address:District field is required').notEmpty();
-        req.checkBody('address.city', 'Address:City field is required').notEmpty();
+        if (req.body.address) {
+          req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
+          req.checkBody('address.district', 'Address:District field is required').notEmpty();
+          req.checkBody('address.city', 'Address:City field is required').notEmpty();
+        }
 
         if (req.body.location) {
           req.sanitize('location.latitude').toFloat();
@@ -173,22 +182,27 @@ module.exports = {
           return reject(errors);
         }
 
-        // Then verify user address.
-        LocationService.getLocationByAddress(req.body.address)
-          .then(function () {
-            resolve();
-          })
-          .catch(function (err) {
-            if (err.toString().match('not found')) {
-              err = "Address field is not valid. Address not found";
-            }
-            res.badRequest(err, {
-              address: {
-                msg: err
+        if (req.body.address) {
+          // Then verify user address.
+          LocationService.getLocationByAddress(req.body.address)
+            .then(function () {
+              resolve();
+            })
+            .catch(function (err) {
+              if (err.toString().match('not found')) {
+                err = "Address field is not valid. Address not found";
               }
+              res.badRequest(err, {
+                address: {
+                  msg: err
+                }
+              });
+              return reject(err);
             });
-            return reject(err);
-          });
+        }
+        else {
+          resolve();
+        }
       });
     }
   },

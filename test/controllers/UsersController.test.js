@@ -34,7 +34,7 @@ describe('UserController test', function() {
         });
     });
 
-    it('should validate parameters', function(done) {
+    it('should not require parameters except email and password', function(done) {
       request(sails.hooks.http.app)
         .post('/users')
         .expect(400)
@@ -45,12 +45,12 @@ describe('UserController test', function() {
           res.body.meta.errorType.should.equal("Bad Request");
           res.body.meta.errorMessage.should.match(/is required/);
 
-          res.body.meta.invalidFields.should.have.properties([
-            'email', 'password', 'gender', 'birthYear',
+          res.body.meta.invalidFields.should.have.properties([ 'email', 'password' ]);
+
+          res.body.meta.invalidFields.should.not.have.properties([
+            'gender', 'birthYear', 'address',
             'address.subdistrict', 'address.district', 'address.city'
           ]);
-
-          res.body.meta.invalidFields.should.not.have.properties('tel');
 
           done();
         });
@@ -81,6 +81,21 @@ describe('UserController test', function() {
 
           res.body.meta.invalidFields.should.have.properties([ 'address' ]);
 
+          done();
+        });
+    });
+
+    it('should save new record with minimum fields requirement', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "siriwat-before-real@opendream.co.th",
+          password: "12345678"
+        })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
           done();
         });
     });
