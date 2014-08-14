@@ -353,6 +353,68 @@ describe('UserController test', function() {
             done();
           });
       });
+
+      it('should allow update only e-mail', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users/' + user.id)
+          .query({
+            accessToken: user.accessToken
+          })
+          .send({
+            email: "siriwat+updated-email@opendream.co.th"
+          })
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+
+            res.body.meta.status.should.equal(200);
+            res.body.response.id.should.equal(user.id);
+            res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
+            res.body.response.gender.should.equal('female');
+            res.body.response.birthYear.should.equal(1990);
+            res.body.response.address.subdistrict.should.equal('Suan Luang');
+            res.body.response.address.district.should.equal('Amphoe Krathum Baen');
+            res.body.response.address.city.should.equal('Samut Sakhon');
+            res.body.response.platform.should.equal('doctormeandroid');
+
+            done();
+          });
+      });
+
+      it('should not allow change to existing e-mail', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users/' + user.id)
+          .query({
+            accessToken: user.accessToken
+          })
+          .send({
+            // allow update to own e-mail
+            email: "siriwat@opendream.co.th"
+          })
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+
+            request(sails.hooks.http.app)
+              .post('/users/' + user.id)
+              .query({
+                accessToken: user.accessToken
+              })
+              .send({
+                email: "siriwat-before-real@opendream.co.th"
+              })
+              .expect(409)
+              .end(function(err, res) {
+                if (err) return done(new Error(err));
+
+                res.body.meta.status.should.equal(409);
+                res.body.meta.errorType.should.equal('Conflict');
+                res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
+
+                done();
+              });
+          });
+      });
     });
 
   });

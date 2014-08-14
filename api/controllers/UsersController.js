@@ -243,7 +243,8 @@ module.exports = {
           (req.body.address && req.body.address.district) || req.user.district,
           (req.body.address && req.body.address.city) || req.user.city,
           new Date(),
-          req.body.platform || req.query.platform || 'doctormeios',
+          req.body.platform || req.query.platform || req.user.platform || 'doctormeios',
+          req.body.email || req.user.email,
           req.user.id
         ];
 
@@ -256,8 +257,9 @@ module.exports = {
             "district" = $4, \
             "city" = $5, \
             "updatedAt" = $6, \
-            "platform" = $7 \
-          WHERE id = $8 RETURNING * \
+            "platform" = $7, \
+            "email" = $8 \
+          WHERE id = $9 RETURNING * \
         ', values, function(err, result) {
           pgDone();
 
@@ -324,27 +326,86 @@ module.exports = {
           return res.badRequest(_.first(errors).msg, paramErrors);
         }
 
+        var promise = when.resolve();
+
         // Then verify user address.
         if (req.body.address) {
-          LocationService.getLocationByAddress(req.body.address)
-            .then(function () {
-              resolve();
-            })
-            .catch(function (err) {
-              if (err.toString().match('not found')) {
-                err = "Address field is not valid. Address not found";
-              }
-              res.badRequest(err, {
-                address: {
-                  msg: err
-                }
-              });
-              return reject(err);
+          promise = promise.then(function () {
+            return when.promise(function (resolve, reject) {
+
+              LocationService.getLocationByAddress(req.body.address)
+                .then(resolve)
+                .catch(function (err) {
+                  if (err.toString().match('not found')) {
+                    err = "Address field is not valid. Address not found";
+
+                    res.badRequest(err, {
+                      address: {
+                        msg: err
+                      }
+                    });
+                  }
+                  else {
+                    sails.log.error(err);
+                    res.serverError("Server error", err);
+                  }
+
+                  reject(err);
+                });
+
             });
+
+          });
         }
-        else {
-          resolve();
+
+        if (req.body.email) {
+          promise = promise.then(function () {
+            return when.promise(function (resolve, reject) {
+
+              pgconnect()
+                .then(function (conn) {
+                  var query = "SELECT id FROM users WHERE email = $1 AND email <> $2";
+                  var values = [ req.body.email, req.user.email ];
+
+                  conn.client.query(query, values, function (err, result) {
+                    conn.done();
+                    if (err) {
+                      sails.log.error(err);
+                      res.serverError("Server error", err);
+                      return reject(err);
+                    }
+
+                    if (result.rows.length > 0) {
+                      res.conflict("E-mail in `email` field is already existed", {
+                        email: {
+                          msg: "E-mail in `email` field is already existed"
+                        }
+                      });
+
+                      return reject("Duplicated e-mail update");
+                    }
+
+                    resolve();
+                  });
+                })
+                .catch(function (err) {
+                  sails.log.error(err);
+                  res.serverError("Server error", err);
+                  return reject(err);
+                });
+
+            });
+
+          });
         }
+
+        promise
+          .then(function () {
+            resolve();
+          })
+          .catch(function (err) {
+            reject(err);
+          });
       });
     }
   },
