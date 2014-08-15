@@ -91,10 +91,10 @@ function push(notification) {
   return when.promise(function (resolve, reject) {
     updateStatus(notification, STATUS.processing)
       .then(function () {
-        return parallel(
-          pushIOS(notification),
-          pushAndroid(notification
-        ));
+        return parallel([
+          function () { return pushIOS(notification); },
+          function () { return pushAndroid(notification); }
+        ]);
       })
       .then(function () {
         pgconnect()
@@ -140,7 +140,7 @@ function pushIOS(notification, tag) {
   return when.promise(function (resolve, reject) {
     var note = new apn.notification();
 
-    note.payload = { aps: { link: notification.link } };
+    note.payload = { aps: { link: notification.link || null } };
     note.payload.notification_id = notification.id;
     note.setAlertText(notification.body);
 
@@ -211,11 +211,15 @@ function pushAndroid(notification, tag) {
   }
 
   return when.promise(function (resolve, reject) {
-    var gcmService = getGCMService({}, true);
+    var gcmService = getGCMService(sails.config.apn, true);
 
     var message = new gcm.Message(sails.config.gcm.options);
     message.addDataWithKeyValue('message', notification.body);
-    message.addDataWithKeyValue('link', notification.link);
+
+    // Add link if exists.
+    if (notification.link) {
+      message.addDataWithKeyValue('link', notification.link);
+    }
 
     gcmService.send(message, devices, sails.config.retries, function (err, result) {
       if (err) {
