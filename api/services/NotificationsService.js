@@ -144,7 +144,7 @@ function pushIOS(notification, tag) {
     note.payload.notification_id = notification.id;
     note.setAlertText(notification.body);
 
-    var apnService = getAPNService({}, true);
+    var apnService = getAPNService(sails.config.apn, true);
 
     apnService.on('transmissionError', function (errCode, notification, device) {
       if (errCode == 8) {
@@ -211,7 +211,7 @@ function pushAndroid(notification, tag) {
   }
 
   return when.promise(function (resolve, reject) {
-    var gcmService = getGCMService(sails.config.apn, true);
+    var gcmService = getGCMService({}, true);
 
     var message = new gcm.Message(sails.config.gcm.options);
     message.addDataWithKeyValue('message', notification.body);
