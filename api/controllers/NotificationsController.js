@@ -97,7 +97,7 @@ function create(req, res) {
         }
 
         var data = [
-          { field: 'published', value: req.body.publised },
+          { field: 'published', value: req.body.published },
           { field: 'body', value: req.body.body },
           { field: 'link', value: req.body.link },
           { field: 'gender', value: req.body.gender },
