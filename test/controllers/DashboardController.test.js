@@ -2,6 +2,7 @@ var when = require('when');
 var request = require('supertest');
 var moment = require('moment');
 var pg = require('pg');
+var assert = require('assert');
 require('date-utils');
 
 function getFirstDayOfWeek(date) {
@@ -251,18 +252,18 @@ describe('DashboardController Test', function() {
               var thisWeek = moment().weeks();
 
               var docs = [
-                { source: 'boe', date: moment(thisYear).weeks(thisWeek - 1).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 1, value: 10.05 },
-                { source: 'boe', date: moment(thisYear).weeks(thisWeek + 0).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 0, value: 11.00 },
-                { source: 'boe', date: moment(thisYear).weeks(thisWeek + 1).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 1, value: 11.05 },
-                { source: 'boe', date: moment(thisYear).weeks(thisWeek + 2).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 2, value: 12.00 },
-                { source: 'boe', date: moment(thisYear).weeks(thisWeek + 3).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 3, value: 12.05 },
-                { source: 'boe', date: moment(thisYear).weeks(thisWeek + 4).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 4, value: 13.00 },
-                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek - 1).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 1, value: 11.05 },
-                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek + 0).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 0, value: 12.00 },
-                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek + 1).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 1, value: 12.05 },
-                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek + 2).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 2, value: 13.00 },
-                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek + 3).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 3, value: 13.05 },
-                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek + 4).day(0).toDate().clearTime(), year: thisYear, week: thisWeek + 4, value: 14.00 },
+                { source: 'boe', date: moment(thisYear).weeks(thisWeek - 6).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 6, value: 10.05 },
+                { source: 'boe', date: moment(thisYear).weeks(thisWeek - 5).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 5, value: 11.00 },
+                { source: 'boe', date: moment(thisYear).weeks(thisWeek - 4).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 4, value: 11.05 },
+                { source: 'boe', date: moment(thisYear).weeks(thisWeek - 3).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 3, value: 12.00 },
+                { source: 'boe', date: moment(thisYear).weeks(thisWeek - 2).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 2, value: 12.05 },
+                { source: 'boe', date: moment(thisYear).weeks(thisWeek - 1).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 1, value: 13.00 },
+                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek - 6).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 6, value: 11.05 },
+                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek - 5).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 5, value: 12.00 },
+                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek - 4).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 4, value: 12.05 },
+                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek - 3).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 3, value: 13.00 },
+                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek - 2).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 2, value: 13.05 },
+                { source: 'sicksense', date: moment(thisYear).weeks(thisWeek - 1).day(0).toDate().clearTime(), year: thisYear, week: thisWeek - 1, value: 14.00 },
               ];
 
               when.map(docs, function (doc) {
@@ -373,33 +374,33 @@ describe('DashboardController Test', function() {
 
           var date = moment().toDate().clearTime();
 
-          Date.parse(res.body.response.graphs.BOE[0].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[0].date).should.equal(moment(date).add('w', -6).day(0)._d.getTime());
           res.body.response.graphs.BOE[0].value.should.equal(10.05);
-          Date.parse(res.body.response.graphs.BOE[1].date).should.equal(moment(date).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[1].date).should.equal(moment(date).add('w', -5).day(0)._d.getTime());
           res.body.response.graphs.BOE[1].value.should.equal(11.00);
-          Date.parse(res.body.response.graphs.BOE[2].date).should.equal(moment(date).add('w', 1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[2].date).should.equal(moment(date).add('w', -4).day(0)._d.getTime());
           res.body.response.graphs.BOE[2].value.should.equal(11.05);
-          Date.parse(res.body.response.graphs.BOE[3].date).should.equal(moment(date).add('w', 2).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[3].date).should.equal(moment(date).add('w', -3).day(0)._d.getTime());
           res.body.response.graphs.BOE[3].value.should.equal(12.00);
-          Date.parse(res.body.response.graphs.BOE[4].date).should.equal(moment(date).add('w', 3).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[4].date).should.equal(moment(date).add('w', -2).day(0)._d.getTime());
           res.body.response.graphs.BOE[4].value.should.equal(12.05);
-          Date.parse(res.body.response.graphs.BOE[5].date).should.equal(moment(date).add('w', 4).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[5].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
           res.body.response.graphs.BOE[5].value.should.equal(13.00);
 
           res.body.response.graphs.SickSense.should.be.Array;
           res.body.response.graphs.SickSense.length.should.equal(6);
 
-          Date.parse(res.body.response.graphs.SickSense[0].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[0].date).should.equal(moment(date).add('w', -6).day(0)._d.getTime());
           res.body.response.graphs.SickSense[0].value.should.equal(11.05);
-          Date.parse(res.body.response.graphs.SickSense[1].date).should.equal(moment(date).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[1].date).should.equal(moment(date).add('w', -5).day(0)._d.getTime());
           res.body.response.graphs.SickSense[1].value.should.equal(12.00);
-          Date.parse(res.body.response.graphs.SickSense[2].date).should.equal(moment(date).add('w', 1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[2].date).should.equal(moment(date).add('w', -4).day(0)._d.getTime());
           res.body.response.graphs.SickSense[2].value.should.equal(12.05);
-          Date.parse(res.body.response.graphs.SickSense[3].date).should.equal(moment(date).add('w', 2).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[3].date).should.equal(moment(date).add('w', -3).day(0)._d.getTime());
           res.body.response.graphs.SickSense[3].value.should.equal(13.00);
-          Date.parse(res.body.response.graphs.SickSense[4].date).should.equal(moment(date).add('w', 3).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[4].date).should.equal(moment(date).add('w', -2).day(0)._d.getTime());
           res.body.response.graphs.SickSense[4].value.should.equal(13.05);
-          Date.parse(res.body.response.graphs.SickSense[5].date).should.equal(moment(date).add('w', 4).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[5].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
           res.body.response.graphs.SickSense[5].value.should.equal(14.00);
 
           res.body.response.topSymptoms.should.be.Array;
@@ -462,33 +463,33 @@ describe('DashboardController Test', function() {
 
           var date = new Date().clearTime();
 
-          Date.parse(res.body.response.graphs.BOE[0].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[0].date).should.equal(moment(date).add('w', -6).day(0)._d.getTime());
           res.body.response.graphs.BOE[0].value.should.equal(10.05);
-          Date.parse(res.body.response.graphs.BOE[1].date).should.equal(moment(date).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[1].date).should.equal(moment(date).add('w', -5).day(0)._d.getTime());
           res.body.response.graphs.BOE[1].value.should.equal(11.00);
-          Date.parse(res.body.response.graphs.BOE[2].date).should.equal(moment(date).add('w', 1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[2].date).should.equal(moment(date).add('w', -4).day(0)._d.getTime());
           res.body.response.graphs.BOE[2].value.should.equal(11.05);
-          Date.parse(res.body.response.graphs.BOE[3].date).should.equal(moment(date).add('w', 2).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[3].date).should.equal(moment(date).add('w', -3).day(0)._d.getTime());
           res.body.response.graphs.BOE[3].value.should.equal(12.00);
-          Date.parse(res.body.response.graphs.BOE[4].date).should.equal(moment(date).add('w', 3).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[4].date).should.equal(moment(date).add('w', -2).day(0)._d.getTime());
           res.body.response.graphs.BOE[4].value.should.equal(12.05);
-          Date.parse(res.body.response.graphs.BOE[5].date).should.equal(moment(date).add('w', 4).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[5].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
           res.body.response.graphs.BOE[5].value.should.equal(13.00);
 
           res.body.response.graphs.SickSense.should.be.Array;
           res.body.response.graphs.SickSense.length.should.equal(6);
 
-          Date.parse(res.body.response.graphs.SickSense[0].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[0].date).should.equal(moment(date).add('w', -6).day(0)._d.getTime());
           res.body.response.graphs.SickSense[0].value.should.equal(11.05);
-          Date.parse(res.body.response.graphs.SickSense[1].date).should.equal(moment(date).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[1].date).should.equal(moment(date).add('w', -5).day(0)._d.getTime());
           res.body.response.graphs.SickSense[1].value.should.equal(12.00);
-          Date.parse(res.body.response.graphs.SickSense[2].date).should.equal(moment(date).add('w', 1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[2].date).should.equal(moment(date).add('w', -4).day(0)._d.getTime());
           res.body.response.graphs.SickSense[2].value.should.equal(12.05);
-          Date.parse(res.body.response.graphs.SickSense[3].date).should.equal(moment(date).add('w', 2).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[3].date).should.equal(moment(date).add('w', -3).day(0)._d.getTime());
           res.body.response.graphs.SickSense[3].value.should.equal(13.00);
-          Date.parse(res.body.response.graphs.SickSense[4].date).should.equal(moment(date).add('w', 3).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[4].date).should.equal(moment(date).add('w', -2).day(0)._d.getTime());
           res.body.response.graphs.SickSense[4].value.should.equal(13.05);
-          Date.parse(res.body.response.graphs.SickSense[5].date).should.equal(moment(date).add('w', 4).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[5].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
           res.body.response.graphs.SickSense[5].value.should.equal(14.00);
 
           res.body.response.topSymptoms.should.be.Array;
@@ -580,33 +581,33 @@ describe('DashboardController Test', function() {
 
           var date = (new Date()).addDays(-7).clearTime();
 
-          Date.parse(res.body.response.graphs.BOE[0].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
-          res.body.response.graphs.BOE[0].value.should.equal(0);
-          Date.parse(res.body.response.graphs.BOE[1].date).should.equal(moment(date).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[0].date).should.equal(moment(date).add('w', -6).day(0)._d.getTime());
+          assert.strictEqual(res.body.response.graphs.BOE[0].value, null);
+          Date.parse(res.body.response.graphs.BOE[1].date).should.equal(moment(date).add('w', -5).day(0)._d.getTime());
           res.body.response.graphs.BOE[1].value.should.equal(10.05);
-          Date.parse(res.body.response.graphs.BOE[2].date).should.equal(moment(date).add('w', 1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[2].date).should.equal(moment(date).add('w', -4).day(0)._d.getTime());
           res.body.response.graphs.BOE[2].value.should.equal(11.00);
-          Date.parse(res.body.response.graphs.BOE[3].date).should.equal(moment(date).add('w', 2).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[3].date).should.equal(moment(date).add('w', -3).day(0)._d.getTime());
           res.body.response.graphs.BOE[3].value.should.equal(11.05);
-          Date.parse(res.body.response.graphs.BOE[4].date).should.equal(moment(date).add('w', 3).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[4].date).should.equal(moment(date).add('w', -2).day(0)._d.getTime());
           res.body.response.graphs.BOE[4].value.should.equal(12.00);
-          Date.parse(res.body.response.graphs.BOE[5].date).should.equal(moment(date).add('w', 4).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.BOE[5].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
           res.body.response.graphs.BOE[5].value.should.equal(12.05);
 
           res.body.response.graphs.SickSense.should.be.Array;
           res.body.response.graphs.SickSense.length.should.equal(6);
 
-          Date.parse(res.body.response.graphs.SickSense[0].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
-          res.body.response.graphs.SickSense[0].value.should.equal(0);
-          Date.parse(res.body.response.graphs.SickSense[1].date).should.equal(moment(date).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[0].date).should.equal(moment(date).add('w', -6).day(0)._d.getTime());
+          assert.strictEqual(res.body.response.graphs.SickSense[0].value, null);
+          Date.parse(res.body.response.graphs.SickSense[1].date).should.equal(moment(date).add('w', -5).day(0)._d.getTime());
           res.body.response.graphs.SickSense[1].value.should.equal(11.05);
-          Date.parse(res.body.response.graphs.SickSense[2].date).should.equal(moment(date).add('w', 1).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[2].date).should.equal(moment(date).add('w', -4).day(0)._d.getTime());
           res.body.response.graphs.SickSense[2].value.should.equal(12.00);
-          Date.parse(res.body.response.graphs.SickSense[3].date).should.equal(moment(date).add('w', 2).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[3].date).should.equal(moment(date).add('w', -3).day(0)._d.getTime());
           res.body.response.graphs.SickSense[3].value.should.equal(12.05);
-          Date.parse(res.body.response.graphs.SickSense[4].date).should.equal(moment(date).add('w', 3).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[4].date).should.equal(moment(date).add('w', -2).day(0)._d.getTime());
           res.body.response.graphs.SickSense[4].value.should.equal(13.00);
-          Date.parse(res.body.response.graphs.SickSense[5].date).should.equal(moment(date).add('w', 4).day(0)._d.getTime());
+          Date.parse(res.body.response.graphs.SickSense[5].date).should.equal(moment(date).add('w', -1).day(0)._d.getTime());
           res.body.response.graphs.SickSense[5].value.should.equal(13.05);
 
           res.body.response.topSymptoms.should.be.Array;

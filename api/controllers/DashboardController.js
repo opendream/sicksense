@@ -234,8 +234,8 @@ function dashboardProcess(req, res, city, date, extraData) {
     })
     // Get ILI log for graph.
     .then(function() {
-      var a = moment(startLastWeek).startOf('week');
-      var b = moment(a).add('week', 5).endOf('week');
+      var a = moment(startLastWeek).startOf('week').add('week', -5);
+      var b = moment(startLastWeek).startOf('week').add('week',  1);
 
       data.graphs = {};
       return getILILogs(client, 'boe', a, b)
@@ -381,7 +381,7 @@ function getILILogs(client, source, startDate, endDate, limit) {
         else {
           return {
             date: moment(startDate).add('week', i),
-            value: 0
+            value: null
           };
         }
       });
