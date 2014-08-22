@@ -16,6 +16,8 @@ module.exports = {
         ];
 
         conn.client.query(query, values, function (err, result) {
+          conn.done();
+          
           if (err) {
             sails.log.error(err);
             return res.serverError("Server error", err);
