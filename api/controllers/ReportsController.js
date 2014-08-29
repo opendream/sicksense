@@ -41,11 +41,13 @@ module.exports = {
       limit: 10
     }, req.query);
 
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         return res.serverError(new Error("Could not connect to database"));
       }
+      sails.log.debug('[ReportsControlller:index]', now);
 
       var sw, ne, selectQuery, selectValues, countQuery, countValues;
 
@@ -105,12 +107,15 @@ module.exports = {
 
       client.query(selectQuery, selectValues, function(err, result) {
         if (err) {
+          pgDone();
+          sails.log.debug('[ReportsControlller:index]', now);
           sails.log.error(err);
           return res.serverError(new Error("Could not perform your request"));
         }
 
         client.query(countQuery, countValues, function(err, countResult) {
           pgDone();
+          sails.log.debug('[ReportsControlller:index]', now);
 
           if (err) {
             sails.log.error(err);

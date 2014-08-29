@@ -17,11 +17,13 @@ function insert(table, data) {
   var query = util.format("INSERT INTO %s (%s) VALUES (%s) RETURNING *", table, fields.join(','), placeholders.join(','));
 
   return when.promise(function (resolve, reject) {
-
+    var now = (new Date()).getTime();
     pgconnect()
       .then(function (conn) {
+        sails.log.debug('[DBService:insert]', now);
         conn.client.query(query, values, function (err, result) {
           conn.done();
+          sails.log.debug('[DBService:insert]', now);
 
           if (err) return reject(err);
 
@@ -56,10 +58,12 @@ function update(table, data, conditions) {
   var query = util.format("UPDATE %s SET %s WHERE %s RETURNING *", table, sets.join(','), wheres.join(' AND '));
 
   return when.promise(function (resolve, reject) {
-
+    var now = (new Date()).getTime();
     pgconnect()
       .then(function (conn) {
+        sails.log.debug('[DBService:updatex]', conditions, now);
         conn.client.query(query, values, function (err, result) {
+          sails.log.debug('[DBService:updatex]', conditions, now);
           conn.done();
 
           if (err) return reject(err);
@@ -87,11 +91,13 @@ function _delete(table, conditions) {
   var query = util.format("DELETE FROM %s WHERE %s RETURNING *", table, conditionStr);
 
   return when.promise(function (resolve, reject) {
-
+    var now = (new Date()).getTime();
     pgconnect()
       .then(function (conn) {
+        sails.log.debug('[DBService:delete]', now);
         conn.client.query(query, values, function (err, result) {
           conn.done();
+          sails.log.debug('[DBService:delete]', now);
 
           if (err) return reject(err);
 

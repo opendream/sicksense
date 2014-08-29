@@ -29,6 +29,7 @@ request('http://interfetpthailand.net/ili/', function (error, response, body) {
         if (!error && result) {
           pg.connect(config.connections.postgresql.connectionString, function (error, client, pgDone) {
             if (error) {
+              pgDone();
               console.error(error);
               return;
             }

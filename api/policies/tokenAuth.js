@@ -10,16 +10,18 @@ module.exports = function(req, res, next) {
         return res.forbidden("Access token is already expired");
       }
       else {
-        pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+        var now = (new Date()).getTime();
+        pgconnect(function(err, client, pgDone) {
+          sails.log.debug('[tokenAuth]', now);
           if (err) return res.serverError(new Error("Could not connect to database"));
           UserService.getUserByID(client, accessToken.userId)
             .then(function(user) {
-              pgDone();
               req.user = user;
               next();
             })
             .finally(function() {
               pgDone();
+              sails.log.debug('[tokenAuth]', now);
             });
         });
       }

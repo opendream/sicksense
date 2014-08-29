@@ -130,10 +130,13 @@ function dashboardProcess(req, res, city, date, extraData) {
   var lastTwoWeekNumber = moment(startLastWeek).add('week', -1).week();
   var lastTwoWeekYear = moment(startLastWeek).add('week', -1).year();
 
+  var now = (new Date()).getTime();
+
 
   return when
     .promise(function (resolve, reject) {
-      pg.connect(sails.config.connections.postgresql.connectionString, function (err, _client, _pgDone) {
+      pgconnect(function (err, _client, _pgDone) {
+        sails.log.debug('[DashboardController:list]', now);
         if (err) return reject(err);
 
         client = _client;
@@ -306,6 +309,7 @@ function dashboardProcess(req, res, city, date, extraData) {
     .finally(function () {
       // console.log('-: finished topSymptoms', Date.now() - startTime);
       pgDone();
+      sails.log.debug('[DashboardController:list]', now);
 
       var returnData;
 

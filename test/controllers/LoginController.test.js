@@ -1,6 +1,7 @@
 var request = require('supertest');
 var when = require('when');
 var pg = require('pg');
+pg.defaults.application_name = 'sicksense_test';
 
 describe('LoginController test', function() {
 

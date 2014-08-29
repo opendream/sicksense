@@ -19,8 +19,10 @@ module.exports = {
     var email = req.body.email;
     var password = req.body.password;
 
-    pg.connect(connectionString, function(err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function(err, client, pgDone) {
       if (err) return res.serverError("Could not connect to database");
+      sails.log.debug('[LoginController:index]', now);
 
       var user;
       var accessToken;
@@ -46,7 +48,7 @@ module.exports = {
               });
           }
 
-          promise.then(function () {
+          return promise.then(function () {
             UserService.getDefaultDevice(user)
               .then(function (device) {
                 var extra = {
@@ -69,6 +71,7 @@ module.exports = {
         })
         .finally(function() {
           pgDone();
+          sails.log.debug('[LoginController:index]', now);
         });
     });
   }

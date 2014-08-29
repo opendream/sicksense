@@ -16,14 +16,15 @@ module.exports = {
 
 function create (values) {
   return when.promise(function(resolve, reject) {
-
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
         return reject(error);
       }
+      sails.log.debug('[ReportService:create]', now);
 
       var year = moment(values.startedAt).year();
       var week = moment(values.startedAt).week();
@@ -86,6 +87,7 @@ function create (values) {
           ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
+        sails.log.debug('[ReportService:create]', now);
 
         if (err) {
           sails.log.error(err);
@@ -131,14 +133,15 @@ function saveSymptoms(report, symptoms) {
 
       return deferred.promise;
     }).then(function(symptomsId) {
-
-      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      var now = (new Date()).getTime();
+      pgconnect(function(err, client, pgDone) {
         if (err) {
           sails.log.error(err);
           var error = new Error("Could not connect to database");
           error.statusCode = 500;
           return reject(error);
         }
+        sails.log.debug('[ReportService:saveSymptoms]', now);
 
         var params = [];
         var values = [];
@@ -154,6 +157,7 @@ function saveSymptoms(report, symptoms) {
 
         client.query('INSERT INTO reportssymptoms ("reportId", "symptomId") VALUES ' + params, values, function(err, result) {
           pgDone();
+          sails.log.debug('[ReportService:saveSymptoms]', now);
 
           if (err) {
             sails.log.error(err);
@@ -172,14 +176,15 @@ function saveSymptoms(report, symptoms) {
 
 function loadSymptoms(report) {
   return when.promise(function(resolve, reject) {
-
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
         return reject(error);
       }
+      sails.log.debug('[ReportService:loadSymptoms]', now);
 
       client.query('\
         SELECT DISTINCT s.name as name\
@@ -188,6 +193,7 @@ function loadSymptoms(report) {
         WHERE rs."reportId" = $1\
       ', [ report.id ], function(err, result) {
         pgDone();
+        sails.log.debug('[ReportService:loadSymptoms]', now);
 
         if (err) {
           sails.log.error(err);
@@ -209,17 +215,20 @@ function loadSymptoms(report) {
 
 function loadUserAddress(report) {
   return when.promise(function(resolve, reject) {
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
         return reject(error);
       }
+      sails.log.debug('[ReportService:loadUserAddress]', now);
 
       UserService.getUserByID(client, report.userId)
         .then(function(user) {
           pgDone();
+          sails.log.debug('[ReportService:loadUserAddress]', now);
 
           if (!user) {
             var error = new Error("User not found");
@@ -246,13 +255,15 @@ function loadUserAddress(report) {
 
 function loadLocationByAddress(address) {
   return when.promise(function(resolve, reject) {
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
         return reject(error);
       }
+      sails.log.debug('[ReportService:loadLocationByAddress]', now);
 
       client.query("\
         SELECT * FROM locations \
@@ -261,6 +272,7 @@ function loadLocationByAddress(address) {
               (province_en = $3 OR province_th = $3) \
       ", [ address.subdistrict, address.district, address.city ], function(err, result) {
         pgDone();
+        sails.log.debug('[ReportService:loadLocationByAddress]', now);
 
         if (err) {
           sails.log.error(err);
@@ -332,13 +344,15 @@ function getILI(city, startDate, endDate) {
         AND s.name IN (' + params.join(', ') + ') ' + cityCriteria + ' \
     ';
 
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
         return reject(err);
       }
+      sails.log.debug('[ReportService:getILI]', now);
 
       client.query(selectQuery, values, function(err, iliResult) {
         if (err) {
@@ -361,6 +375,7 @@ function getILI(city, startDate, endDate) {
           WHERE "startedAt" BETWEEN $1 AND $2 ' + cityCriteria + ' \
         ', values, function(err, totalResult) {
           pgDone();
+          sails.log.debug('[ReportService:getILI]', now);
 
           if (err) {
             sails.log.error('-- countili', err);

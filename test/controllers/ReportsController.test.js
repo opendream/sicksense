@@ -1,6 +1,7 @@
 var request = require('supertest');
 var when = require('when');
 var pg = require('pg');
+pg.defaults.application_name = 'sicksense_test';
 var moment = require('moment');
 require('date-utils');
 
@@ -13,7 +14,7 @@ describe('ReportController test', function() {
       .then(function() {
         return when.promise(function(resolve, reject) {
 
-          pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+          pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
             if (err) return reject(err);
 
             client.query("SELECT * FROM locations WHERE tambon_en = 'Samsen Nok' and amphoe_en = 'Huai Khwang'", function(err, result) {
@@ -422,7 +423,7 @@ describe('ReportController test', function() {
           res.body.response.platform.should.equal('doctormeandroid');
 
           // Also check in DB too.
-          pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+          pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
             if (err) return done(err);
 
             client.query('SELECT *, ST_AsText(geom) as latlon FROM reports WHERE id=$1', [ res.body.response.id ], function(err, result) {

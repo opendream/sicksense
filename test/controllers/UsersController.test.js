@@ -1,4 +1,5 @@
 var pg = require('pg');
+pg.defaults.application_name = 'sicksense_test';
 var request = require('supertest');
 var when = require('when');
 
@@ -143,7 +144,7 @@ describe('UserController test', function() {
           user = res.body.response;
 
           // Also verify that password is encrypted.
-          pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+          pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
             client.query(
               "SELECT password FROM users WHERE id=$1",
               [ res.body.response.id ],
@@ -278,7 +279,7 @@ describe('UserController test', function() {
         .end(function(err, res) {
           if (err) return done(err);
 
-          pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+          pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
             if (err) return done(new Error(err));
 
             var userId = res.body.response.id;
@@ -298,7 +299,7 @@ describe('UserController test', function() {
     });
 
     it('should set default platform to `doctormeios`', function (done) {
-      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
         if (err) return done(new Error(err));
 
         client.query("SELECT platform FROM users WHERE id = $1", [ user.id ], function (err, result) {
@@ -514,7 +515,7 @@ describe('UserController test', function() {
                 res.body.response.address.district.should.equal('Amphoe Krathum Baen');
                 res.body.response.address.city.should.equal('Samut Sakhon');
                 res.body.response.platform.should.equal('doctormeandroid');
-                
+
                 done();
               });
           });

@@ -15,7 +15,8 @@ function index(req, res) {
       offset: 0
     }, req.query);
 
-    pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function (err, client, pgDone) {
       var notifications = [];
       var count = 0;
 
@@ -23,6 +24,7 @@ function index(req, res) {
         sails.log.error(err);
         return res.serverError('Server error', err);
       }
+      sails.log.debug('[NotificationsControlller:index]', now);
 
       var values = [ params.limit, params.offset ];
       client.query("\
@@ -35,6 +37,8 @@ function index(req, res) {
         OFFSET $2 \
       ", values, function (err, result) {
         if (err) {
+          pgDone();
+          sails.log.debug('[NotificationsControlller:index]', now);
           sails.log.error(err);
           return res.serverError('Server error', err);
         }
@@ -43,6 +47,7 @@ function index(req, res) {
 
         client.query("SELECT count(id) as count FROM notifications", [], function (err, result) {
           pgDone();
+          sails.log.debug('[NotificationsControlller:index]', now);
 
           if (err) {
             sails.log.error(err);
@@ -83,14 +88,18 @@ function create(req, res) {
   if (validate()) run();
 
   function run() {
-    pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function (err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         return res.serverError("Server error", err);
       }
+      sails.log.debug('[NotificationsControlller:create]', now);
 
       var queryData = queryBuilder(req.body);
       client.query(queryData.query, queryData.values, function (err, result) {
+        pgDone();
+        sails.log.debug('[NotificationsControlller:create]', now);
         if (err) {
           sails.log.error(err);
           return res.serverError("Server error", err);
@@ -224,11 +233,13 @@ function create(req, res) {
 
 function destroy(req, res) {
   if (req.notification) {
-    pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
+    var now = (new Date()).getTime();
+    pgconnect(function (err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         return res.serverError("Server error", err);
       }
+      sails.log.debug('[NotificationsControlller:create]', now);
 
       var query;
       var values;
@@ -241,6 +252,8 @@ function destroy(req, res) {
         ];
         client.query(query, values, function (err, result) {
           if (err) {
+            pgDone();
+            sails.log.debug('[NotificationsControlller:create]', now);
             sails.log.error(err);
             return res.serverError("Server error", err);
           }
@@ -257,6 +270,8 @@ function destroy(req, res) {
           req.notification.id
         ];
         client.query(query, values, function (err, result) {
+          pgDone();
+          sails.log.debug('[NotificationsControlller:create]', now);
           if (err) {
             sails.log.error(err);
             return res.serverError("Server error", err);

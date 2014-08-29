@@ -61,7 +61,11 @@ module.exports = {
     }
 
     function save(values) {
-      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, done) {
+      var now = (new Date()).getTime();
+
+      pgconnect(function(err, client, done) {
+        sails.log.debug('[UsersController:insert user]', now);
+
         if (err) return res.serverError("Could not connect to database");
 
         client.query('\
@@ -81,6 +85,8 @@ module.exports = {
               res.serverError("Could not perform your request", err);
             }
 
+            done();
+            sails.log.debug('[UsersController:insert user]', now);
             return;
           }
 
@@ -113,7 +119,7 @@ module.exports = {
                   }
 
                   if (req.body.subscribe) {
-                    EmailSubscriptionsService.subscribe(client, savedUser)
+                    return EmailSubscriptionsService.subscribe(client, savedUser)
                       .then(function() {
                         res.ok(UserService.getUserJSON(savedUser, extra));
                       });
@@ -129,6 +135,7 @@ module.exports = {
             })
             .finally(function() {
               done();
+              sails.log.debug('[UsersController:insert user]', now);
             });
 
         });
@@ -241,105 +248,103 @@ module.exports = {
     });
 
     function run(hashedPassword) {
-      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
-        if (err) return res.serverError("Could not connect to database");
+      var now = (new Date()).getTime();
 
-        var data = [
-          { field: '"updatedAt" = $', value: new Date() }
-        ];
+      var data = [
+        { field: '"updatedAt" = $', value: new Date() }
+      ];
 
-        if (req.body.email) {
-          data.push({
-            field: '"email" = $',
-            value: req.body.email
-          });
-        }
-        if (hashedPassword) {
-          data.push({
-            field: '"password" = $',
-            value: hashedPassword
-          });
-        }
-        if (req.body.gender) {
-          data.push({
-            field: '"gender" = $',
-            value: req.body.gender
-          });
-        }
-        if (req.body.birthYear) {
-          data.push({
-            field: '"birthYear" = $',
-            value: req.body.birthYear
-          });
-        }
-        if (!_.isEmpty(req.body.address) && req.body.address.subdistrict) {
-          data.push({
-            field: '"subdistrict" = $',
-            value: req.body.address.subdistrict
-          });
-        }
-        if (!_.isEmpty(req.body.address) && req.body.address.district) {
-          data.push({
-            field: '"district" = $',
-            value: req.body.address.district
-          });
-        }
-        if (!_.isEmpty(req.body.address) && req.body.address.city) {
-          data.push({
-            field: '"city" = $',
-            value: req.body.address.city
-          });
-        }
-        if (req.body.platform || req.query.platform) {
-          data.push({
-            field: '"platform" = $',
-            value: req.body.platform || req.query.platform
-          });
-        }
+      if (req.body.email) {
+        data.push({
+          field: '"email" = $',
+          value: req.body.email
+        });
+      }
+      if (hashedPassword) {
+        data.push({
+          field: '"password" = $',
+          value: hashedPassword
+        });
+      }
+      if (req.body.gender) {
+        data.push({
+          field: '"gender" = $',
+          value: req.body.gender
+        });
+      }
+      if (req.body.birthYear) {
+        data.push({
+          field: '"birthYear" = $',
+          value: req.body.birthYear
+        });
+      }
+      if (!_.isEmpty(req.body.address) && req.body.address.subdistrict) {
+        data.push({
+          field: '"subdistrict" = $',
+          value: req.body.address.subdistrict
+        });
+      }
+      if (!_.isEmpty(req.body.address) && req.body.address.district) {
+        data.push({
+          field: '"district" = $',
+          value: req.body.address.district
+        });
+      }
+      if (!_.isEmpty(req.body.address) && req.body.address.city) {
+        data.push({
+          field: '"city" = $',
+          value: req.body.address.city
+        });
+      }
+      if (req.body.platform || req.query.platform) {
+        data.push({
+          field: '"platform" = $',
+          value: req.body.platform || req.query.platform
+        });
+      }
 
-        var conditions = [
-          { field: 'id = $', value: req.user.id }
-        ];
+      var conditions = [
+        { field: 'id = $', value: req.user.id }
+      ];
 
-        DBService.update('users', data, conditions)
-          .then(function (users) {
+      DBService.update('users', data, conditions)
+        .then(function (users) {
 
-            var promise = when.resolve();
+          var promise = when.resolve();
 
-            var savedUser = users.rows[0];
+          var savedUser = users.rows[0];
 
-            if (req.body.deviceToken === '') {
-              promise = UserService.removeDefaultUserDevice(savedUser);
-            }
-            else if (req.body.deviceToken) {
-              promise = UserService.clearDevices(req.user)
-                .then(function () {
-                  return UserService.setDevice(savedUser, {
-                    id: req.body.deviceToken,
-                    platform: req.body.platform || req.query.platform || savedUser.platform
-                  });
+          if (req.body.deviceToken === '') {
+            promise = UserService.removeDefaultUserDevice(savedUser);
+          }
+          else if (req.body.deviceToken) {
+            promise = UserService.clearDevices(req.user)
+              .then(function () {
+                return UserService.setDevice(savedUser, {
+                  id: req.body.deviceToken,
+                  platform: req.body.platform || req.query.platform || savedUser.platform
                 });
-            }
+              });
+          }
 
-            promise.then(function () {
-              UserService.getDefaultDevice(savedUser)
-                .then(function (device) {
-                  var extra = {
-                    accessToken: accessToken.token
-                  };
-                  if (device) {
-                    extra.deviceToken = device.id;
-                  }
-                  res.ok(UserService.getUserJSON(savedUser, extra));
-                });
-            });
+          return promise.then(function () {
+            UserService.getDefaultDevice(savedUser)
+              .then(function (device) {
+                var extra = {
+                  accessToken: accessToken.token
+                };
+                if (device) {
+                  extra.deviceToken = device.id;
+                }
+                res.ok(UserService.getUserJSON(savedUser, extra));
+              });
+          });
 
-          }) // end then()
-          .catch(function (err) {
-            sails.log.error(err);
-            return res.serverError("Could not perform your request");
-          }); // end DBService.update()
-      });
+        }) // end then()
+        .catch(function (err) {
+          sails.log.error(err);
+          return res.serverError("Could not perform your request");
+        }); // end DBService.update()
     }
 
     function validate() {
@@ -408,13 +413,21 @@ module.exports = {
           promise = promise.then(function () {
             return when.promise(function (resolve, reject) {
 
+              var now = (new Date()).getTime();
+
               pgconnect()
+                .then(function (conn) {
+                  sails.log.debug('[UsersController:update e-mail]', now);
+                  return when.resolve(conn);
+                })
                 .then(function (conn) {
                   var query = "SELECT id FROM users WHERE email = $1 AND email <> $2";
                   var values = [ req.body.email, req.user.email ];
 
                   conn.client.query(query, values, function (err, result) {
                     conn.done();
+                    sails.log.debug('[UsersController:update e-mail]', now);
+
                     if (err) {
                       sails.log.error(err);
                       res.serverError("Server error", err);
@@ -486,11 +499,13 @@ module.exports = {
         limit: 10
       }, req.query);
 
-      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      var now = (new Date()).getTime();
+      pgconnect(function(err, client, pgDone) {
         if (err) {
           sails.log.error(err);
           return res.serverError(new Error("Could not connect to database"));
         }
+        sails.log.debug('[UsersController:userReports()]', now);
 
         var selectQuery, selectValues, countQuery, countValues;
 
@@ -516,6 +531,7 @@ module.exports = {
 
           client.query(countQuery, countValues, function(err, countResult) {
             pgDone();
+            sails.log.debug('[UsersController:userReports()]', now);
 
             if (err) {
               sails.log.error(err);

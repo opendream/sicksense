@@ -14,11 +14,10 @@ var pg = require('pg');
 
 module.exports.bootstrap = function(cb) {
 
-  pg.defaults.poolSize = sails.config.connections.postgresql.poolSize || 50;
   global['pg'] = pg;
   global['pgconnect'] = function (cb) {
     return when.promise(function (resolve, reject) {
-      pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, done) {
+      pg.connect(sails.config.connections.postgresql, function (err, client, done) {
         if (cb) {
           cb(err, client, done);
         }

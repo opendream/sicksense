@@ -6,7 +6,9 @@ module.exports = {
 
         var eventName = req.body.event;
         if (eventName == 'unsubscribed') {
-            pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, done) {
+            var now = (new Date()).getTime();
+            pgconnect(function(err, client, done) {
+                sails.log.debug('[EmailSubscriptionsController:hooks]', now);
                 if (err) return res.serverError('Could not connect to database');
 
                 UserService.getUserByEmail(client, req.body.recipient)
@@ -27,6 +29,7 @@ module.exports = {
                         }
                     })
                     .finally(function() {
+                        sails.log.debug('[EmailSubscriptionsController:hooks]', now);
                         done();
                     });
             });

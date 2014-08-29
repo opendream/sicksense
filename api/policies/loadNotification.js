@@ -1,5 +1,5 @@
 module.exports = function (req, res, next) {
-  pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
+  pgconnect(function (err, client, pgDone) {
 
     if (err) {
       sails.log.error(err);

@@ -17,7 +17,7 @@ module.exports = {
 
         conn.client.query(query, values, function (err, result) {
           conn.done();
-          
+
           if (err) {
             sails.log.error(err);
             return res.serverError("Server error", err);
@@ -31,6 +31,7 @@ module.exports = {
 
           when
             .map(result.rows, function (item) {
+              // TODO: need check
               return NotificationsService.push(item);
             })
             .then(function (notifications) {

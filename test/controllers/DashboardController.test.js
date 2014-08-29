@@ -2,6 +2,7 @@ var when = require('when');
 var request = require('supertest');
 var moment = require('moment');
 var pg = require('pg');
+pg.defaults.application_name = 'sicksense_test';
 var assert = require('assert');
 require('date-utils');
 
@@ -214,7 +215,7 @@ describe('DashboardController Test', function() {
         })
         .then(function() {
           return when.promise(function(resolve, reject) {
-            pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+            pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
               if (err) return reject(new Error(err));
 
               client.query('SELECT * FROM reports_summary_by_week', function(err, result) {
@@ -227,7 +228,7 @@ describe('DashboardController Test', function() {
         })
         .then(function() {
           return when.promise(function(resolve, reject) {
-            pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+            pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
               if (err) {
                 return reject(new Error(err));
               }
@@ -243,7 +244,7 @@ describe('DashboardController Test', function() {
         })
         .then(function() {
           return when.promise(function(resolve, reject) {
-            pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+            pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
               if (err) {
                 return reject(new Error(err));
               }

@@ -120,14 +120,17 @@ function setDevice(user, device) {
   var existingDevice;
 
   return when.promise(function (resolve, reject) {
+    var now = (new Date()).getTime();
     return pgconnect()
       .then(function (conn) {
+        sails.log.debug('[ReportService:setDevice]', now);
         return when.promise(function (resolve, reject) {
           var query = "SELECT * FROM devices WHERE id = $1";
           var values = [ device.id ];
 
           conn.client.query(query, values, function (err, result) {
             conn.done();
+            sails.log.debug('[ReportService:setDevice]', now);
 
             if (err) return reject(err);
 
@@ -250,6 +253,7 @@ function getDevice(device_id) {
     pgconnect()
       .then(function (conn) {
         conn.client.query("SELECT * FROM devices WHERE id = $1", [ device_id ], function (err, result) {
+          conn.done();
           if (err) return reject(err);
 
           resolve(result.rows[0]);

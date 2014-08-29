@@ -49,8 +49,10 @@ module.exports = {
     },
 
     getEmailsToNotify: function() {
+        var now = (new Date()).getTime();
         return pgconnect()
             .then(function (conn) {
+                sails.log.debug('[EmailSubscrioptionsService:getEmailsToNotify]', now);
                 return when.promise(function(resolve, reject) {
                     var query = "\
                         SELECT users.email \
@@ -61,8 +63,9 @@ module.exports = {
                         \"notifyTime\" <= CURRENT_TIME + interval '2 minute'";
 
                     conn.client.query(query, function (err, result) {
-                        if (err) return reject(err);
                         conn.done();
+                        sails.log.debug('[EmailSubscrioptionsService:getEmailsToNotify]', now);
+                        if (err) return reject(err);
                         resolve(result.rows);
                     });
                 });

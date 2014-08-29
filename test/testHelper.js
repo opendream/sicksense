@@ -8,7 +8,7 @@ require('date-utils');
 
 function clearUsers() {
   return when.promise(function(resolve, reject) {
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
       if (err) return reject(err);
       client.query('DELETE FROM users', [], function(err, result) {
         pgDone();
@@ -60,7 +60,7 @@ function createUser(values, generateAccessToken) {
         values.updatedAt || new Date()
       ];
 
-      pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+      pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
         if (err) return reject(err);
 
         var query = '\
@@ -159,7 +159,7 @@ function _createReport (values) {
     var latitude = parseFloat((values.location && values.location.latitude) || fakeLatitude);
     var longitude = parseFloat((values.location && values.location.longitude) || fakeLongitude);
 
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
@@ -240,7 +240,7 @@ function _createReport (values) {
 
 function clearReports () {
   return when.promise(function(resolve, reject) {
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
       if (err) return reject(err);
 
       client.query('DELETE FROM reports', [], function(err, result) {
@@ -264,7 +264,7 @@ function clearSymptoms () {
 
 function clearReportsSymptoms () {
   return when.promise(function(resolve, reject) {
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
       if (err) return reject(err);
 
       client.query('DELETE FROM reportssymptoms', [], function(err, result) {
@@ -279,7 +279,7 @@ function clearReportsSymptoms () {
 
 function clearReportsSummaryByWeek () {
   return when.promise(function(resolve, reject) {
-    pg.connect(sails.config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
       if (err) return reject(err);
 
       client.query('DELETE FROM reports_summary_by_week', [], function(err, result) {

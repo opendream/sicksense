@@ -4,12 +4,13 @@ module.exports = {
 
   findCityByLatLng: function (latitude, longitude) {
     return when.promise(function (resolve, reject) {
-
-      pg.connect(sails.config.connections.postgresql.connectionString, function (err, client, pgDone) {
+      var now = (new Date()).getTime();
+      pgconnect(function (err, client, pgDone) {
         if (err) {
           sails.log.error("ERROR: findCityByLatLng():", err);
           return reject(err);
         }
+        sails.log.debug('[LocationService:findCityByLatLng]', now);
 
         var query =
           'SELECT * FROM locations ORDER BY ' +
@@ -18,6 +19,8 @@ module.exports = {
 
         client.query(query, [], function (err, result) {
           pgDone();
+          sails.log.debug('[LocationService:findCityByLatLng]', now);
+          
           if (err) {
             sails.log.error("ERROR: findCityByLatLng():", err);
             return reject(err);
@@ -37,8 +40,10 @@ module.exports = {
 
   getLocationByAddress: function (address) {
     return when.promise(function (resolve, reject) {
+      var now = (new Date()).getTime();
       pgconnect()
         .then(function (conn) {
+          sails.log.debug('[LocationService:getLocationByAddress]', now);
           conn.client.query("\
             SELECT * FROM locations \
             WHERE (tambon_en = $1 OR tambon_th = $1) AND \
@@ -46,6 +51,7 @@ module.exports = {
                   (province_en = $3 OR province_th = $3) \
           ", [ address.subdistrict, address.district, address.city ], function (err, result) {
             conn.done();
+            sails.log.debug('[LocationService:getLocationByAddress]', now);
 
             if (err) {
               sails.log.error(err);
