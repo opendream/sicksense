@@ -1,5 +1,6 @@
 
 var when = require('when');
+var moment = require('moment');
 
 /**
  * ReportsController
@@ -170,7 +171,10 @@ module.exports = {
     req.checkBody('animalContact', 'Field `animalContact` is required').notEmpty();
 
     req.checkBody('startedAt', 'Field `startedAt` is required').notEmpty();
+
+    var tomorrow = moment().add(1, 'day').toDate();
     req.checkBody('startedAt', 'Field `startedAt` is not valid').isDate();
+    req.checkBody('startedAt', 'Field `startedAt` is not valid').isBefore(tomorrow);
 
     if (req.body.location) {
       req.checkBody('location.latitude', 'Field `location.latitude` is required').notEmpty();

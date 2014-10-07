@@ -280,6 +280,22 @@ describe('ReportController test', function() {
           });
       });
 
+      it('should validate `startedAt` field by not allowed future time', function(done) {
+        var testDate = moment().add(10, 'day');
+
+        request(sails.hooks.http.app)
+          .post('/reports')
+          .query({ accessToken: accessToken.token })
+          .send({ startedAt: testDate })
+          .expect(400)
+          .end(function(err, res) {
+            if (err) return done(err);
+            res.body.meta.invalidFields.startedAt.match(/startedAt.*is not valid/);
+            done();
+          });
+
+      });
+
       it('should validate `location` field', function(done) {
         request(sails.hooks.http.app)
           .post('/reports')
