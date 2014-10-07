@@ -145,6 +145,25 @@ function dashboardProcess(req, res, city, date, extraData) {
       });
     })
     .then(function () {
+      if (city && city == 'all') {
+        return when.promise(function (resolve, reject) {
+          var query = "select province_en, latitude, longitude from locations where code like '%0101'";
+          client.query(query, {}, function (err, results) {
+            if (err) reject(err);
+            results.rows.forEach(function (row) {
+              data.cityLocations = data.cityLocations || {};
+              data.cityLocations[row.province_en] = row;
+            });
+
+            resolve();
+          });
+        });
+      }
+      else {
+        return when.resolve();
+      }
+    })
+    .then(function () {
       // console.log('-: connect pg', Date.now() - startTime);
       // Get report summary, last week and last two week.
       return when.promise(function (resolve, reject) {
@@ -241,8 +260,8 @@ function dashboardProcess(req, res, city, date, extraData) {
 
           newReportsSummaryLastWeek.push({
             city: city[0].city,
-            latitude: city[0].latitude,
-            longitude: city[0].longitude,
+            latitude: data.cityLocations[city[0].city].latitude,
+            longitude: data.cityLocations[city[0].city].longitude,
             fineCount: fineCount,
             sickCount: sickCount,
             total: totalCount

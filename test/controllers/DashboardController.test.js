@@ -84,6 +84,8 @@ describe('DashboardController Test', function() {
     var currentDate = (new Date()).addDays(-7);
     var weekAgoDate = (new Date(currentDate)).addDays(-7);
 
+    var cityLocations = {};
+
     before(function(done) {
       TestHelper
         .createUser({
@@ -286,6 +288,22 @@ describe('DashboardController Test', function() {
           });
         })
         .then(function() {
+          return when.promise(function (resolve, reject) {
+            var query = "select province_en, latitude, longitude from locations where code like '%0101'";
+            pgconnect(function (err, client, pgDone) {
+              client.query(query, {}, function (err, results) {
+                if (err) reject(err);
+                results.rows.forEach(function (row) {
+                  cityLocations[row.province_en] = row;
+                });
+
+                pgDone();
+                resolve();
+              });
+            });
+          });
+        })
+        .then(function() {
           done();
         })
         .catch(done);
@@ -350,6 +368,8 @@ describe('DashboardController Test', function() {
           province1.fineCount.should.equal(0);
           province1.sickCount.should.equal(2);
           province1.total.should.equal(2);
+          province1.latitude.should.equal(cityLocations['Bangkok'].latitude);
+          province1.longitude.should.equal(cityLocations['Bangkok'].longitude);
 
           province2.fineCount.should.equal(1);
           province2.sickCount.should.equal(0);
