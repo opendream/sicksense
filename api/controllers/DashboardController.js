@@ -208,21 +208,49 @@ function dashboardProcess(req, res, city, date, extraData) {
           sickLastWeek += item.sick;
         }
         else {
-          data.reportsSummaryLastTwoWeek.push({
-            subdistrict: item.tambon_en,
-            district: item.amphoe_en,
-            city: item.province_en,
-            latitude: item.latitude,
-            longitude: item.longitude,
-            fineCount: item.fine,
-            sickCount: item.sick,
-            total: item.fine + item.sick
-          });
+          // data.reportsSummaryLastTwoWeek.push({
+          //   subdistrict: item.tambon_en,
+          //   district: item.amphoe_en,
+          //   city: item.province_en,
+          //   latitude: item.latitude,
+          //   longitude: item.longitude,
+          //   fineCount: item.fine,
+          //   sickCount: item.sick,
+          //   total: item.fine + item.sick
+          // });
           iliLastTwoWeek += item.ili_count;
           fineLastTwoWeek += item.fine;
           sickLastTwoWeek += item.sick;
         }
       });
+
+      if (city && city == 'all') {
+        var newReportsSummaryLastWeek = [];
+        var reportsSummaryLastWeekGroupByCity = _.groupBy(data.reportsSummaryLastWeek, 'city');
+
+        _.each(reportsSummaryLastWeekGroupByCity, function (city) {
+          var fineCount = 0;
+          var sickCount = 0;
+          var totalCount = 0;
+
+          _.each(city, function (report) {
+            fineCount += report.fineCount;
+            sickCount += report.sickCount;
+            totalCount += report.total;
+          });
+
+          newReportsSummaryLastWeek.push({
+            city: city[0].city,
+            latitude: city[0].latitude,
+            longitude: city[0].longitude,
+            fineCount: fineCount,
+            sickCount: sickCount,
+            total: totalCount
+          });
+        });
+
+        data.reportsSummaryLastWeek = newReportsSummaryLastWeek;
+      }
 
       data.finePeople = fineLastWeek;
       data.sickPeople = sickLastWeek;
