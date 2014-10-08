@@ -9,7 +9,7 @@
     "opendream"
   ],
   "dependencies": {
-    "apn": "^1.6.0",
+    "apn": "^1.6.2",
     "date-utils": "^1.2.15",
     "ejs": "~0.8.4",
     "express-validator": "~2.3.0",
