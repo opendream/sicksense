@@ -1,9 +1,18 @@
-Thanks for participating in Flu Near You! Many of you are asking "why should I continue filling out the weekly surveys if the flu season is over?" Flu Near You runs year-round for one reason: a new "flu-like" infection can appear at any time.
+ขอบคุณที่ร่วมเป็นส่วนหนี่งของ Sicksense โครงการภายใต้ความร่วมมือของ [Skoll Global Threats Fund][1] , [สำนักงานกองทุนสนับสนุนการสร้างเสริมสุขภาพ (สสส.)][2] และ [โอเพ่นดรีม][3] ในการสร้างเครือข่ายอาสาสมัครดิจิทัลเพื่อร่วมกันหาสัญญาณของโรคระบาดอุบัติใหม่แบบมีส่วนร่วม ผ่านการรายงานสุขภาพของตนเองแบบนิรนาม
 
-Remember the coronavirus in 2002 that spread to eight countries called SARS? Today, the world is at risk from the Middle Eastern Respiratory Syndrome--also a coronavirus--and called MERS-CoV because it was first detected in Saudi Arabia in 2012. Two cases have spread to the United States in 2014 with several countries now tracking infections. And lets not forget new strains of influenza like the 'swine flu' of 2009 which appeared in North America in May--as the flu season here was just ending.
+ตั้งแต่เมื่อไรไม่รู้ที่มนุษยชาติเราหลงลืมไปว่าภัยคุกคามที่ใกล้ตัวที่สุดคือ โรคระบาดอุบัติใหม่ ลองนึกถึงว่า หากโลกปัจจุบันมีโรคระบาดในระดับเดียวกับไข้หวัดสเปน ในช่วงปี พ.ศ. 2461 - 2463 ที่ทำให้ประชากรโลก 3 - 5% เสียชีวิตในช่วงระยเวลาการระบาด หากจะให้ใกล้ตัวขึ้นอีกนิดก็คือการระบาดไข้หวัดใหญ่สายพันธุ์ใหม่ 2009
+
+เราตั้งเป้าหมายในการเป็นผู้ช่วยของระบบสาธารณะสุขในปัจจุบันเพื่อการค้นหาสัญญาณการเจ็บป่วยแบบ real-time และมีส่วนร่วมผ่านเครื่องมือดิจิทัลต่างๆ ผู้ใช้ในประเทศไทยทุกสามารถเข้าร่วมเป็นอาสาสมัครได้
+
+Sicksense จะเก็บแต่ข้อมูลนิรนามของผู้ใช้และจะใช้งานข้อมูลเหล่านั้นเพื่อการวิเคราะห์หาสัญญาณของโรคระบาดอุบัติใหม่ที่ไม่ใช่เพื่อผลประโยชน์ทางการค้าเท่านั้น
 
 คุณสบายดีไหมจ๊ะ ?
 * สบายดี คลิก https://www.sicksense.org/report.html?isFine=1
 * มีอาการ คลิก https://www.sicksense.org/report.html?isFine=0
 
 หากคุณไม่ต้องการรับอีเมลแจ้งเตือน กรุณาคลิก %unsubscribe_url%
+
+
+[1] http://www.skollglobalthreats.org/
+[2] http://www.thaihealth.or.th/
+[3] http://www.opendream.co.th/
