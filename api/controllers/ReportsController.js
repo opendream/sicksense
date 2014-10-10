@@ -173,8 +173,10 @@ module.exports = {
     req.checkBody('startedAt', 'Field `startedAt` is required').notEmpty();
 
     var tomorrow = moment().add(1, 'day').toDate();
+    var sundayLastWeek = moment().startOf('week').add(-7, 'day');
     req.checkBody('startedAt', 'Field `startedAt` is not valid').isDate();
-    req.checkBody('startedAt', 'Field `startedAt` is not valid').isBefore(tomorrow);
+    req.checkBody('startedAt', 'Field `startedAt` is not valid, should not too far in the future').isBefore(tomorrow);
+    req.checkBody('startedAt', 'Field `startedAt` is not valid, should not too long in the past').isAfter(sundayLastWeek);
 
     if (req.body.location) {
       req.checkBody('location.latitude', 'Field `location.latitude` is required').notEmpty();
