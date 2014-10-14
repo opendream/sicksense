@@ -605,6 +605,15 @@ module.exports = {
           .then(function() {
             return OnetimeTokenService.create('user.forgotpassword', localUser.id, 60 * 60 * 24);
           })
+          .then(function(token) {
+            var subject = sails.config.mail.forgot_password.subject;
+            var from = sails.config.mail.forgot_password.from;
+            var to = localUser.email;
+            to = 'nirut@opendream.co.th';
+            var body = sails.config.mail.forgot_password.text;
+            var html = sails.config.mail.forgot_password.html;
+            return MailService.send(subject, body, from, to, html);
+          })
           .then(function() {
             return res.ok({
               'message': 'E-mail has been sent to ' + email + '.'

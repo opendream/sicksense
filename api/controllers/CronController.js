@@ -63,14 +63,15 @@ module.exports = {
           var emails = _.pluck(rows, 'email');
           var numEmails = emails.length;
           var numRounds = Math.ceil(numEmails / maxEmails);
-          var subjects = sails.config.mailgun.subjects;
-          var from = sails.config.mailgun.from;
-          var template = MailService.getTemplate();
+          var subjects = sails.config.mail.notification.subjects;
+          var from = sails.config.mail.notification.from;
+          var body = sails.config.mail.notification.text;
+          var html = sails.config.mail.notification.html;
 
           when.map(_.range(0, numRounds), function(i) {
             var to = emails.splice(0, maxEmails);
             var subject = subjects[Math.floor(Math.random() * subjects.length)];
-            return MailService.send(subject, template.text, from, to, template.html);
+            return MailService.send(subject, body, from, to, html);
           })
           .then(function() {
             return res.ok({

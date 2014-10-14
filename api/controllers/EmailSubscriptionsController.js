@@ -48,8 +48,8 @@ module.exports = {
             from: settings.from,
             to: email,
             subject: settings.subjects[Math.floor(Math.random() * settings.subjects.length)],
-            text: template.text,
-            html: template.html
+            text: sails.config.mail.notification.text,
+            html: sails.config.mail.notification.html
         };
 
         sails.log.info('Send email notification at ' + new Date());

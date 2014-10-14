@@ -60,6 +60,7 @@ module.exports = {
         });
     },
 
+    // TODO Move to configuration.
     getTemplate: function() {
         return {
             text: fs.readFileSync('./assets/templates/email.txt', { encoding: 'UTF8' }),
