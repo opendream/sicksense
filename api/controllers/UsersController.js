@@ -578,6 +578,51 @@ module.exports = {
       var user = UserService.getUserJSON(req.user);
       res.ok(user);
     });
+  },
+
+  forgotPassword: function(req, res) {
+    var localUser;
+    var email = req.query.email;
+    if (email) {
+      pgconnect(function(err, client, done) {
+        if (err) return res.serverError('Could not connect to database.');
+
+        UserService.getUserByEmail(client, email)
+          .then(function(user) {
+            localUser = user;
+            return OnetimeTokenService.getByEmail(user.email, 'user.forgotpassword');
+          })
+          .then(function(token) {
+            if (token) {
+              sails.log.debug('delete token', token);
+              return OnetimeTokenService.delete(token.user_id, token.type);
+            }
+
+            return when.promise(function(resolve, reject) {
+              resolve();
+            });
+          })
+          .then(function() {
+            return OnetimeTokenService.create('user.forgotpassword', localUser.id, 60 * 60 * 24);
+          })
+          .then(function() {
+            return res.ok({
+              'message': 'E-mail has been sent to ' + email + '.'
+            });
+          })
+          .catch(function(err) {
+            sails.log.error(err);
+            return res.forbidden(err);
+          })
+          .finally(function() {
+            done();
+          });
+      });
+    }
+    else {
+      sails.log.error('E-mail is not provided');
+      res.forbidden('E-mail is not provided.');
+    }
   }
 
 };

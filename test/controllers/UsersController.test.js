@@ -671,4 +671,105 @@ describe('UserController test', function() {
 
   });
 
+  describe('[POST] /users/forgotpassword', function() {
+    var user, token;
+
+    before(function(done) {
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createUser({ email: "john@example.com", password: "12345678" }, true);
+        })
+        .then(function(_user) {
+          user = _user;
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should error when email is not provided', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/forgotpassword')
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when email is provided but it does not exists', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/forgotpassword')
+        .query({ email: 'adam@example.com' })
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should create new token', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/forgotpassword')
+        .query({ email: 'john@example.com' })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
+            client.query(
+              "SELECT * FROM onetimetoken WHERE user_id=$1 ORDER BY id DESC",
+              [ user.id ],
+              function(err, result) {
+                pgDone();
+                if (err) return done(err);
+
+                result.rows.length.should.equal(1);
+                result.rows[0].token.length.should.greaterThan(0);
+                result.rows[0].type.should.equal('user.forgotpassword');
+                result.rows[0].expired.should.greaterThan(new Date());
+
+                token = result.rows[0];
+                done();
+              }
+            );
+          });
+        });
+    });
+
+    it('should remove old token before create the new one', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/forgotpassword')
+        .query({ email: 'john@example.com' })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
+            client.query(
+              "SELECT * FROM onetimetoken WHERE user_id=$1 ORDER BY id DESC",
+              [ user.id ],
+              function(err, result) {
+                pgDone();
+                if (err) return done(err);
+
+                sails.log.debug(result.rows);
+
+                result.rows.length.should.equal(1);
+                result.rows[0].token.should.not.equal(token.token);
+                result.rows[0].expired.should.greaterThan(token.expired);
+
+                done();
+              }
+            );
+          });
+        });
+    });
+
+  });
+
 });

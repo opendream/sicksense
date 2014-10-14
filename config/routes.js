@@ -34,6 +34,11 @@ module.exports.routes = {
 
   // Custom routes here...
 
+  'post /users/forgotpassword': {
+    controller: 'users',
+    action: 'forgotPassword'
+  },
+
   'post /users': {
     controller: 'users',
     action: 'create'

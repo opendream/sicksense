@@ -56,7 +56,7 @@ function getUserByEmail(client, email) {
   return when.promise(function(resolve, reject) {
     client.query('SELECT * FROM users WHERE email=$1', [ email ], function(err, result) {
       if (err) return reject(err);
-      if (result.rows.length === 0) return reject(new Error('User not found'));
+      if (result.rows.length === 0) return reject('User not found');
 
       resolve(result.rows[0]);
     });
