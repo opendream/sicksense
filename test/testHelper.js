@@ -292,13 +292,29 @@ function clearReportsSummaryByWeek () {
   });
 }
 
+function clearOnetimeToken() {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
+      if (err) return reject(err);
+
+      client.query('DELETE FROM onetimetoken', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
 function clearAll () {
   return clearUsers()
     .then(clearAccessTokens)
     .then(clearSymptoms)
     .then(clearReports)
     .then(clearReportsSymptoms)
-    .then(clearReportsSummaryByWeek);
+    .then(clearReportsSummaryByWeek)
+    .then(clearOnetimeToken);
 }
 
 module.exports = global.TestHelper = {
@@ -310,5 +326,6 @@ module.exports = global.TestHelper = {
   clearReportsSymptoms: clearReportsSymptoms,
   clearReportsSummaryByWeek: clearReportsSummaryByWeek,
   clearReports: clearReports,
+  clearOnetimeToken: clearOnetimeToken,
   clearAll: clearAll
 };

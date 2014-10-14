@@ -49,6 +49,25 @@ describe('OnetimeToken service test', function () {
 
       OnetimeTokenService.create('test', data.user.id, 30)
         .then(function (tokenObject) {
+          tokenObject.should.be.ok;
+          tokenObject.user_id.should.equal(data.user.id)
+          tokenObject.token.length.should.greaterThan(0);
+          tokenObject.expired.should.greaterThan(new Date());
+          done();
+        })
+        .catch(done);
+
+    });
+
+  });
+
+  describe('getByEmail()', function() {
+
+    it('should return existing token', function(done) {
+
+      OnetimeTokenService.getByEmail(data.user.email, 'test')
+        .then(function(tokenObject) {
+          tokenObject.user_id.should.equal(data.user.id);
           done();
         })
         .catch(done);

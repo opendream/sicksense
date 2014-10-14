@@ -12,12 +12,8 @@ module.exports = {
     assert.notEqual(userId, undefined, 'userId should be defined');
 
     lifetime = lifetime || sails.config.onetimetoken.lifetime;
-
-    validate();
-
     token = hat.rack(256, 36)();
     expired = ( new Date( (new Date()).getTime() + (lifetime * 1000) ) );
-
 
     return when.promise(function (resolve, reject) {
 
@@ -28,7 +24,8 @@ module.exports = {
             .insert('onetimetoken', [
               { field: 'user_id', value: userId },
               { field: 'token', value: token },
-              { field: 'expired', value: expired }
+              { field: 'expired', value: expired },
+              { field: 'type', value: type }
             ])
             .then(function (result) {
               resolve(result.rows[0]);
@@ -65,6 +62,41 @@ module.exports = {
 
     }
 
+  },
+
+  getByEmail: function(email, type) {
+    return when.promise(function (resolve, reject) {
+      return validate()
+        .then(function(user) {
+          DBService.select('onetimetoken', '*', [{ field: 'user_id = $', value: user.id }])
+            .then(function(result) {
+              resolve(result.rows[0]);
+            })
+            .catch(function(err) {
+              reject(err);
+            });
+        })
+        .catch(function(err) {
+          reject(err);
+        });
+    });
+
+    function validate() {
+
+      return when.promise(function (resolve, reject) {
+        DBService.select('users', 'id', [
+          { field: 'email = $', value: email }
+        ])
+        .then(function (result) {
+          assert.notEqual(result.rows.length, 0);
+          resolve(result.rows[0]);
+        })
+        .catch(function (err) {
+          reject(err);
+        });
+
+      });
+    }
   }
 
 };
