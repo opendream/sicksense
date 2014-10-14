@@ -49,6 +49,8 @@ describe('OnetimeToken service test', function () {
 
     it('should create new token', function (done) {
 
+      var now = new Date();
+
       OnetimeTokenService.create('test', data.user.id, 30)
         .then(function (tokenObject) {
           tokenObject.should.be.ok;

@@ -2,6 +2,7 @@ var pg = require('pg');
 pg.defaults.application_name = 'sicksense_test';
 var request = require('supertest');
 var when = require('when');
+var rewire = require('rewire');
 
 describe('UserController test', function() {
 
@@ -256,6 +257,111 @@ describe('UserController test', function() {
 
           done();
         });
+    });
+
+    describe('e-mail verification', function () {
+
+      var mailserviceSend,
+          onetimetokenserviceCreate,
+          counter = {
+            mail: 0,
+            onetimetoken: 0
+          },
+          mail = {};
+
+      beforeEach(function (done) {
+        mailserviceSend = sails.services.mailservice.send;
+        onetimetokenserviceCreate = sails.services.onetimetokenservice.create;
+
+        sails.services.mailservice.send = function send(subject, body, from, to, html) {
+          counter.mail++;
+          mail.body = body;
+          mail.to = to;
+          mail.html = html;
+        };
+
+        sails.services.onetimetokenservice.create = function send() {
+          counter.onetimetoken++;
+          return onetimetokenserviceCreate.apply(this, arguments);
+        };
+
+        done();
+      });
+
+      afterEach(function (done) {
+        counter.mail = 0;
+        counter.onetimetoken = 0;
+        mail = {};
+
+        sails.services.mailservice.send = mailserviceSend;
+        sails.services.onetimetokenservice.create = onetimetokenserviceCreate;
+        done();
+      });
+
+      it('should save new record and do not send e-mail if user is an unsubscribed account', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat6@sicksense.org",
+            password: "12345678"
+          })
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(err);
+            counter.onetimetoken.should.equal(0);
+            counter.mail.should.equal(0);
+            done();
+          });
+      });
+
+      it('should save new record and do not send e-mail if user is a subscribed account', function(done) {
+        var mailConfig = sails.config.mail.verificationEmail;
+        // Override.
+        sails.config.mail.verificationEmail = {
+          subject: '[sicksense] Please verify your e-mail',
+          body: 'Use this link %token%',
+          from: 'sicksense.org',
+          html: 'Use this link %token%',
+          lifetime: (60 * 60) * 3000 // 3 hours
+        };
+
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            // we use e-mail to check if a subscribed one or not.
+            email: "siriwat600@opendream.co.th",
+            password: "12345678"
+          })
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(err);
+
+            // delay here because aync mail sent.
+            setTimeout(function () {
+              counter.onetimetoken.should.equal(1);
+              counter.mail.should.equal(1);
+
+              // vefify that token send to correct e-mail
+              DBService.select('onetimetoken', 'token', [
+                { field: 'user_id = $', value: res.body.response.id },
+              ]).then(function (result) {
+                var token = result.rows[0].token;
+
+                mail.body.should.containEql(token);
+                mail.to.should.equal("siriwat600@opendream.co.th");
+                mail.html.should.containEql(token);
+
+                // revert to default value.
+                sails.config.mail.verificationEmail = mailConfig;
+
+                done();
+              });
+            }, 10);
+          });
+      });
+
     });
 
     it('should subscribe if subscribe is sent', function(done) {

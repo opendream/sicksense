@@ -1,4 +1,5 @@
 var expressValidator = require('express-validator');
+var querystring = require('querystring');
 
 // Quick fix
 // @see: https://github.com/chriso/validator.js/issues/268
@@ -39,6 +40,28 @@ expressValidator.validator.extend('isLatitudeLongitudePairs', function(value) {
 module.exports.express = {
   middleware: {
     expressValidator: expressValidator(),
+    getUrl: function(req, res, next) {
+      req.getUrl = function (url, query) {
+        url = url || '';
+
+        // build query.
+        if (query) {
+          query = _.reduce(query, function (a, b, key) {
+            return (
+              a + ( a.match(/(&|\?)$/) ? '' : '&' ) +
+              ( querystring.escape(key) + '=' + querystring.escape(b) )
+            );
+          }, '?');
+        }
+        else {
+          query = '';
+        }
+
+        return req.baseUrl + ( url.match(/^\//) ? url : '/' + url ) + query;
+      };
+
+      next();
+    },
     jsonp: function(req, res, next) {
       if (req.query.callback) {
         req.options = req.options || {};
