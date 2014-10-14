@@ -266,15 +266,20 @@ describe('UserController test', function() {
           counter = {
             mail: 0,
             onetimetoken: 0
-          };
+          },
+          mail = {};
 
       beforeEach(function (done) {
         mailserviceSend = sails.services.mailservice.send;
         onetimetokenserviceCreate = sails.services.onetimetokenservice.create;
 
-        sails.services.mailservice.send = function send() {
+        sails.services.mailservice.send = function send(subject, body, from, to, html) {
           counter.mail++;
+          mail.body = body;
+          mail.to = to;
+          mail.html = html;
         };
+
         sails.services.onetimetokenservice.create = function send() {
           counter.onetimetoken++;
           return onetimetokenserviceCreate.apply(this, arguments);
@@ -286,6 +291,7 @@ describe('UserController test', function() {
       afterEach(function (done) {
         counter.mail = 0;
         counter.onetimetoken = 0;
+        mail = {};
 
         sails.services.mailservice.send = mailserviceSend;
         sails.services.onetimetokenservice.create = onetimetokenserviceCreate;
@@ -310,6 +316,16 @@ describe('UserController test', function() {
       });
 
       it('should save new record and do not send e-mail if user is a subscribed account', function(done) {
+        var mailConfig = sails.config.mail.verificationEmail;
+        // Override.
+        sails.config.mail.verificationEmail = {
+          subject: '[sicksense] Please verify your e-mail',
+          body: 'Use this link %token%',
+          from: 'sicksense.org',
+          html: 'Use this link %token%',
+          lifetime: (60 * 60) * 3000 // 3 hours
+        };
+
         request(sails.hooks.http.app)
           .post('/users')
           .send({
@@ -326,7 +342,22 @@ describe('UserController test', function() {
             setTimeout(function () {
               counter.onetimetoken.should.equal(1);
               counter.mail.should.equal(1);
-              done();
+
+              // vefify that token send to correct e-mail
+              DBService.select('onetimetoken', 'token', [
+                { field: 'user_id = $', value: res.body.response.id },
+              ]).then(function (result) {
+                var token = result.rows[0].token;
+
+                mail.body.should.containEql(token);
+                mail.to.should.equal("siriwat600@opendream.co.th");
+                mail.html.should.containEql(token);
+
+                // revert to default value.
+                sails.config.mail.verificationEmail = mailConfig;
+
+                done();
+              });
             }, 10);
           });
       });

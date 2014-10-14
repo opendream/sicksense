@@ -46,9 +46,12 @@ module.exports.express = {
 
         // build query.
         if (query) {
-          query = '?' + _.reduce(query, function (a, b, key) {
-            return a + '&' + ( querystring.escape(key) + '=' + querystring.escape(b) );
-          }, '');
+          query = _.reduce(query, function (a, b, key) {
+            return (
+              a + ( a.match(/(&|\?)$/) ? '' : '&' ) +
+              ( querystring.escape(key) + '=' + querystring.escape(b) )
+            );
+          }, '?');
         }
         else {
           query = '';
