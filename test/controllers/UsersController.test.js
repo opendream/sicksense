@@ -778,9 +778,11 @@ describe('UserController test', function() {
   });
 
   describe('[POST] /users/forgotpassword', function() {
-    var user, token;
+    var user, token, mailserviceSend;
 
     before(function(done) {
+      mailserviceSend = MailService.send;
+      MailService.send = when.resolve;
       TestHelper.clearAll()
         .then(function() {
           return TestHelper.createUser({ email: "john@example.com", password: "12345678" }, true);
@@ -793,6 +795,7 @@ describe('UserController test', function() {
     });
 
     after(function(done) {
+      MailService.send = mailserviceSend;
       TestHelper.clearAll()
         .then(done, done);
     });

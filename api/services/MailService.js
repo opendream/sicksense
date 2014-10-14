@@ -60,12 +60,4 @@ module.exports = {
         });
     },
 
-    // TODO Move to configuration.
-    getTemplate: function() {
-        return {
-            text: fs.readFileSync('./assets/templates/email.txt', { encoding: 'UTF8' }),
-            html: fs.readFileSync('./assets/templates/email.html', { encoding: 'UTF8' })
-        };
-    }
-
 };

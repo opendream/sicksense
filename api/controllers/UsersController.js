@@ -637,11 +637,11 @@ module.exports = {
             return OnetimeTokenService.create('user.forgotpassword', localUser.id, 60 * 60 * 24);
           })
           .then(function(token) {
-            var subject = sails.config.mail.forgot_password.subject;
-            var from = sails.config.mail.forgot_password.from;
+            var subject = sails.config.mail.forgotPassword.subject;
+            var from = sails.config.mail.forgotPassword.from;
             var to = localUser.email;
-            var body = sails.config.mail.forgot_password.text;
-            var html = sails.config.mail.forgot_password.html;
+            var body = sails.config.mail.forgotPassword.text;
+            var html = sails.config.mail.forgotPassword.html;
             return MailService.send(subject, body, from, to, html);
           })
           .then(function() {
