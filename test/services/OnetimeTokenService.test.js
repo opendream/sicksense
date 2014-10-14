@@ -47,8 +47,17 @@ describe('OnetimeToken service test', function () {
 
     it('should create new token', function (done) {
 
+      var now = new Date();
+
       OnetimeTokenService.create('test', data.user.id, 30)
         .then(function (tokenObject) {
+
+          tokenObject.id.should.be.ok;
+          tokenObject.user_id.should.equal(data.user.id);
+          tokenObject.token.should.not.have.length(0);
+          tokenObject.expired.getTime().should.not.lessThan(now.getTime() + 30000);
+          tokenObject.type.should.equal('test');
+
           done();
         })
         .catch(done);

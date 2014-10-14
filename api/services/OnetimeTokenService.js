@@ -13,8 +13,6 @@ module.exports = {
 
     lifetime = lifetime || sails.config.onetimetoken.lifetime;
 
-    validate();
-
     token = hat.rack(256, 36)();
     expired = ( new Date( (new Date()).getTime() + (lifetime * 1000) ) );
 
@@ -28,7 +26,8 @@ module.exports = {
             .insert('onetimetoken', [
               { field: 'user_id', value: userId },
               { field: 'token', value: token },
-              { field: 'expired', value: expired }
+              { field: 'expired', value: expired },
+              { field: 'type', value: type }
             ])
             .then(function (result) {
               resolve(result.rows[0]);
