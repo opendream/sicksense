@@ -2,7 +2,7 @@ var pg = require('pg');
 var when = require('when');
 var wkt = require('terraformer-wkt-parser');
 var passgen = require('password-hash-and-salt');
-var Faker = require('Faker');
+var Faker = require('faker');
 var rack = require('hat').rack(512, 36);
 require('date-utils');
 
@@ -33,15 +33,15 @@ function createUser(values, generateAccessToken) {
   values = values || {};
 
   return when.promise(function(resolve, reject) {
-    var fakeEmail = Faker.Internet.email();
-    var fakeLatitude = Faker.Address.latitude();
-    var fakeLongitude = Faker.Address.longitude();
+    var fakeEmail = Faker.internet.email();
+    var fakeLatitude = Faker.address.latitude();
+    var fakeLongitude = Faker.address.longitude();
 
     passgen(values.password || fakeEmail).hash(sails.config.session.secret, function(err, hashedPassword) {
       var _values = [
         values.email || fakeEmail,
         hashedPassword,
-        values.tel || Faker.PhoneNumber.phoneNumber(),
+        values.tel || Faker.phone.phoneNumber(),
         values.gender || "male",
         values.birthYear || _.random(1900, 2014),
         values.subdistrict || "Samsen Nok",
@@ -113,8 +113,8 @@ function createReport (values) {
     longitude: 100.545357
   }, values.locationByAddress);
 
-  var fakeLatitude = Faker.Address.latitude();
-  var fakeLongitude = Faker.Address.longitude();
+  var fakeLatitude = Faker.address.latitude();
+  var fakeLongitude = Faker.address.longitude();
 
   values.location = _.extend({
     latitude: fakeLatitude,
@@ -127,7 +127,7 @@ function createReport (values) {
   values.startedAt = new Date(values.startedAt || new Date());
   values.createdAt = new Date(values.createdAt || new Date());
   values.updatedAt = new Date(values.updatedAt || new Date());
-  values.moreInfo = values.moreInfo || Faker.Lorem.paragraph();
+  values.moreInfo = values.moreInfo || Faker.lorem.paragraph();
 
   return ReportService.loadLocationByAddress(values.address)
     .then(function (location) {
@@ -153,8 +153,8 @@ function _createReport (values) {
   }, values.locationByAddress);
 
   return when.promise(function(resolve, reject) {
-    var fakeLatitude = Faker.Address.latitude();
-    var fakeLongitude = Faker.Address.longitude();
+    var fakeLatitude = Faker.address.latitude();
+    var fakeLongitude = Faker.address.longitude();
 
     var latitude = parseFloat((values.location && values.location.latitude) || fakeLatitude);
     var longitude = parseFloat((values.location && values.location.longitude) || fakeLongitude);
@@ -196,7 +196,7 @@ function _createReport (values) {
             latitude
           ]
         }),
-        values.moreInfo || Faker.Lorem.paragraph(),
+        values.moreInfo || Faker.lorem.paragraph(),
         values.userId,
         isILI,
         values.createdAt || new Date(),
