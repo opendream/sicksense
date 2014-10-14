@@ -2,10 +2,44 @@ var util = require('util');
 var when = require('when');
 
 module.exports = {
+  select: select,
   insert: insert,
   update: update,
   delete: _delete
 };
+
+function select(table, fieldStr, conditions) {
+  var values = [];
+
+  var conditionStr = _.map(_.range(conditions.length), function (index) {
+    var item = conditions[index];
+
+    values.push(item.value);
+    return item.field.replace(/\$/, '$' + (index + 1));
+  }).join(' AND ');
+
+  var query = util.format("SELECT %s FROM %s WHERE %s", fieldStr, table, conditionStr);
+
+  return when.promise(function (resolve, reject) {
+    var now = (new Date()).getTime();
+    pgconnect()
+      .then(function (conn) {
+        sails.log.debug('[DBService:select]', now);
+        conn.client.query(query, values, function (err, result) {
+          conn.done();
+          sails.log.debug('[DBService:select]', now);
+
+          if (err) return reject(err);
+
+          resolve(result);
+        });
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+
+  });
+}
 
 function insert(table, data) {
   var fields = _.pluck(data, 'field');
