@@ -109,6 +109,37 @@ module.exports = {
               }
             })
             .then(function() {
+              if (savedUser.email.match(/\@(www\.)?sicksense\.org$/)) {
+                return when.resolve();
+              }
+
+              // check if subscribed account then send verification e-mail.
+              var config = sails.config.mail.verificationEmail,
+                  lifetime = config.lifetime,
+                  subject = config.subject,
+                  body = config.body,
+                  from = config.from,
+                  to = savedUser.email,
+                  html = config.html;
+
+              // Async here. User can still successful register if this method fail.
+              OnetimeTokenService.create('user.verifyEmail', savedUser.id, lifetime)
+                .then(function (tokenObject) {
+                  var url = req.getUrl('/users/verify', {
+                    token: tokenObject.token
+                  });
+
+                  // substitute value in body, html
+                  body = body.replace(/\%token%/, url);
+                  html = html.replace(/\%token%/, url);
+
+                  return MailService.send(subject, body, from, to, html);
+                })
+                .catch(function (err) {
+                  sails.log.error(new Error('Can not send verification e-mail'), err);
+                });
+            })
+            .then(function() {
               return UserService.getDefaultDevice(savedUser)
                 .then(function (device) {
                   var extra = {
