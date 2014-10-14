@@ -68,7 +68,10 @@ module.exports = {
     return when.promise(function (resolve, reject) {
       return validate()
         .then(function(user) {
-          DBService.select('onetimetoken', '*', [{ field: 'user_id = $', value: user.id }])
+          return DBService.select('onetimetoken', '*', [
+              { field: 'user_id = $', value: user.id },
+              { field: 'type = $', value: type }
+            ])
             .then(function(result) {
               resolve(result.rows[0]);
             })
@@ -97,6 +100,23 @@ module.exports = {
 
       });
     }
+  },
+
+  delete: function(user_id, type) {
+
+    return when.promise(function(resolve, reject) {
+      DBService.delete('onetimetoken', [
+          { field: 'user_id = $', value: user_id },
+          { field: 'type = $', value: type }
+        ])
+        .then(function() {
+          resolve();
+        })
+        .catch(function(err) {
+          reject(err);
+        });
+    })
+
   }
 
 };

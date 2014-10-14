@@ -1,3 +1,5 @@
+var when = require('when');
+
 describe('OnetimeToken service test', function () {
 
   var data = {};
@@ -71,6 +73,85 @@ describe('OnetimeToken service test', function () {
           done();
         })
         .catch(done);
+
+    });
+
+    it('should return empty token', function(done) {
+
+      OnetimeTokenService.getByEmail('no-one@example.com', 'test')
+        .catch(function() {
+          done();
+        });
+
+    });
+
+  });
+
+  describe('delete()', function() {
+    var localUser;
+    var mockTokens = [
+      {
+        token: '12345678',
+        type: 'testdelete',
+        expired: new Date()
+      },
+      {
+        token: '23456789',
+        type: 'testdelete',
+        expired: new Date()
+      }
+    ];
+
+    before(function (done) {
+      DBService.insert('users', [
+          { field: 'email', value: 'onetimetokenuser002@sicksense.org' },
+          { field: 'password', value: 'text-here-is-ignored' }
+        ])
+        .then(function (result) {
+          localUser = result.rows[0];
+          return when.map(mockTokens, function(token) {
+            return DBService.insert('onetimetoken', [
+              { field: 'user_id', value: localUser.id },
+              { field: 'token', value: token.token },
+              { field: 'type', value: token.type },
+              { field: 'expired', value: token.expired }
+            ]);
+          });
+        })
+        .then(function(results) {
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function (done) {
+      DBService.delete('onetimetoken', [
+          { field: 'type = $', value: 'testdelete' }
+        ]).then(function () {
+          done();
+        });
+    });
+
+    it('should remove old tokens', function(done) {
+
+      DBService.select('onetimetoken', '*', [
+          { field: 'user_id = $', value: localUser.id },
+          { field: 'type = $', value: 'testdelete' }
+        ])
+        .then(function(result) {
+          result.rows.length.should.equal(2);
+          return OnetimeTokenService.delete(localUser.id, 'testdelete');
+        })
+        .then(function() {
+          return DBService.select('onetimetoken', '*', [
+            { field: 'user_id = $', value: localUser.id },
+            { field: 'type = $', value: 'testdelete' }
+          ]);
+        })
+        .then(function(result) {
+          result.rows.length.should.equal(0);
+          done();
+        });
 
     });
 
