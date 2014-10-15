@@ -606,8 +606,16 @@ module.exports = {
         return res.forbidden(new Error("You can not get another user's reports"));
       }
 
-      var user = UserService.getUserJSON(req.user);
-      res.ok(user);
+      pgconnect(function(err, client, done) {
+        if (err) return res.serverError('Could not connect to database.');
+
+        EmailSubscriptionsService.isSubscribed(client, req.user).then(function (isSubscribed) {
+          var user = UserService.getUserJSON(req.user, {
+            isSubscribed: isSubscribed
+          });
+          res.ok(user);
+        });
+      });
     });
   },
 

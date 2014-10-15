@@ -677,6 +677,22 @@ describe('UserController test', function() {
         });
     });
 
+    it('should return user is subscribed', function (done) {
+      request(sails.hooks.http.app)
+        .get('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.isSubscribed.should.be.false;
+
+          done();
+        });
+    });
+
   });
 
   describe('[GET] /users/:id/reports', function() {
