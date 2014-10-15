@@ -813,7 +813,7 @@ describe('UserController test', function() {
     it('should error when email is provided but it does not exists', function(done) {
       request(sails.hooks.http.app)
         .post('/users/forgotpassword')
-        .query({ email: 'adam@example.com' })
+        .send({ email: 'adam@example.com' })
         .expect(403)
         .end(function(err, res) {
           if (err) return done(err);
@@ -824,7 +824,7 @@ describe('UserController test', function() {
     it('should create new token', function(done) {
       request(sails.hooks.http.app)
         .post('/users/forgotpassword')
-        .query({ email: 'john@example.com' })
+        .send({ email: 'john@example.com' })
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);
@@ -853,7 +853,7 @@ describe('UserController test', function() {
     it('should remove old token before create the new one', function(done) {
       request(sails.hooks.http.app)
         .post('/users/forgotpassword')
-        .query({ email: 'john@example.com' })
+        .send({ email: 'john@example.com' })
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);

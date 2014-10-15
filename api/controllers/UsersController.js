@@ -613,7 +613,7 @@ module.exports = {
 
   forgotPassword: function(req, res) {
     var localUser;
-    var email = req.query.email;
+    var email = req.body.email;
     if (email) {
       pgconnect(function(err, client, done) {
         if (err) return res.serverError('Could not connect to database.');
