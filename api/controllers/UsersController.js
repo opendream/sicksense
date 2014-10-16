@@ -358,11 +358,31 @@ module.exports = {
               });
           }
 
-          return promise.then(function () {
+          pgconnect(function(err, client, pgDone) {
+            if (err) return res.serverError('Could not connect to database.');
+
+            if (req.body.subscribe) {
+              promise = EmailSubscriptionsService.subscribe(client, req.user).then(function () {
+                pgDone();
+
+                return true;
+              });
+            } else {
+
+              promise = EmailSubscriptionsService.unsubscribe(client, req.user).then(function () {
+                pgDone();
+
+                return false;
+              });
+            }
+          });
+
+          return promise.then(function (isSubscribed) {
             UserService.getDefaultDevice(savedUser)
               .then(function (device) {
                 var extra = {
-                  accessToken: accessToken.token
+                  accessToken: accessToken.token,
+                  isSubscribed: isSubscribed
                 };
                 if (device) {
                   extra.deviceToken = device.id;

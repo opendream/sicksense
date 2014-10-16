@@ -656,6 +656,72 @@ describe('UserController test', function() {
         });
     });
 
+    it('should add user subscribe', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          subscribe: true
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.response.isSubscribed.should.be.true;
+
+          pgconnect(function(err, client, pgDone) {
+            if (err) return res.serverError('Could not connect to database.');
+
+            EmailSubscriptionsService.isSubscribed(client, res.body.response).then(function (isSubscribed) {
+              isSubscribed.should.be.true;
+              pgDone();
+
+              done();
+            }).catch(function (err) {
+              pgDone();
+
+              done(err);
+            });
+          });
+
+        });
+    });
+
+    it('should add user unsubscribe', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          subscribe: false
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.response.isSubscribed.should.be.false;
+
+          pgconnect(function(err, client, pgDone) {
+            if (err) return res.serverError('Could not connect to database.');
+
+            EmailSubscriptionsService.isSubscribed(client, res.body.response).then(function (isSubscribed) {
+              isSubscribed.should.be.false;
+              pgDone();
+
+              done();
+            }).catch(function (err) {
+              pgDone();
+
+              done(err);
+            });
+          });
+
+        });
+    });
+
   });
 
   describe('[GET] /users/:id', function() {
