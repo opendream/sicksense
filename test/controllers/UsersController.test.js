@@ -3,6 +3,7 @@ pg.defaults.application_name = 'sicksense_test';
 var request = require('supertest');
 var when = require('when');
 var rewire = require('rewire');
+var passgen = require('password-hash-and-salt');
 
 describe('UserController test', function() {
 
@@ -882,6 +883,152 @@ describe('UserController test', function() {
               }
             );
           });
+        });
+    });
+
+  });
+
+  describe('[POST] /users/resetpassword', function() {
+    var user, token, mailserviceSend;
+    var mockTokens = [
+      {
+        token: '12345678',
+        type: 'testdelete',
+        expired: new Date()
+      },
+      {
+        token: '23456789',
+        type: 'testdelete',
+        expired: new Date()
+      }
+    ];
+
+    before(function(done) {
+      mailserviceSend = MailService.send;
+      MailService.send = when.resolve;
+
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createUser({ email: "john@example.com", password: "12345678" }, true);
+        })
+        .then(function(_user) {
+          user = _user;
+        })
+        .then(function() {
+          return when.map(mockTokens, function(token) {
+            return DBService.insert('onetimetoken', [
+              { field: 'user_id', value: user.id },
+              { field: 'token', value: token.token },
+              { field: 'type', value: token.type },
+              { field: 'expired', value: token.expired }
+            ]);
+          });
+        })
+        .then(function() {
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      MailService.send = mailserviceSend;
+
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should error when nothing is provided', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/resetpassword')
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when token is provided but password', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/resetpassword')
+        .send({ token: '12345678' })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when token and password are provided but password is empty', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/resetpassword')
+        .send({ token: '12345678', password: '' })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when token and password are provided but token is empty', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/resetpassword')
+        .send({ token: '', password: '12345678' })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when token and password are provided but token is invalid', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/resetpassword')
+        .send({ token: 'invalidtoken', password: '12345678' })
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should update password, clear token, and return user object with accessToken', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/resetpassword')
+        .send({ token: '12345678', password: 'new-password' })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          DBService.select('users', 'password', [
+              { field: 'email = $', value : user.email }
+            ])
+            .then(function(result) {
+              passgen('new-password').hash(sails.config.session.secret, function(err, hashedPassword) {
+                result.rows[0].password.should.equal(hashedPassword);
+
+                DBService.select('onetimetoken', '*', [
+                    { field: 'user_id = $', value: user.id },
+                    { field: 'type = $', value: 'user.forgotpassword' }
+                  ])
+                .then(function(result) {
+                  result.rows.length.should.equal(0);
+                })
+                .then(function() {
+                  res.body.response.user.should.be.ok;
+                  res.body.response.user.id.should.equal(user.id);
+                  (res.body.response.user.password === undefined).should.be.true;
+                  res.body.response.user.accessToken.should.be.ok;
+
+                  AccessToken.findOneByUserId(user.id).exec(function(err, result) {
+                    result.should.be.ok;
+                    done();
+                  });
+                })
+                .catch(done);
+              })
+            })
+            .catch(done);
+
         });
     });
 

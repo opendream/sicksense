@@ -39,6 +39,11 @@ module.exports.routes = {
     action: 'forgotPassword'
   },
 
+  'post /users/resetpassword': {
+    controller: 'users',
+    action: 'resetPassword'
+  },
+
   'post /users': {
     controller: 'users',
     action: 'create'

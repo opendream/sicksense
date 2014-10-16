@@ -662,6 +662,83 @@ module.exports = {
       sails.log.error('E-mail is not provided');
       res.forbidden('E-mail is not provided.');
     }
+  },
+
+
+  resetPassword: function(req, res) {
+    var onetimeToken;
+
+    validate()
+      .then(function(tokenObject) {
+        onetimeToken = tokenObject;
+        if (!onetimeToken) {
+          return res.forbidden('Token is invalid');
+        }
+
+        OnetimeTokenService.delete(onetimeToken.user_id, onetimeToken.type)
+          .then(function() {
+            var password = req.body.password;
+            passgen(password).hash(sails.config.session.secret, function(err, hashedPassword) {
+              updatePassword(hashedPassword);
+            });
+          })
+          .catch(function(err) {
+            return res.serverError(err)
+          });
+      })
+      .catch(function(err) {
+        return res.serverError(err)
+      });
+
+    function updatePassword(hashedPassword) {
+      var values = [{ field: 'password = $', value: hashedPassword }];
+      var conditions = [{ field: 'id = $', value: onetimeToken.user_id }];
+      DBService.update('users', values, conditions)
+        .then(function(result) {
+          return result.rows[0];
+        })
+        .then(function(returnedUser) {
+
+          AccessToken.findOneByUserId(returnedUser.id).exec(function(err, accessToken) {
+            if (err) return res.serverError(err);
+
+            returnedUser = UserService.getUserJSON(returnedUser, {
+              accessToken: accessToken.token
+            });
+
+            return res.ok({
+              message: 'Password has been updated.',
+              user: returnedUser
+            });
+          });
+        })
+        .catch(function(err) {
+          return res.serverError(err);
+        });
+    };
+
+    function validate() {
+      return when.promise(function(resolve, reject) {
+        req.checkBody('token', 'Token is required').notEmpty();
+        req.checkBody('password', 'Password is required').notEmpty();
+
+        var errors = req.validationErrors();
+        var paramErrors = req.validationErrors(true);
+        if (errors) {
+          res.badRequest(_.first(errors).msg, paramErrors);
+          return reject(errors);
+        }
+
+        var token = req.body.token;
+        OnetimeTokenService.getByToken(token)
+          .then(function(tokenObject) {
+            resolve(tokenObject);
+          })
+          .catch(function(err) {
+            reject(err);
+          });
+      });
+    }
   }
 
 };
