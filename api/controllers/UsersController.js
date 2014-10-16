@@ -690,6 +690,46 @@ module.exports = {
       sails.log.error('E-mail is not provided');
       res.forbidden('E-mail is not provided.');
     }
+  },
+
+  verify: function (req, res) {
+    req.checkQuery('token', '`token` field is required').notEmpty();
+    // check token validation.
+    OnetimeTokenService.getByTokenString(req.query.token)
+      .then(function (tokenObject) {
+
+        if (OnetimeTokenService.isValidToken(tokenObject)) {
+
+          DBService.select('sicksense_users', 'sicksense_id', [
+            { field: 'user_id = $', value: tokenObject.user_id }
+          ])
+          .then(function (result) {
+            if (result.rows.length !== 0) {
+              return DBService.update('sicksense', [
+                { field: 'is_verify = $', value: 't' }
+              ], [
+                { field: 'id = $', value: result.rows[0].sicksense_id }
+              ]);
+            }
+            else {
+              return when.resolve();
+            }
+          })
+          .then(function () {
+            return OnetimeTokenService.delete(tokenObject.user_id, tokenObject.type);
+          })
+          .then(function () {
+            res.ok();
+          })
+          .catch(function (err) {
+            sails.log.error('UsersController.verify()::', err);
+            res.serverError('Server error, Cannot verify user e-mail. Please try again', err);
+          });
+        }
+        else {
+          res.forbidden('Invalid Token');
+        }
+      });
   }
 
 };
