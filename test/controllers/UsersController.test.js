@@ -909,7 +909,7 @@ describe('UserController test', function() {
 
       TestHelper.clearAll()
         .then(function() {
-          return TestHelper.createUser({ email: "john@example.com", password: "12345678" }, true);
+          return TestHelper.createUser({ email: "john@example.com", password: "12345678" }, false);
         })
         .then(function(_user) {
           user = _user;

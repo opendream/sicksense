@@ -702,14 +702,32 @@ module.exports = {
           AccessToken.findOneByUserId(returnedUser.id).exec(function(err, accessToken) {
             if (err) return res.serverError(err);
 
-            returnedUser = UserService.getUserJSON(returnedUser, {
-              accessToken: accessToken.token
-            });
+            if (accessToken) {
+              returnedUser = UserService.getUserJSON(returnedUser, {
+                accessToken: accessToken.token
+              });
 
-            return res.ok({
-              message: 'Password has been updated.',
-              user: returnedUser
-            });
+              return res.ok({
+                message: 'Password has been updated.',
+                user: returnedUser
+              });
+            }
+            else {
+              AccessTokenService.refresh(returnedUser.id)
+                .then(function(accessToken) {
+                  returnedUser = UserService.getUserJSON(returnedUser, {
+                    accessToken: accessToken.token
+                  });
+
+                  return res.ok({
+                    message: 'Password has been updated.',
+                    user: returnedUser
+                  });
+                })
+                .catch(function(err) {
+                  res.serverError(err);
+                });
+            }
           });
         })
         .catch(function(err) {
