@@ -787,7 +787,7 @@ module.exports = {
   },
 
   verify: function (req, res) {
-    req.checkQuery('token', '`token` field is required').notEmpty();
+    req.check('token', '`token` field is required').notEmpty();
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -796,7 +796,7 @@ module.exports = {
     }
 
     // check token validation.
-    OnetimeTokenService.getByTokenString(req.query.token)
+    OnetimeTokenService.getByTokenString(req.body.token)
       .then(function (tokenObject) {
 
         if (OnetimeTokenService.isValidToken(tokenObject)) {

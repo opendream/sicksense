@@ -1240,7 +1240,7 @@ describe('UserController test', function() {
       .then(function () {
         request(sails.hooks.http.app)
           .post('/users/verify')
-          .query({ token: data.tokenObject.token })
+          .send({ token: data.tokenObject.token })
           .expect(200)
           .end(function (err, res) {
             if (err) return done(err);
@@ -1266,7 +1266,6 @@ describe('UserController test', function() {
       });
 
     });
-
   });
 
 });

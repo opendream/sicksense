@@ -92,6 +92,7 @@ module.exports = {
     });
   },
 
+  // merge with getByToken().
   getByTokenString: function (tokenStr, type) {
     var criteria = [
       { field: 'token = $', value: tokenStr }
