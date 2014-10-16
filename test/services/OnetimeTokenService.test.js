@@ -35,7 +35,7 @@ describe('OnetimeToken service test', function () {
 
     it('should not allowed inexisting user', function (done) {
 
-      OnetimeTokenService.create('test', 12345678, 30)
+      OnetimeTokenService.create('test', 12345678, sails.config.onetimeToken.lifetime)
         .then(
           function success(tokenObject) {
             tokenObject.should.be.empty;
@@ -51,7 +51,7 @@ describe('OnetimeToken service test', function () {
 
       var now = new Date();
 
-      OnetimeTokenService.create('test', data.user.id, 30)
+      OnetimeTokenService.create('test', data.user.id, sails.config.onetimeToken.lifetime)
         .then(function (tokenObject) {
           tokenObject.should.be.ok;
           tokenObject.user_id.should.equal(data.user.id)
@@ -84,6 +84,38 @@ describe('OnetimeToken service test', function () {
         .catch(function() {
           done();
         });
+
+    });
+
+  });
+
+  describe('getByToken()', function() {
+
+    it('should return existing token', function(done) {
+      var onetimeToken;
+
+      OnetimeTokenService.create('test', data.user.id, sails.config.onetimeToken.lifetime)
+        .then(function(token) {
+          onetimeToken = token;
+          return OnetimeTokenService.getByToken(token.token);
+        })
+        .then(function(tokenObject) {
+          tokenObject.should.be.ok;
+          tokenObject.token.should.equal(onetimeToken.token);
+          done();
+        })
+        .catch(done);
+
+    });
+
+    it('should return empty token if invalid token is provided', function(done) {
+
+      OnetimeTokenService.getByToken('invalid token')
+        .then(function(onetimeToken) {
+          (onetimeToken === undefined).should.be.true;
+          done();
+        })
+        .catch(done);
 
     });
 

@@ -115,7 +115,6 @@ module.exports = {
 
               // check if subscribed account then send verification e-mail.
               var config = sails.config.mail.verificationEmail,
-                  lifetime = config.lifetime,
                   subject = config.subject,
                   body = config.body,
                   from = config.from,
@@ -123,7 +122,7 @@ module.exports = {
                   html = config.html;
 
               // Async here. User can still successful register if this method fail.
-              OnetimeTokenService.create('user.verifyEmail', savedUser.id, lifetime)
+              OnetimeTokenService.create('user.verifyEmail', savedUser.id, sails.config.onetimeToken.lifetime)
                 .then(function (tokenObject) {
                   var url = req.getUrl('/users/verify', {
                     token: tokenObject.token
@@ -358,11 +357,31 @@ module.exports = {
               });
           }
 
-          return promise.then(function () {
+          pgconnect(function(err, client, pgDone) {
+            if (err) return res.serverError('Could not connect to database.');
+
+            if (req.body.subscribe) {
+              promise = EmailSubscriptionsService.subscribe(client, req.user).then(function () {
+                pgDone();
+
+                return true;
+              });
+            } else {
+
+              promise = EmailSubscriptionsService.unsubscribe(client, req.user).then(function () {
+                pgDone();
+
+                return false;
+              });
+            }
+          });
+
+          return promise.then(function (isSubscribed) {
             UserService.getDefaultDevice(savedUser)
               .then(function (device) {
                 var extra = {
-                  accessToken: accessToken.token
+                  accessToken: accessToken.token,
+                  isSubscribed: isSubscribed
                 };
                 if (device) {
                   extra.deviceToken = device.id;
@@ -606,14 +625,22 @@ module.exports = {
         return res.forbidden(new Error("You can not get another user's reports"));
       }
 
-      var user = UserService.getUserJSON(req.user);
-      res.ok(user);
+      pgconnect(function(err, client, done) {
+        if (err) return res.serverError('Could not connect to database.');
+
+        EmailSubscriptionsService.isSubscribed(client, req.user).then(function (isSubscribed) {
+          var user = UserService.getUserJSON(req.user, {
+            isSubscribed: isSubscribed
+          });
+          res.ok(user);
+        });
+      });
     });
   },
 
   forgotPassword: function(req, res) {
     var localUser;
-    var email = req.query.email;
+    var email = req.body.email;
     if (email) {
       pgconnect(function(err, client, done) {
         if (err) return res.serverError('Could not connect to database.');
@@ -621,11 +648,10 @@ module.exports = {
         UserService.getUserByEmail(client, email)
           .then(function(user) {
             localUser = user;
-            return OnetimeTokenService.getByEmail(user.email, 'user.forgotpassword');
+            return OnetimeTokenService.getByEmail(user.email, 'user.resetPassword');
           })
           .then(function(token) {
             if (token) {
-              sails.log.debug('delete token', token);
               return OnetimeTokenService.delete(token.user_id, token.type);
             }
 
@@ -634,14 +660,16 @@ module.exports = {
             });
           })
           .then(function() {
-            return OnetimeTokenService.create('user.forgotpassword', localUser.id, 60 * 60 * 24);
+            return OnetimeTokenService.create('user.resetPassword', localUser.id, sails.config.onetimeToken.lifetime);
           })
           .then(function(token) {
+            var siteURL = sails.config.siteURL;
+            var resetURL = siteURL + '/reset-password.html?token=' + token.token;
             var subject = sails.config.mail.forgotPassword.subject;
             var from = sails.config.mail.forgotPassword.from;
             var to = localUser.email;
-            var body = sails.config.mail.forgotPassword.text;
-            var html = sails.config.mail.forgotPassword.html;
+            var body = sails.config.mail.forgotPassword.text.replace(/\%reset_password_url\%/g, resetURL);
+            var html = sails.config.mail.forgotPassword.html.replace(/\%reset_password_url\%/g, resetURL);
             return MailService.send(subject, body, from, to, html);
           })
           .then(function() {
@@ -661,6 +689,101 @@ module.exports = {
     else {
       sails.log.error('E-mail is not provided');
       res.forbidden('E-mail is not provided.');
+    }
+  },
+
+
+  resetPassword: function(req, res) {
+    var onetimeToken;
+
+    validate()
+      .then(function(tokenObject) {
+        onetimeToken = tokenObject;
+        if (!onetimeToken) {
+          return res.forbidden('Token is invalid');
+        }
+
+        OnetimeTokenService.delete(onetimeToken.user_id, onetimeToken.type)
+          .then(function() {
+            var password = req.body.password;
+            passgen(password).hash(sails.config.session.secret, function(err, hashedPassword) {
+              updatePassword(hashedPassword);
+            });
+          })
+          .catch(function(err) {
+            return res.serverError(err)
+          });
+      })
+      .catch(function(err) {
+        return res.serverError(err)
+      });
+
+    function updatePassword(hashedPassword) {
+      var values = [{ field: 'password = $', value: hashedPassword }];
+      var conditions = [{ field: 'id = $', value: onetimeToken.user_id }];
+      DBService.update('users', values, conditions)
+        .then(function(result) {
+          return result.rows[0];
+        })
+        .then(function(returnedUser) {
+
+          AccessToken.findOneByUserId(returnedUser.id).exec(function(err, accessToken) {
+            if (err) return res.serverError(err);
+
+            if (accessToken) {
+              returnedUser = UserService.getUserJSON(returnedUser, {
+                accessToken: accessToken.token
+              });
+
+              return res.ok({
+                message: 'Password has been updated.',
+                user: returnedUser
+              });
+            }
+            else {
+              AccessTokenService.refresh(returnedUser.id)
+                .then(function(accessToken) {
+                  returnedUser = UserService.getUserJSON(returnedUser, {
+                    accessToken: accessToken.token
+                  });
+
+                  return res.ok({
+                    message: 'Password has been updated.',
+                    user: returnedUser
+                  });
+                })
+                .catch(function(err) {
+                  res.serverError(err);
+                });
+            }
+          });
+        })
+        .catch(function(err) {
+          return res.serverError(err);
+        });
+    };
+
+    function validate() {
+      return when.promise(function(resolve, reject) {
+        req.checkBody('token', 'Token is required').notEmpty();
+        req.checkBody('password', 'Password is required').notEmpty();
+
+        var errors = req.validationErrors();
+        var paramErrors = req.validationErrors(true);
+        if (errors) {
+          res.badRequest(_.first(errors).msg, paramErrors);
+          return reject(errors);
+        }
+
+        var token = req.body.token;
+        OnetimeTokenService.getByToken(token)
+          .then(function(tokenObject) {
+            resolve(tokenObject);
+          })
+          .catch(function(err) {
+            reject(err);
+          });
+      });
     }
   }
 

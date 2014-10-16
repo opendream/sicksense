@@ -1,7 +1,9 @@
-var when = require('when');
+var assert = require('assert');
 var passgen = require('password-hash-and-salt');
+var when = require('when');
 
 module.exports = {
+  updatePassword: updatePassword,
   getUserByEmailPassword: getUserByEmailPassword,
   getAccessToken: getAccessToken,
   getUserByID: getUserByID,
@@ -13,6 +15,52 @@ module.exports = {
   clearDevices: clearDevices,
   removeDefaultUserDevice: removeDefaultUserDevice
 };
+
+function updatePassword(userId, newPassword, shouldRefreshAccessToken) {
+  var user;
+  return when.promise(function(resolve, reject) {
+    // Validate user.
+    return DBService.select('users', '*', [{ field: 'id = $', value: userId }])
+      .then(function(result) {
+        assert.notEqual(result.rows.length, 0);
+        return result.rows[0];
+      })
+      // Update password.
+      .then(function(user) {
+        passgen(newPassword).hash(sails.config.session.secret, function(err, hashedPassword) {
+          var values = [{ field: 'password = $', value: hashedPassword }];
+          var conditions = [{ field: 'id = $', value: user.id }];
+          DBService.update('users', values, conditions)
+            .then(function(result) {
+              var user = result.rows[0];
+
+              // Need refresh access token.
+              if (shouldRefreshAccessToken) {
+                AccessTokenService.refresh(user.id)
+                  .then(function(freshAccessToken) {
+                    resolve(UserService.getUserJSON(user, {accessToken: freshAccessToken.token }));
+                  })
+                  .catch(function(err) {
+                    reject(err);
+                  });
+              }
+              else {
+                AccessToken.findOneByUserId(user.id).exec(function(err, result) {
+                  if (err) return reject(err);
+                  resolve(UserService.getUserJSON(user, {accessToken: result.token}));
+                });
+              }
+            })
+            .catch(function(err) {
+              reject(err);
+            });
+        });
+      })
+      .catch(function(err) {
+        reject(err);
+      })
+  });
+}
 
 function getUserByEmailPassword(client, email, password) {
   return when.promise(function(resolve, reject) {

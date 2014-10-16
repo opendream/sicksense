@@ -11,7 +11,7 @@ module.exports = {
     assert.notEqual(type, undefined, 'type should be defined');
     assert.notEqual(userId, undefined, 'userId should be defined');
 
-    lifetime = lifetime || sails.config.onetimetoken.lifetime;
+    lifetime = lifetime || sails.config.onetimeToken.lifetime;
     token = hat.rack(256, 36)();
     expired = ( new Date( (new Date()).getTime() + (lifetime * 1000) ) );
 
@@ -100,6 +100,20 @@ module.exports = {
 
       });
     }
+  },
+
+  getByToken: function(token) {
+    return when.promise(function(resolve, reject) {
+      DBService.select('onetimetoken', '*', [
+          { field: 'token = $', value: token }
+        ])
+        .then(function(result) {
+          resolve(result.rows[0]);
+        })
+        .catch(function(err) {
+          reject(err);
+        });
+    });
   },
 
   delete: function(user_id, type) {

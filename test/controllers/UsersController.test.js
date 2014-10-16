@@ -3,12 +3,19 @@ pg.defaults.application_name = 'sicksense_test';
 var request = require('supertest');
 var when = require('when');
 var rewire = require('rewire');
+var passgen = require('password-hash-and-salt');
 
 describe('UserController test', function() {
 
   before(function(done) {
     MailService.subscribe = when.resolve;
+    MailService.send = when.resolve;
     done();
+  });
+
+  after(function(done) {
+    TestHelper.clearAll()
+      .then(done, done);
   });
 
   describe('[POST] /users', function() {
@@ -450,182 +457,276 @@ describe('UserController test', function() {
         });
     });
 
-    describe('[POST] /user/:id', function() {
+  });
 
-      it('should require accessToken to save existing user', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .expect(403)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-            done();
+  describe('[POST] /user/:id', function() {
+
+    var user;
+    before(function(done) {
+      TestHelper.clearAll()
+        .then(function () {
+          return TestHelper.createUser({ email: "siriwat-before-real@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function() {
+          return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function(_user) {
+          user = _user;
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      TestHelper.clearUsers()
+        .then(TestHelper.clearAccessTokens)
+        .then(function() {
+          done();
+        })
+        .catch(function(err) {
+          done(err);
+        });
+    });
+
+    it('should require accessToken to save existing user', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+          done();
+        });
+    });
+
+    it('should validate user address', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          email: "siriwat-not-real@opendream.co.th",
+          password: "12345678",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {
+            subdistrict: "Tak",
+            district: "Huay Kwang",
+            city: "Bangkok"
+          },
+          location: {
+            latitude: 13.1135,
+            longitude: 105.0014
+          }
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'address' ]);
+
+          done();
+        });
+    });
+
+    it('should save existing user record if provide userId', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          gender: "female",
+          birthYear: 1990,
+          address: {
+            subdistrict: "Suan Luang",
+            district: "Amphoe Krathum Baen",
+            city: "Samut Sakhon"
+          },
+          platform: 'doctormeandroid'
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.meta.status.should.equal(200);
+          res.body.response.id.should.be.ok;
+          res.body.response.gender.should.equal('female');
+          res.body.response.birthYear.should.equal(1990);
+          res.body.response.address.subdistrict.should.equal('Suan Luang');
+          res.body.response.address.district.should.equal('Amphoe Krathum Baen');
+          res.body.response.address.city.should.equal('Samut Sakhon');
+          res.body.response.platform.should.equal('doctormeandroid');
+
+          done();
+        });
+    });
+
+    it('should allow update only e-mail', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          email: "siriwat+updated-email@opendream.co.th"
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.meta.status.should.equal(200);
+          res.body.response.id.should.equal(user.id);
+          res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
+          res.body.response.gender.should.equal('female');
+          res.body.response.birthYear.should.equal(1990);
+          res.body.response.address.subdistrict.should.equal('Suan Luang');
+          res.body.response.address.district.should.equal('Amphoe Krathum Baen');
+          res.body.response.address.city.should.equal('Samut Sakhon');
+          res.body.response.platform.should.equal('doctormeandroid');
+
+          done();
+        });
+    });
+
+    it('should not allow change to existing e-mail', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          // allow update to own e-mail
+          email: "siriwat+updated-email@opendream.co.th"
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          request(sails.hooks.http.app)
+            .post('/users/' + user.id)
+            .query({
+              accessToken: user.accessToken
+            })
+            .send({
+              email: "siriwat-before-real@opendream.co.th"
+            })
+            .expect(409)
+            .end(function(err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.meta.status.should.equal(409);
+              res.body.meta.errorType.should.equal('Conflict');
+              res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
+
+              done();
+            });
+        });
+    });
+
+    it('should allow user to update password', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          password: "1qaz2wsx"
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          request(sails.hooks.http.app)
+            .post('/login')
+            .send({
+              email: "siriwat+updated-email@opendream.co.th",
+              password: "1qaz2wsx"
+            })
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.meta.status.should.equal(200);
+              res.body.response.id.should.equal(user.id);
+              res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
+              res.body.response.gender.should.equal('female');
+              res.body.response.birthYear.should.equal(1990);
+              res.body.response.address.subdistrict.should.equal('Suan Luang');
+              res.body.response.address.district.should.equal('Amphoe Krathum Baen');
+              res.body.response.address.city.should.equal('Samut Sakhon');
+              res.body.response.platform.should.equal('doctormeandroid');
+
+              done();
+            });
+        });
+    });
+
+    it('should add user subscribe', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          subscribe: true
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.response.isSubscribed.should.be.true;
+
+          pgconnect(function(err, client, pgDone) {
+            if (err) return res.serverError('Could not connect to database.');
+
+            EmailSubscriptionsService.isSubscribed(client, res.body.response).then(function (isSubscribed) {
+              isSubscribed.should.be.true;
+              pgDone();
+
+              done();
+            }).catch(function (err) {
+              pgDone();
+
+              done(err);
+            });
           });
-      });
 
-      it('should validate user address', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            email: "siriwat-not-real@opendream.co.th",
-            password: "12345678",
-            tel: "0841291342",
-            gender: "male",
-            birthYear: 1986,
-            address: {
-              subdistrict: "Tak",
-              district: "Huay Kwang",
-              city: "Bangkok"
-            },
-            location: {
-              latitude: 13.1135,
-              longitude: 105.0014
-            }
-          })
-          .expect(400)
-          .end(function(err, res) {
-            if (err) return done(err);
+        });
+    });
 
-            res.body.meta.invalidFields.should.have.properties([ 'address' ]);
+    it('should add user unsubscribe', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          subscribe: false
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
 
-            done();
+          res.body.response.isSubscribed.should.be.false;
+
+          pgconnect(function(err, client, pgDone) {
+            if (err) return res.serverError('Could not connect to database.');
+
+            EmailSubscriptionsService.isSubscribed(client, res.body.response).then(function (isSubscribed) {
+              isSubscribed.should.be.false;
+              pgDone();
+
+              done();
+            }).catch(function (err) {
+              pgDone();
+
+              done(err);
+            });
           });
-      });
 
-      it('should save existing user record if provide userId', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            gender: "female",
-            birthYear: 1990,
-            address: {
-              subdistrict: "Suan Luang",
-              district: "Amphoe Krathum Baen",
-              city: "Samut Sakhon"
-            },
-            platform: 'doctormeandroid'
-          })
-          .expect(200)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-
-            res.body.meta.status.should.equal(200);
-            res.body.response.id.should.be.ok;
-            res.body.response.gender.should.equal('female');
-            res.body.response.birthYear.should.equal(1990);
-            res.body.response.address.subdistrict.should.equal('Suan Luang');
-            res.body.response.address.district.should.equal('Amphoe Krathum Baen');
-            res.body.response.address.city.should.equal('Samut Sakhon');
-            res.body.response.platform.should.equal('doctormeandroid');
-
-            done();
-          });
-      });
-
-      it('should allow update only e-mail', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            email: "siriwat+updated-email@opendream.co.th"
-          })
-          .expect(200)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-
-            res.body.meta.status.should.equal(200);
-            res.body.response.id.should.equal(user.id);
-            res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
-            res.body.response.gender.should.equal('female');
-            res.body.response.birthYear.should.equal(1990);
-            res.body.response.address.subdistrict.should.equal('Suan Luang');
-            res.body.response.address.district.should.equal('Amphoe Krathum Baen');
-            res.body.response.address.city.should.equal('Samut Sakhon');
-            res.body.response.platform.should.equal('doctormeandroid');
-
-            done();
-          });
-      });
-
-      it('should not allow change to existing e-mail', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            // allow update to own e-mail
-            email: "siriwat+updated-email@opendream.co.th"
-          })
-          .expect(200)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-
-            request(sails.hooks.http.app)
-              .post('/users/' + user.id)
-              .query({
-                accessToken: user.accessToken
-              })
-              .send({
-                email: "siriwat-before-real@opendream.co.th"
-              })
-              .expect(409)
-              .end(function(err, res) {
-                if (err) return done(new Error(err));
-
-                res.body.meta.status.should.equal(409);
-                res.body.meta.errorType.should.equal('Conflict');
-                res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
-
-                done();
-              });
-          });
-      });
-
-      it('should allow user to update password', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            password: "1qaz2wsx"
-          })
-          .expect(200)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-
-            request(sails.hooks.http.app)
-              .post('/login')
-              .send({
-                email: "siriwat+updated-email@opendream.co.th",
-                password: "1qaz2wsx"
-              })
-              .expect(200)
-              .end(function (err, res) {
-                if (err) return done(new Error(err));
-
-                res.body.meta.status.should.equal(200);
-                res.body.response.id.should.equal(user.id);
-                res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
-                res.body.response.gender.should.equal('female');
-                res.body.response.birthYear.should.equal(1990);
-                res.body.response.address.subdistrict.should.equal('Suan Luang');
-                res.body.response.address.district.should.equal('Amphoe Krathum Baen');
-                res.body.response.address.city.should.equal('Samut Sakhon');
-                res.body.response.platform.should.equal('doctormeandroid');
-
-                done();
-              });
-          });
-      });
+        });
     });
 
   });
@@ -672,6 +773,22 @@ describe('UserController test', function() {
           if (err) return done(err);
 
           res.body.response.id.should.equal(user.id);
+
+          done();
+        });
+    });
+
+    it('should return user is subscribed', function (done) {
+      request(sails.hooks.http.app)
+        .get('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.isSubscribed.should.be.false;
 
           done();
         });
@@ -777,7 +894,7 @@ describe('UserController test', function() {
 
   });
 
-  describe('[POST] /users/forgotpassword', function() {
+  describe('[POST] /users/forgot-password', function() {
     var user, token, mailserviceSend;
 
     before(function(done) {
@@ -802,7 +919,7 @@ describe('UserController test', function() {
 
     it('should error when email is not provided', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/forgotpassword')
+        .post('/users/forgot-password')
         .expect(403)
         .end(function(err, res) {
           if (err) return done(err);
@@ -812,8 +929,8 @@ describe('UserController test', function() {
 
     it('should error when email is provided but it does not exists', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/forgotpassword')
-        .query({ email: 'adam@example.com' })
+        .post('/users/forgot-password')
+        .send({ email: 'adam@example.com' })
         .expect(403)
         .end(function(err, res) {
           if (err) return done(err);
@@ -823,8 +940,8 @@ describe('UserController test', function() {
 
     it('should create new token', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/forgotpassword')
-        .query({ email: 'john@example.com' })
+        .post('/users/forgot-password')
+        .send({ email: 'john@example.com' })
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);
@@ -839,7 +956,7 @@ describe('UserController test', function() {
 
                 result.rows.length.should.equal(1);
                 result.rows[0].token.length.should.greaterThan(0);
-                result.rows[0].type.should.equal('user.forgotpassword');
+                result.rows[0].type.should.equal('user.resetPassword');
                 result.rows[0].expired.should.greaterThan(new Date());
 
                 token = result.rows[0];
@@ -852,8 +969,8 @@ describe('UserController test', function() {
 
     it('should remove old token before create the new one', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/forgotpassword')
-        .query({ email: 'john@example.com' })
+        .post('/users/forgot-password')
+        .send({ email: 'john@example.com' })
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);
@@ -876,6 +993,152 @@ describe('UserController test', function() {
               }
             );
           });
+        });
+    });
+
+  });
+
+  describe('[POST] /users/reset-password', function() {
+    var user, token, mailserviceSend;
+    var mockTokens = [
+      {
+        token: '12345678',
+        type: 'testdelete',
+        expired: new Date()
+      },
+      {
+        token: '23456789',
+        type: 'testdelete',
+        expired: new Date()
+      }
+    ];
+
+    before(function(done) {
+      mailserviceSend = MailService.send;
+      MailService.send = when.resolve;
+
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createUser({ email: "john@example.com", password: "12345678" }, false);
+        })
+        .then(function(_user) {
+          user = _user;
+        })
+        .then(function() {
+          return when.map(mockTokens, function(token) {
+            return DBService.insert('onetimetoken', [
+              { field: 'user_id', value: user.id },
+              { field: 'token', value: token.token },
+              { field: 'type', value: token.type },
+              { field: 'expired', value: token.expired }
+            ]);
+          });
+        })
+        .then(function() {
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      MailService.send = mailserviceSend;
+
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should error when nothing is provided', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when token is provided but password', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({ token: '12345678' })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when token and password are provided but password is empty', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({ token: '12345678', password: '' })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when token and password are provided but token is empty', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({ token: '', password: '12345678' })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when token and password are provided but token is invalid', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({ token: 'invalidtoken', password: '12345678' })
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should update password, clear token, and return user object with accessToken', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({ token: '12345678', password: 'new-password' })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          DBService.select('users', 'password', [
+              { field: 'email = $', value : user.email }
+            ])
+            .then(function(result) {
+              passgen('new-password').hash(sails.config.session.secret, function(err, hashedPassword) {
+                result.rows[0].password.should.equal(hashedPassword);
+
+                DBService.select('onetimetoken', '*', [
+                    { field: 'user_id = $', value: user.id },
+                    { field: 'type = $', value: 'user.resetPassword' }
+                  ])
+                .then(function(result) {
+                  result.rows.length.should.equal(0);
+                })
+                .then(function() {
+                  res.body.response.user.should.be.ok;
+                  res.body.response.user.id.should.equal(user.id);
+                  (res.body.response.user.password === undefined).should.be.true;
+                  res.body.response.user.accessToken.should.be.ok;
+
+                  AccessToken.findOneByUserId(user.id).exec(function(err, result) {
+                    result.should.be.ok;
+                    done();
+                  });
+                })
+                .catch(done);
+              })
+            })
+            .catch(done);
+
         });
     });
 

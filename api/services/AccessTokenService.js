@@ -28,10 +28,22 @@ module.exports = {
           accessToken.expired = (new Date()).addDays(sails.config.tokenLife);
         }
 
-        AccessToken[isNew ? 'create' : 'update'](accessToken).exec(function(err, savedAccessToken) {
+        if (isNew) {
+          AccessToken.create(accessToken).exec(callback);
+        }
+        else {
+          AccessToken.update({id: accessToken.id}, accessToken).exec(callback);
+        }
+
+        function callback(err, savedAccessToken) {
           if (err) return reject(err);
-          resolve(savedAccessToken);
-        });
+          if (savedAccessToken instanceof Array) {
+            resolve(savedAccessToken[0]);
+          }
+          else {
+            resolve(savedAccessToken);
+          }
+        };
 
       });
     });

@@ -34,9 +34,14 @@ module.exports.routes = {
 
   // Custom routes here...
 
-  'post /users/forgotpassword': {
+  'post /users/forgot-password': {
     controller: 'users',
     action: 'forgotPassword'
+  },
+
+  'post /users/reset-password': {
+    controller: 'users',
+    action: 'resetPassword'
   },
 
   'post /users': {
@@ -106,6 +111,11 @@ module.exports.routes = {
   'get /email/send': {
     controller: 'emailsubscriptions',
     action: 'send'
+  },
+
+  'post /onetimetoken/validate': {
+    controller: 'onetimetoken',
+    action: 'validate'
   }
 
   // If a request to a URL doesn't match any of the custom routes above,
