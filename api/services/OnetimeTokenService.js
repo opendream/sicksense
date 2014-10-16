@@ -64,6 +64,59 @@ module.exports = {
 
   },
 
+  isValidToken: function (tokenObject) {
+    if (tokenObject && tokenObject.expired > (new Date())) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  },
+
+  isValidTokenString: function (tokenStr) {
+    var service = this;
+
+    return when.promise(function (resolve, reject) {
+      service.getByTokenString(tokenStr)
+        .then(function (tokenObject) {
+          if (service.isValidToken(tokenObject)) {
+            resolve(tokenObject);
+          }
+          else {
+            resolve(false);
+          }
+        })
+        .catch(function (err) {
+          reject(err);
+        });
+    });
+  },
+
+  getByTokenString: function (tokenStr, type) {
+    var criteria = [
+      { field: 'token = $', value: tokenStr }
+    ];
+
+    if (type && _.isString(type)) {
+      criteria.push({ field: 'type = $', value: type });
+    }
+
+    return when.promise(function (resolve, reject) {
+      DBService.select('onetimetoken', '*', criteria)
+        .then(function (result) {
+          if (result.rows.length !== 0) {
+            resolve(result.rows[0]);
+          }
+          else {
+            resolve(null);
+          }
+        })
+        .catch(function (err) {
+          reject(err);
+        });
+    });
+  },
+
   getByEmail: function(email, type) {
     return when.promise(function (resolve, reject) {
       return validate()
@@ -129,7 +182,7 @@ module.exports = {
         .catch(function(err) {
           reject(err);
         });
-    })
+    });
 
   }
 

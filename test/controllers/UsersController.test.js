@@ -1141,6 +1141,116 @@ describe('UserController test', function() {
 
         });
     });
+  });
+
+  describe('[POST] /users/verify : Verify e-mail test', function () {
+
+    var data = {};
+
+    before(function (done) {
+
+      // create new user
+      DBService
+      .insert('users', [
+        { field: 'email', value: 'randomedtotestverify001@sicksense.org' },
+        { field: 'password', value: 'text-here-is-ignored' }
+      ])
+      .then(function (result) {
+        data.user = result.rows[0];
+        // assign verification token
+        return OnetimeTokenService.create('test', data.user.id, 10)
+          .then(function (tokenObject) {
+            data.tokenObject = tokenObject;
+          });
+      })
+      // create sicksense id
+      .then(function () {
+        return DBService.insert('sicksense', [
+          { field: 'email', value: 'verifyemailtest001@opendream.co.th' },
+          { field: '"createdAt"', value: new Date() }
+        ]);
+      })
+      .then(function (result) {
+        data.sicksense = result.rows[0];
+        return DBService.insert('sicksense_users', [
+          { field: 'sicksense_id', value: data.sicksense.id },
+          { field: 'user_id', value: data.user.id }
+        ]);
+      })
+      .then(function () {
+        done();
+      })
+      .catch(done);
+
+    });
+
+    it('should return 403 if token does not exist', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/verify')
+        .query({ token: 'thisisnotthevalidtoken' })
+        .expect(403)
+        .end(function (err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should return 403 if token does not valid or expired', function (done) {
+
+      DBService.update('onetimetoken', [
+        { field: 'expired = $', value: (new Date()).toJSON() },
+      ], [
+        { field: 'id = $', value: data.tokenObject.id }
+      ])
+      .then(function () {
+        request(sails.hooks.http.app)
+          .post('/users/verify')
+          .query({ token: data.tokenObject.token })
+          .expect(403)
+          .end(function (err, res) {
+            if (err) return done(err);
+            done();
+          });
+      });
+
+    });
+
+    it('should return 200 and mark user as verified if token is valid and then remove that token', function (done) {
+
+      DBService.update('onetimetoken', [
+        { field: 'expired = $', value: ( new Date( (new Date()).getTime() + 60000 ) ).toJSON() },
+      ], [
+        { field: 'id = $', value: data.tokenObject.id }
+      ])
+      .then(function () {
+        request(sails.hooks.http.app)
+          .post('/users/verify')
+          .query({ token: data.tokenObject.token })
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err);
+
+            // Should mark user as verified.
+            DBService.select('sicksense', 'is_verify', [
+              { field: 'id = $', value: data.sicksense.id }
+            ])
+            .then(function (result) {
+              result.rows[0].is_verify.should.equal(true);
+
+              DBService.select('onetimetoken', 'id', [
+                { field: 'id = $', value: data.tokenObject.id }
+              ])
+              .then(function (result) {
+                result.rows.should.have.length(0);
+                done();
+              })
+              .catch(done);
+            })
+            .catch(done);
+          });
+      });
+
+    });
 
   });
 

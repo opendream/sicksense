@@ -33,6 +33,10 @@ module.exports.routes = {
 
 
   // Custom routes here...
+  'post /users/verify': {
+    controller: 'users',
+    action: 'verify'
+  },
 
   'post /users/forgot-password': {
     controller: 'users',

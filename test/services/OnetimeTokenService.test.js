@@ -121,6 +121,63 @@ describe('OnetimeToken service test', function () {
 
   });
 
+  describe('isValidTokenString()', function () {
+    var data = {};
+
+    before(function (done) {
+
+      // create new user
+      DBService
+      .insert('users', [
+        { field: 'email', value: 'verifyemailtest300@opendream.co.th' },
+        { field: 'password', value: 'text-here-is-ignored' }
+      ])
+      .then(function (result) {
+        data.user = result.rows[0];
+        // assign verification token
+        return OnetimeTokenService.create('test', data.user.id, 10)
+          .then(function (tokenObject) {
+            data.tokenObject = tokenObject;
+          });
+      })
+      .then(done)
+      .catch(done);
+
+    });
+
+    it('should return token object if valid', function (done) {
+
+      OnetimeTokenService.isValidTokenString(data.tokenObject.token)
+        .then(function (result) {
+          result.id.should.equal(data.tokenObject.id);
+          result.user_id.should.equal(data.tokenObject.user_id);
+          result.token.should.equal(data.tokenObject.token);
+          done();
+        });
+
+    });
+
+    it('should return false if not valid', function (done) {
+
+      DBService.update('onetimetoken', [
+        { field: 'expired = $', value: new Date() }
+      ], [
+        { field: 'id = $', value: data.tokenObject.id }
+      ]).then(function () {
+
+        OnetimeTokenService.isValidTokenString(data.tokenObject.token)
+          .then(function (result) {
+            result.should.equal(false);
+            done();
+          })
+          .catch(done);
+
+      });
+
+    });
+
+  });
+
   describe('delete()', function() {
     var localUser;
     var mockTokens = [
