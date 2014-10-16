@@ -60,6 +60,25 @@ module.exports.express = {
         return req.baseUrl + ( url.match(/^\//) ? url : '/' + url ) + query;
       };
 
+      req.getWWWUrl = function (url, query) {
+        url = url || '';
+
+        // build query.
+        if (query) {
+          query = _.reduce(query, function (a, b, key) {
+            return (
+              a + ( a.match(/(&|\?)$/) ? '' : '&' ) +
+              ( querystring.escape(key) + '=' + querystring.escape(b) )
+            );
+          }, '?');
+        }
+        else {
+          query = '';
+        }
+
+        return sails.config.common.siteURL + ( url.match(/^\//) ? url : '/' + url ) + query;
+      };
+
       next();
     },
     jsonp: function(req, res, next) {

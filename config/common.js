@@ -1,5 +1,6 @@
 module.exports = {
 
-  siteURL: 'http://example.com'
+  siteURL: 'http://example.com',
+  verifyEndpoint: '/verify.html'
 
 };

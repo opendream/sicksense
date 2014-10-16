@@ -124,7 +124,7 @@ module.exports = {
               // Async here. User can still successful register if this method fail.
               OnetimeTokenService.create('user.verifyEmail', savedUser.id, sails.config.onetimeToken.lifetime)
                 .then(function (tokenObject) {
-                  var url = req.getUrl('/users/verify', {
+                  var url = req.getWWWUrl(sails.config.common.verifyEndpoint, {
                     token: tokenObject.token
                   });
 
