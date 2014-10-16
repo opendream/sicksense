@@ -8,7 +8,13 @@ describe('UserController test', function() {
 
   before(function(done) {
     MailService.subscribe = when.resolve;
+    MailService.send = when.resolve;
     done();
+  });
+
+  after(function(done) {
+    TestHelper.clearAll()
+      .then(done, done);
   });
 
   describe('[POST] /users', function() {
