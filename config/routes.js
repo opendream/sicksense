@@ -34,12 +34,12 @@ module.exports.routes = {
 
   // Custom routes here...
 
-  'post /users/forgotpassword': {
+  'post /users/forgot-password': {
     controller: 'users',
     action: 'forgotPassword'
   },
 
-  'post /users/resetpassword': {
+  'post /users/reset-password': {
     controller: 'users',
     action: 'resetPassword'
   },

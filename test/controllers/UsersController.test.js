@@ -784,7 +784,7 @@ describe('UserController test', function() {
 
   });
 
-  describe('[POST] /users/forgotpassword', function() {
+  describe('[POST] /users/forgot-password', function() {
     var user, token, mailserviceSend;
 
     before(function(done) {
@@ -809,7 +809,7 @@ describe('UserController test', function() {
 
     it('should error when email is not provided', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/forgotpassword')
+        .post('/users/forgot-password')
         .expect(403)
         .end(function(err, res) {
           if (err) return done(err);
@@ -819,7 +819,7 @@ describe('UserController test', function() {
 
     it('should error when email is provided but it does not exists', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/forgotpassword')
+        .post('/users/forgot-password')
         .send({ email: 'adam@example.com' })
         .expect(403)
         .end(function(err, res) {
@@ -830,7 +830,7 @@ describe('UserController test', function() {
 
     it('should create new token', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/forgotpassword')
+        .post('/users/forgot-password')
         .send({ email: 'john@example.com' })
         .expect(200)
         .end(function(err, res) {
@@ -859,7 +859,7 @@ describe('UserController test', function() {
 
     it('should remove old token before create the new one', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/forgotpassword')
+        .post('/users/forgot-password')
         .send({ email: 'john@example.com' })
         .expect(200)
         .end(function(err, res) {
@@ -888,7 +888,7 @@ describe('UserController test', function() {
 
   });
 
-  describe('[POST] /users/resetpassword', function() {
+  describe('[POST] /users/reset-password', function() {
     var user, token, mailserviceSend;
     var mockTokens = [
       {
@@ -939,7 +939,7 @@ describe('UserController test', function() {
 
     it('should error when nothing is provided', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/resetpassword')
+        .post('/users/reset-password')
         .expect(400)
         .end(function(err, res) {
           if (err) return done(err);
@@ -949,7 +949,7 @@ describe('UserController test', function() {
 
     it('should error when token is provided but password', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/resetpassword')
+        .post('/users/reset-password')
         .send({ token: '12345678' })
         .expect(400)
         .end(function(err, res) {
@@ -960,7 +960,7 @@ describe('UserController test', function() {
 
     it('should error when token and password are provided but password is empty', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/resetpassword')
+        .post('/users/reset-password')
         .send({ token: '12345678', password: '' })
         .expect(400)
         .end(function(err, res) {
@@ -971,7 +971,7 @@ describe('UserController test', function() {
 
     it('should error when token and password are provided but token is empty', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/resetpassword')
+        .post('/users/reset-password')
         .send({ token: '', password: '12345678' })
         .expect(400)
         .end(function(err, res) {
@@ -982,7 +982,7 @@ describe('UserController test', function() {
 
     it('should error when token and password are provided but token is invalid', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/resetpassword')
+        .post('/users/reset-password')
         .send({ token: 'invalidtoken', password: '12345678' })
         .expect(403)
         .end(function(err, res) {
@@ -993,7 +993,7 @@ describe('UserController test', function() {
 
     it('should update password, clear token, and return user object with accessToken', function(done) {
       request(sails.hooks.http.app)
-        .post('/users/resetpassword')
+        .post('/users/reset-password')
         .send({ token: '12345678', password: 'new-password' })
         .expect(200)
         .end(function(err, res) {
