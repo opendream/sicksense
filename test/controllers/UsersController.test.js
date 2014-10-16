@@ -450,182 +450,276 @@ describe('UserController test', function() {
         });
     });
 
-    describe('[POST] /user/:id', function() {
+  });
 
-      it('should require accessToken to save existing user', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .expect(403)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-            done();
+  describe('[POST] /user/:id', function() {
+
+    var user;
+    before(function(done) {
+      TestHelper.clearAll()
+        .then(function () {
+          return TestHelper.createUser({ email: "siriwat-before-real@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function() {
+          return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function(_user) {
+          user = _user;
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      TestHelper.clearUsers()
+        .then(TestHelper.clearAccessTokens)
+        .then(function() {
+          done();
+        })
+        .catch(function(err) {
+          done(err);
+        });
+    });
+
+    it('should require accessToken to save existing user', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+          done();
+        });
+    });
+
+    it('should validate user address', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          email: "siriwat-not-real@opendream.co.th",
+          password: "12345678",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {
+            subdistrict: "Tak",
+            district: "Huay Kwang",
+            city: "Bangkok"
+          },
+          location: {
+            latitude: 13.1135,
+            longitude: 105.0014
+          }
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'address' ]);
+
+          done();
+        });
+    });
+
+    it('should save existing user record if provide userId', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          gender: "female",
+          birthYear: 1990,
+          address: {
+            subdistrict: "Suan Luang",
+            district: "Amphoe Krathum Baen",
+            city: "Samut Sakhon"
+          },
+          platform: 'doctormeandroid'
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.meta.status.should.equal(200);
+          res.body.response.id.should.be.ok;
+          res.body.response.gender.should.equal('female');
+          res.body.response.birthYear.should.equal(1990);
+          res.body.response.address.subdistrict.should.equal('Suan Luang');
+          res.body.response.address.district.should.equal('Amphoe Krathum Baen');
+          res.body.response.address.city.should.equal('Samut Sakhon');
+          res.body.response.platform.should.equal('doctormeandroid');
+
+          done();
+        });
+    });
+
+    it('should allow update only e-mail', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          email: "siriwat+updated-email@opendream.co.th"
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.meta.status.should.equal(200);
+          res.body.response.id.should.equal(user.id);
+          res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
+          res.body.response.gender.should.equal('female');
+          res.body.response.birthYear.should.equal(1990);
+          res.body.response.address.subdistrict.should.equal('Suan Luang');
+          res.body.response.address.district.should.equal('Amphoe Krathum Baen');
+          res.body.response.address.city.should.equal('Samut Sakhon');
+          res.body.response.platform.should.equal('doctormeandroid');
+
+          done();
+        });
+    });
+
+    it('should not allow change to existing e-mail', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          // allow update to own e-mail
+          email: "siriwat+updated-email@opendream.co.th"
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          request(sails.hooks.http.app)
+            .post('/users/' + user.id)
+            .query({
+              accessToken: user.accessToken
+            })
+            .send({
+              email: "siriwat-before-real@opendream.co.th"
+            })
+            .expect(409)
+            .end(function(err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.meta.status.should.equal(409);
+              res.body.meta.errorType.should.equal('Conflict');
+              res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
+
+              done();
+            });
+        });
+    });
+
+    it('should allow user to update password', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          password: "1qaz2wsx"
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          request(sails.hooks.http.app)
+            .post('/login')
+            .send({
+              email: "siriwat+updated-email@opendream.co.th",
+              password: "1qaz2wsx"
+            })
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.meta.status.should.equal(200);
+              res.body.response.id.should.equal(user.id);
+              res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
+              res.body.response.gender.should.equal('female');
+              res.body.response.birthYear.should.equal(1990);
+              res.body.response.address.subdistrict.should.equal('Suan Luang');
+              res.body.response.address.district.should.equal('Amphoe Krathum Baen');
+              res.body.response.address.city.should.equal('Samut Sakhon');
+              res.body.response.platform.should.equal('doctormeandroid');
+
+              done();
+            });
+        });
+    });
+
+    it('should add user subscribe', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          subscribe: true
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.response.isSubscribed.should.be.true;
+
+          pgconnect(function(err, client, pgDone) {
+            if (err) return res.serverError('Could not connect to database.');
+
+            EmailSubscriptionsService.isSubscribed(client, res.body.response).then(function (isSubscribed) {
+              isSubscribed.should.be.true;
+              pgDone();
+
+              done();
+            }).catch(function (err) {
+              pgDone();
+
+              done(err);
+            });
           });
-      });
 
-      it('should validate user address', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            email: "siriwat-not-real@opendream.co.th",
-            password: "12345678",
-            tel: "0841291342",
-            gender: "male",
-            birthYear: 1986,
-            address: {
-              subdistrict: "Tak",
-              district: "Huay Kwang",
-              city: "Bangkok"
-            },
-            location: {
-              latitude: 13.1135,
-              longitude: 105.0014
-            }
-          })
-          .expect(400)
-          .end(function(err, res) {
-            if (err) return done(err);
+        });
+    });
 
-            res.body.meta.invalidFields.should.have.properties([ 'address' ]);
+    it('should add user unsubscribe', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          subscribe: false
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
 
-            done();
+          res.body.response.isSubscribed.should.be.false;
+
+          pgconnect(function(err, client, pgDone) {
+            if (err) return res.serverError('Could not connect to database.');
+
+            EmailSubscriptionsService.isSubscribed(client, res.body.response).then(function (isSubscribed) {
+              isSubscribed.should.be.false;
+              pgDone();
+
+              done();
+            }).catch(function (err) {
+              pgDone();
+
+              done(err);
+            });
           });
-      });
 
-      it('should save existing user record if provide userId', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            gender: "female",
-            birthYear: 1990,
-            address: {
-              subdistrict: "Suan Luang",
-              district: "Amphoe Krathum Baen",
-              city: "Samut Sakhon"
-            },
-            platform: 'doctormeandroid'
-          })
-          .expect(200)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-
-            res.body.meta.status.should.equal(200);
-            res.body.response.id.should.be.ok;
-            res.body.response.gender.should.equal('female');
-            res.body.response.birthYear.should.equal(1990);
-            res.body.response.address.subdistrict.should.equal('Suan Luang');
-            res.body.response.address.district.should.equal('Amphoe Krathum Baen');
-            res.body.response.address.city.should.equal('Samut Sakhon');
-            res.body.response.platform.should.equal('doctormeandroid');
-
-            done();
-          });
-      });
-
-      it('should allow update only e-mail', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            email: "siriwat+updated-email@opendream.co.th"
-          })
-          .expect(200)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-
-            res.body.meta.status.should.equal(200);
-            res.body.response.id.should.equal(user.id);
-            res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
-            res.body.response.gender.should.equal('female');
-            res.body.response.birthYear.should.equal(1990);
-            res.body.response.address.subdistrict.should.equal('Suan Luang');
-            res.body.response.address.district.should.equal('Amphoe Krathum Baen');
-            res.body.response.address.city.should.equal('Samut Sakhon');
-            res.body.response.platform.should.equal('doctormeandroid');
-
-            done();
-          });
-      });
-
-      it('should not allow change to existing e-mail', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            // allow update to own e-mail
-            email: "siriwat+updated-email@opendream.co.th"
-          })
-          .expect(200)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-
-            request(sails.hooks.http.app)
-              .post('/users/' + user.id)
-              .query({
-                accessToken: user.accessToken
-              })
-              .send({
-                email: "siriwat-before-real@opendream.co.th"
-              })
-              .expect(409)
-              .end(function(err, res) {
-                if (err) return done(new Error(err));
-
-                res.body.meta.status.should.equal(409);
-                res.body.meta.errorType.should.equal('Conflict');
-                res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
-
-                done();
-              });
-          });
-      });
-
-      it('should allow user to update password', function(done) {
-        request(sails.hooks.http.app)
-          .post('/users/' + user.id)
-          .query({
-            accessToken: user.accessToken
-          })
-          .send({
-            password: "1qaz2wsx"
-          })
-          .expect(200)
-          .end(function(err, res) {
-            if (err) return done(new Error(err));
-
-            request(sails.hooks.http.app)
-              .post('/login')
-              .send({
-                email: "siriwat+updated-email@opendream.co.th",
-                password: "1qaz2wsx"
-              })
-              .expect(200)
-              .end(function (err, res) {
-                if (err) return done(new Error(err));
-
-                res.body.meta.status.should.equal(200);
-                res.body.response.id.should.equal(user.id);
-                res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
-                res.body.response.gender.should.equal('female');
-                res.body.response.birthYear.should.equal(1990);
-                res.body.response.address.subdistrict.should.equal('Suan Luang');
-                res.body.response.address.district.should.equal('Amphoe Krathum Baen');
-                res.body.response.address.city.should.equal('Samut Sakhon');
-                res.body.response.platform.should.equal('doctormeandroid');
-
-                done();
-              });
-          });
-      });
+        });
     });
 
   });
@@ -672,6 +766,22 @@ describe('UserController test', function() {
           if (err) return done(err);
 
           res.body.response.id.should.equal(user.id);
+
+          done();
+        });
+    });
+
+    it('should return user is subscribed', function (done) {
+      request(sails.hooks.http.app)
+        .get('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.isSubscribed.should.be.false;
 
           done();
         });
