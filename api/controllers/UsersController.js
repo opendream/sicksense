@@ -115,7 +115,6 @@ module.exports = {
 
               // check if subscribed account then send verification e-mail.
               var config = sails.config.mail.verificationEmail,
-                  lifetime = config.lifetime,
                   subject = config.subject,
                   body = config.body,
                   from = config.from,
@@ -123,7 +122,7 @@ module.exports = {
                   html = config.html;
 
               // Async here. User can still successful register if this method fail.
-              OnetimeTokenService.create('user.verifyEmail', savedUser.id, lifetime)
+              OnetimeTokenService.create('user.verifyEmail', savedUser.id, sails.config.onetimeToken.lifetime)
                 .then(function (tokenObject) {
                   var url = req.getUrl('/users/verify', {
                     token: tokenObject.token
@@ -621,11 +620,10 @@ module.exports = {
         UserService.getUserByEmail(client, email)
           .then(function(user) {
             localUser = user;
-            return OnetimeTokenService.getByEmail(user.email, 'user.forgotpassword');
+            return OnetimeTokenService.getByEmail(user.email, 'user.resetPassword');
           })
           .then(function(token) {
             if (token) {
-              sails.log.debug('delete token', token);
               return OnetimeTokenService.delete(token.user_id, token.type);
             }
 
@@ -634,7 +632,7 @@ module.exports = {
             });
           })
           .then(function() {
-            return OnetimeTokenService.create('user.forgotpassword', localUser.id, 60 * 60 * 24);
+            return OnetimeTokenService.create('user.resetPassword', localUser.id, sails.config.onetimeToken.lifetime);
           })
           .then(function(token) {
             var subject = sails.config.mail.forgotPassword.subject;

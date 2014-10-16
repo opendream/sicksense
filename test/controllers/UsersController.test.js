@@ -846,7 +846,7 @@ describe('UserController test', function() {
 
                 result.rows.length.should.equal(1);
                 result.rows[0].token.length.should.greaterThan(0);
-                result.rows[0].type.should.equal('user.forgotpassword');
+                result.rows[0].type.should.equal('user.resetPassword');
                 result.rows[0].expired.should.greaterThan(new Date());
 
                 token = result.rows[0];
@@ -1008,7 +1008,7 @@ describe('UserController test', function() {
 
                 DBService.select('onetimetoken', '*', [
                     { field: 'user_id = $', value: user.id },
-                    { field: 'type = $', value: 'user.forgotpassword' }
+                    { field: 'type = $', value: 'user.resetPassword' }
                   ])
                 .then(function(result) {
                   result.rows.length.should.equal(0);
