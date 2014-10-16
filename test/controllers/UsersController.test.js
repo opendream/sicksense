@@ -322,7 +322,7 @@ describe('UserController test', function() {
           });
       });
 
-      it('should save new record and do not send e-mail if user is a subscribed account', function(done) {
+      it('should save new record and send e-mail if user is a subscribed account', function(done) {
         var mailConfig = sails.config.mail.verificationEmail;
         // Override.
         sails.config.mail.verificationEmail = {

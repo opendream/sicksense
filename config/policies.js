@@ -29,7 +29,8 @@ module.exports.policies = {
     userReports: 'tokenAuth',
     getUser: 'tokenAuth',
     forgotPassword: true,
-    resetPassword: true
+    resetPassword: true,
+    verify: true
   },
 
   'NotificationsController': {
