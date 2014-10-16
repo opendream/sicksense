@@ -1,6 +1,7 @@
 CREATE TABLE sicksense (
     "id" serial not null,
     "email" varchar not null,
+    "password" varchar not null,
     "is_verify" boolean default 'f',
     "data" json,
     "createdAt" timestamp with time zone,
