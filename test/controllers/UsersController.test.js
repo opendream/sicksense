@@ -1244,6 +1244,10 @@ describe('UserController test', function() {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(err);
+            console.log('--', res.body);
+
+            res.body.response.id.should.exist;
+            res.body.response.accessToken.should.exist;
 
             // Should mark user as verified.
             DBService.select('sicksense', 'is_verify', [

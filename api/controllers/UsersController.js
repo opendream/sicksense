@@ -799,6 +799,8 @@ module.exports = {
     OnetimeTokenService.getByTokenString(req.body.token)
       .then(function (tokenObject) {
 
+        var data = {};
+
         if (OnetimeTokenService.isValidToken(tokenObject)) {
 
           UserService.verify(tokenObject.user_id)
@@ -806,12 +808,39 @@ module.exports = {
               return OnetimeTokenService.delete(tokenObject.user_id, tokenObject.type);
             })
             .then(function () {
-              res.ok();
+              return DBService.select('users', '*', [
+                { field: 'id = $', value: tokenObject.user_id }
+              ]);
+            })
+            .then(function (result) {
+              data.user = result.rows[0];
+
+              return DBService.select('accesstoken', '*', [
+                { field: '"userId" = $', value: tokenObject.user_id }
+              ]);
+            })
+            .then(function (result) {
+              var accessToken = result.rows[0];
+              if (accessToken) {
+                data.user = UserService.getUserJSON(data.user, {
+                  accessToken: accessToken.token
+                });
+                res.ok(data.user);
+              }
+              else {
+                return AccessTokenService.refresh(data.user.id).then(function(accessToken) {
+                    data.user = UserService.getUserJSON(data.user, {
+                      accessToken: accessToken.token
+                    });
+                    res.ok(data.user);
+                  });
+              }
             })
             .catch(function (err) {
               sails.log.error('UsersController.verify()::', err);
               res.serverError('Server error, Cannot verify user e-mail. Please try again', err);
             });
+
         }
         else {
           res.forbidden('Invalid Token');
