@@ -102,6 +102,20 @@ module.exports = {
     }
   },
 
+  getByToken: function(token) {
+    return when.promise(function(resolve, reject) {
+      DBService.select('onetimetoken', '*', [
+          { field: 'token = $', value: token }
+        ])
+        .then(function(result) {
+          resolve(result.rows[0]);
+        })
+        .catch(function(err) {
+          reject(err);
+        });
+    });
+  },
+
   delete: function(user_id, type) {
 
     return when.promise(function(resolve, reject) {

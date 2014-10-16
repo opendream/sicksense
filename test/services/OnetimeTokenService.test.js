@@ -89,6 +89,38 @@ describe('OnetimeToken service test', function () {
 
   });
 
+  describe('getByToken()', function() {
+
+    it('should return existing token', function(done) {
+      var onetimeToken;
+
+      OnetimeTokenService.create('test', data.user.id, 30)
+        .then(function(token) {
+          onetimeToken = token;
+          return OnetimeTokenService.getByToken(token.token);
+        })
+        .then(function(tokenObject) {
+          tokenObject.should.be.ok;
+          tokenObject.token.should.equal(onetimeToken.token);
+          done();
+        })
+        .catch(done);
+
+    });
+
+    it('should return empty token if invalid token is provided', function(done) {
+
+      OnetimeTokenService.getByToken('invalid token')
+        .then(function(onetimeToken) {
+          (onetimeToken === undefined).should.be.true;
+          done();
+        })
+        .catch(done);
+
+    });
+
+  });
+
   describe('delete()', function() {
     var localUser;
     var mockTokens = [
