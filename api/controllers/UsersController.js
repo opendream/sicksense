@@ -635,11 +635,13 @@ module.exports = {
             return OnetimeTokenService.create('user.resetPassword', localUser.id, sails.config.onetimeToken.lifetime);
           })
           .then(function(token) {
+            var siteURL = sails.config.siteURL;
+            var resetURL = siteURL + '/reset-password.html?token=' + token.token;
             var subject = sails.config.mail.forgotPassword.subject;
             var from = sails.config.mail.forgotPassword.from;
             var to = localUser.email;
-            var body = sails.config.mail.forgotPassword.text;
-            var html = sails.config.mail.forgotPassword.html;
+            var body = sails.config.mail.forgotPassword.text.replace(/\%reset_password_url\%/g, resetURL);
+            var html = sails.config.mail.forgotPassword.html.replace(/\%reset_password_url\%/g, resetURL);
             return MailService.send(subject, body, from, to, html);
           })
           .then(function() {

@@ -29,7 +29,7 @@ module.exports = {
             }
 
             return res.ok({
-              onetimeToken: tokenObject
+              success: true
             });
           })
           .catch(function(err) {
