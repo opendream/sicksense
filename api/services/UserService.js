@@ -13,7 +13,8 @@ module.exports = {
   getDefaultDevice: getDefaultDevice,
   setDevice: setDevice,
   clearDevices: clearDevices,
-  removeDefaultUserDevice: removeDefaultUserDevice
+  removeDefaultUserDevice: removeDefaultUserDevice,
+  verify: verify
 };
 
 function updatePassword(userId, newPassword, shouldRefreshAccessToken) {
@@ -349,4 +350,22 @@ function setDefaultDeviceSubscribePushNoti(user, subscribe) {
         return setSubscribePushNoti(user, devices[0].id, subscribe);
       }
     });
+}
+
+function verify(user_id) {
+  return DBService.select('sicksense_users', 'sicksense_id', [
+    { field: 'user_id = $', value: user_id }
+  ])
+  .then(function (result) {
+    if (result.rows.length !== 0) {
+      return DBService.update('sicksense', [
+        { field: 'is_verify = $', value: 't' }
+      ], [
+        { field: 'id = $' , value: result.rows[0].sicksense_id }
+      ]);
+    }
+    else {
+      return when.resolve();
+    }
+  });
 }

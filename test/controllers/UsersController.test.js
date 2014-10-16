@@ -1184,6 +1184,21 @@ describe('UserController test', function() {
 
     });
 
+    it('should require `token` field', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/verify')
+        .expect(400)
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          res.body.meta.status.should.equal(400);
+          res.body.meta.errorType.should.equal("Bad Request");
+          res.body.meta.errorMessage.should.match(/is required/);
+
+          done();
+        });
+    });
+
     it('should return 403 if token does not exist', function (done) {
       request(sails.hooks.http.app)
         .post('/users/verify')

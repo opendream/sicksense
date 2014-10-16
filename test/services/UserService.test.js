@@ -82,4 +82,66 @@ describe('UserService test', function() {
 
   });
 
+  describe('verify()', function () {
+
+    var data = {};
+
+    before(function (done) {
+
+      // create new user
+      DBService
+      .insert('users', [
+        { field: 'email', value: 'randomedtotestverify001@sicksense.org' },
+        { field: 'password', value: 'text-here-is-ignored' }
+      ])
+      .then(function (result) {
+        data.user = result.rows[0];
+        // assign verification token
+        return OnetimeTokenService.create('test', data.user.id, 10)
+          .then(function (tokenObject) {
+            data.tokenObject = tokenObject;
+          });
+      })
+      // create sicksense id
+      .then(function () {
+        return DBService.insert('sicksense', [
+          { field: 'email', value: 'verifyemailtest001@opendream.co.th' },
+          { field: '"createdAt"', value: new Date() }
+        ]);
+      })
+      .then(function (result) {
+        data.sicksense = result.rows[0];
+        return DBService.insert('sicksense_users', [
+          { field: 'sicksense_id', value: data.sicksense.id },
+          { field: 'user_id', value: data.user.id }
+        ]);
+      })
+      .then(function () {
+        done();
+      })
+      .catch(done);
+
+    });
+
+    it('should mark user as verified', function (done) {
+
+      UserService.verify(data.user.id)
+        .then(function () {
+
+          DBService.select('sicksense', 'is_verify', [
+            { field: 'id = $', value: data.sicksense.id }
+          ])
+          .then(function (result) {
+            result.rows.should.have.length(1);
+            result.rows[0].is_verify.should.equal(true);
+            done();
+          })
+          .catch(done);
+
+        });
+
+    });
+
+  });
+
 });
