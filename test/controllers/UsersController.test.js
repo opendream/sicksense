@@ -1167,6 +1167,7 @@ describe('UserController test', function() {
       .then(function () {
         return DBService.insert('sicksense', [
           { field: 'email', value: 'verifyemailtest001@opendream.co.th' },
+          { field: 'password', value: 'password-here-is-ignored' },
           { field: '"createdAt"', value: new Date() }
         ]);
       })
