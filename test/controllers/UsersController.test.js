@@ -1273,4 +1273,142 @@ describe('UserController test', function() {
     });
   });
 
+  describe('[POST] /users/:id/change-password', function () {
+    var user;
+    before(function(done) {
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function(_user) {
+          user = _user;
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      TestHelper.clearUsers()
+        .then(TestHelper.clearAccessTokens)
+        .then(function() {
+          done();
+        })
+        .catch(function(err) {
+          done(err);
+        });
+    });
+
+    it('should error when nothing is provided', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should error when token is provided but others', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .query({
+          accessToken: user.accessToken
+        })
+        .send()
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'oldPassword' ]);
+          res.body.meta.invalidFields.should.have.properties([ 'newPassword' ]);
+
+          done();
+        });
+    });
+
+    it('should error if token is invalid', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .query({
+          accessToken: 'invalid-token'
+        })
+        .send({
+          oldPassword: '12345678',
+          newPassword: 'new-password'
+        })
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should error if old password is wrong', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          oldPassword: 'password-is-wrong',
+          newPassword: 'new-password'
+        })
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should update password and return user object with accessToken', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          oldPassword: '12345678',
+          newPassword: 'new-password'
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          DBService.select('users', 'password', [
+              { field: 'email = $', value : user.email }
+            ])
+            .then(function(result) {
+              passgen('new-password').hash(sails.config.session.secret, function(err, hashedPassword) {
+                result.rows[0].password.should.equal(hashedPassword);
+
+                DBService.select('onetimetoken', '*', [
+                    { field: 'user_id = $', value: user.id },
+                    { field: 'type = $', value: 'user.resetPassword' }
+                  ])
+                .then(function(result) {
+                  result.rows.length.should.equal(0);
+                })
+                .then(function() {
+                  res.body.response.user.should.be.ok;
+                  res.body.response.user.id.should.equal(user.id);
+                  (res.body.response.user.password === undefined).should.be.true;
+                  res.body.response.user.accessToken.should.be.ok;
+
+                  AccessToken.findOneByUserId(user.id).exec(function(err, result) {
+                    result.should.be.ok;
+                    done();
+                  });
+                })
+                .catch(done);
+              })
+            })
+            .catch(done);
+
+        });
+    });
+  });
+
 });

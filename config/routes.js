@@ -68,6 +68,11 @@ module.exports.routes = {
     action: 'userReports'
   },
 
+  'post /users/:id/change-password': {
+    controller: 'users',
+    action: 'changePassword'
+  },
+
   'post /reports': {
     controller: 'reports',
     action: 'create'

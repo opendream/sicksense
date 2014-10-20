@@ -28,6 +28,7 @@ module.exports.policies = {
     update: 'tokenAuth',
     userReports: 'tokenAuth',
     getUser: 'tokenAuth',
+    changePassword: 'tokenAuth',
     forgotPassword: true,
     resetPassword: true,
     verify: true

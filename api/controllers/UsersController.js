@@ -846,6 +846,85 @@ module.exports = {
           res.forbidden('Invalid Token');
         }
       });
+  },
+
+  changePassword: function(req, res) {
+    // Check own access token first.
+    AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
+      if (err) {
+        sails.log.error(err);
+        return res.accessToken(new Error("Could not perform your request"));
+      }
+
+      if (!accessToken || accessToken.userId != req.params.id) {
+        return res.forbidden(new Error("You can not get another user's reports"));
+      }
+
+      validate()
+        .then(function() {
+          return pgconnect()
+            .then(function(conn) {
+              if (err) return res.serverError("Could not connect to database");
+
+              return UserService.getUserByID(conn.client, accessToken.userId)
+                .then(function (user) {
+                  return UserService.getUserByEmailPassword(conn.client, user.email, req.body.oldPassword)
+                })
+                .finally(function () {
+                  conn.done();
+                });
+
+            })
+        })
+        .then(function (user) {
+          return passgen(req.body.newPassword).hash(sails.config.session.secret, function(err, hashedPassword) {
+            updatePassword(hashedPassword, user.id, accessToken);
+          });
+        })
+        .catch(function(err) {
+          if (err && err.statusCode == 403) return res.forbidden(err);
+
+          return res.serverError(err)
+        });
+    });
+
+    function updatePassword(hashedPassword, userId, accessToken) {
+      var values = [{ field: 'password = $', value: hashedPassword }];
+      var conditions = [{ field: 'id = $', value: userId }];
+      DBService.update('users', values, conditions)
+        .then(function(result) {
+          return result.rows[0];
+        })
+        .then(function(returnedUser) {
+          returnedUser = UserService.getUserJSON(returnedUser, {
+            accessToken: accessToken.token
+          });
+
+          return res.ok({
+            message: 'Password has been changed.',
+            user: returnedUser
+          });
+        })
+        .catch(function(err) {
+          return res.serverError(err);
+        });
+    };
+
+    function validate() {
+      return when.promise(function(resolve, reject) {
+        req.checkBody('oldPassword', 'Old password is required').notEmpty();
+        req.checkBody('newPassword', 'New password is required').notEmpty();
+
+        var errors = req.validationErrors();
+        var paramErrors = req.validationErrors(true);
+        if (errors) {
+          res.badRequest(_.first(errors).msg, paramErrors);
+          return reject(errors);
+        }
+
+        resolve();
+      });
+    }
   }
 
 };
