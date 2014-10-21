@@ -145,4 +145,105 @@ describe('UserService test', function() {
 
   });
 
+  describe('getUsersFromSicksenseID()', function () {
+    var data = {};
+
+    beforeEach(function(done) {
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createSicksenseID({ email: "siriwat@opendream.co.th", password: "12345678" });
+        })
+        .then(function(_sicksenseID) {
+          data.sicksenseID = _sicksenseID;
+        })
+        .then(function() {
+          return TestHelper.createUser({ email: "A001@sicksense.org", password: "A001" }, true);
+        })
+        .then(function (_user) {
+          data.user = _user;
+        })
+        .then(function () {
+          return TestHelper.createUser({ email: "A002@sicksense.org", password: "A002" }, true);
+        })
+        .then(function (_user) {
+          data.user2 = _user;
+        })
+        .then(function () {
+          return TestHelper.connectSicksenseAndUser(data.sicksenseID, data.user);
+        })
+        .then(function () {
+          return TestHelper.connectSicksenseAndUser(data.sicksenseID, data.user2);
+        })
+        .then(function() {
+          done();
+        })
+        .catch(function(err) {
+          done(err);
+        });
+    });
+
+    afterEach(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should return 2 users', function (done) {
+
+      UserService.getUsersBySicksenseId(data.sicksenseID.id)
+        .then(function (users) {
+          users.length.should.equal(2);
+          users[0].id.should.be.ok;
+          users[1].id.should.be.ok;
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+
+    });
+
+    it('should return 1 users', function (done) {
+
+      DBService.delete('sicksense_users', [
+          { field: 'user_id = $', value: data.user.id }
+        ])
+        .then(function () {
+          return UserService.getUsersBySicksenseId(data.sicksenseID.id);
+        })
+        .then(function (users) {
+          users.length.should.equal(1);
+          users[0].id.should.be.ok;
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+
+    });
+
+    it('should return 0 users', function (done) {
+
+      DBService.delete('sicksense_users', [
+          { field: 'user_id = $', value: data.user.id }
+        ])
+        .then(function () {
+          return DBService.delete('sicksense_users', [
+            { field: 'user_id = $', value: data.user2.id }
+          ])
+        })
+        .then(function () {
+          return UserService.getUsersBySicksenseId(data.sicksenseID.id);
+        })
+        .then(function (users) {
+          users.length.should.equal(0);
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+
+    });
+
+  });
+
 });

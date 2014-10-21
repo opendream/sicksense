@@ -8,6 +8,7 @@ module.exports = {
   getAccessToken: getAccessToken,
   getUserByID: getUserByID,
   getUserByEmail: getUserByEmail,
+  getUsersBySicksenseId: getUsersBySicksenseId,
   getUserJSON: getUserJSON,
   getDevices: getDevices,
   getDefaultDevice: getDefaultDevice,
@@ -109,6 +110,25 @@ function getUserByEmail(client, email) {
 
       resolve(result.rows[0]);
     });
+  });
+}
+
+function getUsersBySicksenseId(sicksenseId) {
+  return when.promise(function (resolve, reject) {
+    DBService.select('sicksense_users', 'user_id', [
+        { field: 'sicksense_id = $', value: sicksenseId }
+      ])
+      .then(function (result) {
+        return when.map(result.rows, function(row) {
+          return { id: row.user_id };
+        });
+      })
+      .then(function (users) {
+        resolve(users);
+      })
+      .catch(function (err) {
+        reject(err);
+      });
   });
 }
 
