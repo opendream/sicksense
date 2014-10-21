@@ -47,5 +47,36 @@ module.exports = {
 
       });
     });
+  },
+
+  delete: function (userId) {
+    return when.promise(function (resolve, reject) {
+      AccessToken.destroy({ userId: userId }).exec(function (err, result) {
+        if (err) return reject(err);
+        resolve(true);
+      });
+    });
+  },
+
+  clearFromAllSicksenseID: function (sicksenseId) {
+    return when.promise(function (resolve, reject) {
+      return DBService.select('sicksense_users', 'user_id', [
+          { field: 'sicksense_id = $', value: sicksenseId }
+        ])
+        .then(function (result) {
+          if (result.rows.length) return resolve();
+          var users = result.rows;
+          return when.map(users, function (user) {
+            AccessTokenService.delete(user.id);
+          });
+        })
+        .then(function () {
+          resolve();
+        })
+        .catch(function (err) {
+          reject(err);
+        })
+    })
   }
+
 };
