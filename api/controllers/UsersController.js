@@ -8,8 +8,13 @@ var when = require('when');
 module.exports = {
 
   create: function(req, res) {
+    var now = (new Date()).getTime();
+    var data = {};
+    var user;
+
     validate()
       .then(function () {
+        prepare();
         run();
       })
       .catch(function (err) {
@@ -17,160 +22,285 @@ module.exports = {
       });
 
     function run() {
-      var data = req.body;
-      if (_.isEmpty(data.location)) {
+      checkUserEmailExists(data.email)
+        .then(function(exists) {
+          if (exists) {
+            return res.conflict('This e-mail is already registered, please login or try another e-mail.');
+          }
+
+          return createUser(data)
+            .then(function() {
+              return createAccessToken();
+            })
+            .then(function() {
+              return createUserDeviceToken();
+            })
+            .then(function() {
+              if (data.sicksense) {
+                return checkSicksenseEmailExists(data.sicksense.email)
+                  .then(function (exists) {
+                    if (exists) {
+                      return res.conflict('This e-mail is already registered, please login or try another e-mail');
+                    }
+                    else {
+                      return createSicksenseID(data)
+                        .then(function() {
+                          return sendEmailVerification();
+                        })
+                        .then(function() {
+                          return subscribeUser();
+                        })
+                        .then(function() {
+                          return responseJSON();
+                        })
+                        .catch(function (err) {
+                          res.serverError(err);
+                        });
+                    }
+                  })
+                  .catch(function (err) {
+                    res.serverError(err);
+                  });
+              }
+
+              return responseJSON();
+            })
+            .catch(function (err) {
+              res.serverError(err);
+            });
+        })
+        .catch(function (err) {
+          res.serverError(err);
+        });
+    };
+
+    function prepare() {
+      var body = req.body;
+      data = {};
+
+      if (_.isEmpty(body.location)) {
         data.location = {};
       }
       else {
-        data.location.latitude = parseFloat(data.location.latitude);
-        data.location.longitude = parseFloat(data.location.longitude);
-        data.point = 'SRID=4326;' + wkt.convert({
+        data.latitude = parseFloat(body.location.latitude);
+        data.longitude = parseFloat(body.location.longitude);
+        data.geom = 'SRID=4326;' + wkt.convert({
           type: "Point",
           coordinates: [
-            data.location.longitude,
-            data.location.latitude
+            data.longitude,
+            data.latitude
           ]
         });
       }
 
-      if (!data.address) {
-        data.address = {};
+      if (!body.address) {
+        body.address = {};
       }
 
-      passgen(data.password).hash(sails.config.session.secret, function(err, hashedPassword) {
-        var values = [
-          data.email,
-          hashedPassword,
-          data.tel,
-          data.gender,
-          data.birthYear,
-          data.address.subdistrict,
-          data.address.district,
-          data.address.city,
-          data.location.latitude,
-          data.location.longitude,
-          data.point,
-          new Date(),
-          new Date(),
-          // platform at the time register.
-          req.body.platform || req.query.platform || 'doctormeios'
-        ];
+      if (isSicksenseID(body.email)) {
+        data.sicksense = {
+          email: body.email,
+          password: body.password
+        };
+      }
 
-        save(values);
+      data.email = body.uuid + '@sicksense.org';
+      data.password = body.uuid;
+      data.tel = body.tel;
+      data.birthYear = body.birthYear;
+      data.gender = body.gender;
+      data.subdistrict = body.address.subdistrict;
+      data.district = body.address.district;
+      data.city = body.address.city;
+      data.platform = body.platform || req.query.platform || 'doctormeios'
+    };
+
+    function checkUserEmailExists(email) {
+      return when.promise(function (resolve, reject) {
+        DBService.select('users', 'email', [
+            { field: 'email = $', value: email }
+          ])
+          .then(function(result) {
+            resolve(result.rows.length !== 0);
+          })
+          .catch(function(err) {
+            reject(err);
+          });
       });
-    }
+    };
 
-    function save(values) {
-      var now = (new Date()).getTime();
+    function createUser(data) {
+      return when.promise(function (resolve, reject) {
+        passgen(data.password).hash(sails.config.session.secret, function (err, hashedPassword) {
+          if (err) return reject(err);
 
-      pgconnect(function(err, client, done) {
-        sails.log.debug('[UsersController:insert user]', now);
-
-        if (err) return res.serverError("Could not connect to database");
-
-        client.query('\
-          INSERT \
-          INTO "users" ( \
-            "email", "password", "tel", "gender", "birthYear", "subdistrict", "district", \
-            "city", "latitude", "longitude", "geom", "createdAt", "updatedAt", "platform" \
-          ) \
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING * \
-        ', values, function(err, result) {
-
-          if (err) {
-            if (err.detail && err.detail.match(/Key \(email\).*already exists/)) {
-              res.conflict("This e-mail is already registered, please login or try another e-mail");
-            }
-            else {
-              res.serverError("Could not perform your request", err);
-            }
-
-            done();
-            sails.log.debug('[UsersController:insert user]', now);
-            return;
-          }
-
-          var savedUser = result.rows[0];
-
-          // Then generate accessToken.
-          var accessToken;
-          AccessTokenService.refresh(savedUser.id)
-            .then(function(_accessToken) {
-              accessToken = _accessToken;
-
-              if (req.body.deviceToken === '') {
-                return UserService.removeDefaultUserDevice(savedUser);
+          DBService.insert('users', [
+              { field: 'email', value: data.email },
+              { field: 'password', value: hashedPassword },
+              { field: 'tel', value: data.tel },
+              { field: 'gender', value: data.gender },
+              { field: '"birthYear"', value: data.birthYear },
+              { field: 'subdistrict', value: data.subdistrict },
+              { field: 'district', value: data.district },
+              { field: 'city', value: data.city },
+              { field: 'latitude', value: data.latitude },
+              { field: 'longitude', value: data.longitude },
+              { field: 'geom', value: data.geom },
+              { field: 'platform', value: data.platform },
+              { field: '"createdAt"', value: new Date() },
+              { field: '"updatedAt"', value: new Date() }
+            ])
+            .then(function(result) {
+              if (result.rows.length === 0) {
+                reject(new Error('Could not insert data into database.'));
               }
-              else if (req.body.deviceToken) {
-                return UserService.setDevice(savedUser, {
-                  id: req.body.deviceToken,
-                  platform: req.body.platform || req.query.platform || savedUser.platform
-                });
+              else {
+                user = result.rows[0];
+                resolve(result.rows[0]);
               }
-            })
-            .then(function() {
-              if (savedUser.email.match(/\@(www\.)?sicksense\.org$/)) {
-                return when.resolve();
-              }
-
-              // check if subscribed account then send verification e-mail.
-              var config = sails.config.mail.verificationEmail,
-                  subject = config.subject,
-                  body = config.body,
-                  from = config.from,
-                  to = savedUser.email,
-                  html = config.html;
-
-              // Async here. User can still successful register if this method fail.
-              OnetimeTokenService.create('user.verifyEmail', savedUser.id, sails.config.onetimeToken.lifetime)
-                .then(function (tokenObject) {
-                  var url = req.getWWWUrl(sails.config.common.verifyEndpoint, {
-                    token: tokenObject.token
-                  });
-
-                  // substitute value in body, html
-                  body = body.replace(/\%token%/, url);
-                  html = html.replace(/\%token%/, url);
-
-                  return MailService.send(subject, body, from, to, html);
-                })
-                .catch(function (err) {
-                  sails.log.error(new Error('Can not send verification e-mail'), err);
-                });
-            })
-            .then(function() {
-              return UserService.getDefaultDevice(savedUser)
-                .then(function (device) {
-                  var extra = {
-                    accessToken: accessToken.token
-                  };
-                  if (device) {
-                    extra.deviceToken = device.id;
-                  }
-
-                  if (req.body.subscribe) {
-                    return EmailSubscriptionsService.subscribe(client, savedUser)
-                      .then(function() {
-                        res.ok(UserService.getUserJSON(savedUser, extra));
-                      });
-                  }
-                  else {
-                    res.ok(UserService.getUserJSON(savedUser, extra));
-                  }
-                });
             })
             .catch(function(err) {
-              sails.log.error(err);
-              res.serverError(new Error("Registration is success but cannot automatically login. Please login manually."));
-            })
-            .finally(function() {
-              done();
-              sails.log.debug('[UsersController:insert user]', now);
+              reject(err);
             });
-
         });
       });
-    }
+    };
+
+    function createAccessToken() {
+      return when.promise(function (resolve, reject) {
+        AccessTokenService.refresh(user.id)
+          .then(function(_accessToken) {
+            user.accessToken = _accessToken;
+            resolve(_accessToken);
+          })
+          .catch(function (err) {
+            reject(err);
+          });
+      });
+    };
+
+    function createUserDeviceToken() {
+      if (req.body.deviceToken === '') {
+        return UserService.removeDefaultUserDevice(user);
+      }
+      else if (req.body.deviceToken) {
+        return UserService.setDevice(user, {
+          id: req.body.deviceToken,
+          platform: req.body.platform || req.query.platform || user.platform
+        });
+      }
+    };
+
+    function isSicksenseID(email) {
+      return !email.match(/\@(www\.)?sicksense\.org$/);
+    };
+
+    function checkSicksenseEmailExists(email) {
+      return when.promise(function (resolve, reject) {
+        DBService.select('sicksense', 'email', [
+            { field: 'email = $', value: email }
+          ])
+          .then(function (result) {
+            resolve(result.rows.length !== 0);
+          })
+          .catch(function (err) {
+            reject(err);
+          });
+      });
+    };
+
+    function createSicksenseID(data) {
+      return when.promise(function (resolve, reject) {
+        passgen(data.sicksense.password).hash(sails.config.session.secret, function (err, hashedPassword) {
+          if (err) return reject(err);
+
+          DBService.insert('sicksense', [
+              { field: 'email', value: data.sicksense.email },
+              { field: 'password', value: hashedPassword },
+              { field: '"createdAt"', value: new Date() },
+              { field: '"updatedAt"', value: new Date() }
+            ])
+            .then(function (result) {
+              if (result.rows.length === 0) {
+                reject(new Error('Could not insert data into database.'));
+              }
+              else {
+                user.sicksense = result.rows[0];
+              }
+            })
+            .then(function () {
+              return DBService.insert('sicksense_users', [
+                  { field: 'sicksense_id', value: user.sicksense.id },
+                  { field: 'user_id', value: user.id }
+                ])
+            })
+            .then(function () {
+              resolve(user.sicksense);
+            })
+            .catch(function (err) {
+              reject(err);
+            });
+        });
+      });
+    };
+
+    function sendEmailVerification() {
+      // check if subscribed account then send verification e-mail.
+      var config = sails.config.mail.verificationEmail,
+          subject = config.subject,
+          body = config.body,
+          from = config.from,
+          to = user.sicksense.email,
+          html = config.html;
+
+      // Async here. User can still successful register if this method fail.
+      return OnetimeTokenService.create('user.verifyEmail', user.sicksense.id, sails.config.onetimeToken.lifetime)
+        .then(function (tokenObject) {
+          var url = req.getWWWUrl(sails.config.common.verifyEndpoint, {
+            token: tokenObject.token
+          });
+
+          // substitute value in body, html
+          body = body.replace(/\%token%/, url);
+          html = html.replace(/\%token%/, url);
+
+          return MailService.send(subject, body, from, to, html);
+        })
+        .catch(function (err) {
+          sails.log.error(new Error('Can not send verification e-mail'), err);
+          sails.log.error(err);
+          res.serverError(err);
+        });
+    };
+
+    function subscribeUser() {
+      if (req.body.subscribe && user.sicksense.id) {
+        return EmailSubscriptionsService.subscribe(user.sicksense);
+      }
+    };
+
+    function responseJSON() {
+      var extra = {};
+      extra.accessToken = user.accessToken.token;
+
+      return UserService.getDefaultDevice(user)
+        .then(function (device) {
+          if (device) {
+            extra.deviceToken = device.id;
+          }
+
+          if (user.sicksense) {
+            user.email = user.sicksense.email;
+          }
+
+          var json = UserService.getUserJSON(user, extra);
+          // sails.log.error(json, user);
+          return res.ok(json);
+        })
+        .catch(function (err) {
+          return res.serverError(err);
+        });
+    };
 
     function validate() {
       return when.promise(function (resolve, reject) {
@@ -179,6 +309,8 @@ module.exports = {
 
         req.checkBody('password', 'Password field is required').notEmpty();
         req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+
+        req.checkBody('uuid', 'UUID field is required').notEmpty();
 
         if (req.body.gender) {
           req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
@@ -357,24 +489,15 @@ module.exports = {
               });
           }
 
-          pgconnect(function(err, client, pgDone) {
-            if (err) return res.serverError('Could not connect to database.');
-
-            if (req.body.subscribe) {
-              promise = EmailSubscriptionsService.subscribe(client, req.user).then(function () {
-                pgDone();
-
-                return true;
-              });
-            } else {
-
-              promise = EmailSubscriptionsService.unsubscribe(client, req.user).then(function () {
-                pgDone();
-
-                return false;
-              });
-            }
-          });
+          if (req.body.subscribe) {
+            promise = EmailSubscriptionsService.subscribe(req.user).then(function () {
+              return true;
+            });
+          } else {
+            promise = EmailSubscriptionsService.unsubscribe(req.user).then(function () {
+              return false;
+            });
+          }
 
           return promise.then(function (isSubscribed) {
             UserService.getDefaultDevice(savedUser)
@@ -625,49 +748,48 @@ module.exports = {
         return res.forbidden(new Error("You can not get another user's reports"));
       }
 
-      pgconnect(function(err, client, done) {
-        if (err) return res.serverError('Could not connect to database.');
-
-        EmailSubscriptionsService.isSubscribed(client, req.user).then(function (isSubscribed) {
+      EmailSubscriptionsService.isSubscribed(req.user)
+        .then(function (isSubscribed) {
           var user = UserService.getUserJSON(req.user, {
             isSubscribed: isSubscribed
           });
           res.ok(user);
+        })
+        .catch(function (err) {
+          res.serverError('Could not connect to database.');
         });
-      });
     });
   },
 
   forgotPassword: function(req, res) {
-    var localUser;
+    var sicksenseID;
     var email = req.body.email;
     if (email) {
       pgconnect(function(err, client, done) {
         if (err) return res.serverError('Could not connect to database.');
 
-        UserService.getUserByEmail(client, email)
-          .then(function(user) {
-            localUser = user;
-            return OnetimeTokenService.getByEmail(user.email, 'user.resetPassword');
+        UserService.getSicksenseIDByEmail(email)
+          .then(function (_sicksenseID) {
+            sicksenseID = _sicksenseID;
+          })
+          .then(function () {
+            return OnetimeTokenService.getByEmail(sicksenseID.email, 'user.resetPassword');
           })
           .then(function(token) {
             if (token) {
               return OnetimeTokenService.delete(token.user_id, token.type);
             }
-
-            return when.promise(function(resolve, reject) {
-              resolve();
-            });
+            return when.resolve();
           })
-          .then(function() {
-            return OnetimeTokenService.create('user.resetPassword', localUser.id, sails.config.onetimeToken.lifetime);
+          .then(function () {
+            return OnetimeTokenService.create('user.resetPassword', sicksenseID.id, sails.config.onetimeToken.lifetime);
           })
-          .then(function(token) {
+          .then(function (token) {
             var siteURL = sails.config.common.siteURL;
             var resetURL = siteURL + '/reset-password.html?token=' + token.token;
             var subject = sails.config.mail.forgotPassword.subject;
             var from = sails.config.mail.forgotPassword.from;
-            var to = localUser.email;
+            var to = sicksenseID.email;
             var body = sails.config.mail.forgotPassword.text.replace(/\%reset_password_url\%/g, resetURL);
             var html = sails.config.mail.forgotPassword.html.replace(/\%reset_password_url\%/g, resetURL);
             return MailService.send(subject, body, from, to, html);
@@ -808,33 +930,7 @@ module.exports = {
               return OnetimeTokenService.delete(tokenObject.user_id, tokenObject.type);
             })
             .then(function () {
-              return DBService.select('users', '*', [
-                { field: 'id = $', value: tokenObject.user_id }
-              ]);
-            })
-            .then(function (result) {
-              data.user = result.rows[0];
-
-              return DBService.select('accesstoken', '*', [
-                { field: '"userId" = $', value: tokenObject.user_id }
-              ]);
-            })
-            .then(function (result) {
-              var accessToken = result.rows[0];
-              if (accessToken) {
-                data.user = UserService.getUserJSON(data.user, {
-                  accessToken: accessToken.token
-                });
-                res.ok(data.user);
-              }
-              else {
-                return AccessTokenService.refresh(data.user.id).then(function(accessToken) {
-                    data.user = UserService.getUserJSON(data.user, {
-                      accessToken: accessToken.token
-                    });
-                    res.ok(data.user);
-                  });
-              }
+              res.ok({});
             })
             .catch(function (err) {
               sails.log.error('UsersController.verify()::', err);

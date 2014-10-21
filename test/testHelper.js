@@ -344,6 +344,21 @@ function clearOnetimeToken() {
   });
 }
 
+function clearEmailSubscription() {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
+      if (err) return reject(err);
+
+      client.query('DELETE FROM email_subscription', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
 function clearSicksenseIDs() {
   return when.promise(function(resolve, reject) {
     pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
@@ -371,7 +386,8 @@ function clearAll () {
     .then(clearReports)
     .then(clearReportsSymptoms)
     .then(clearReportsSummaryByWeek)
-    .then(clearOnetimeToken);
+    .then(clearOnetimeToken)
+    .then(clearEmailSubscription);
 }
 
 module.exports = global.TestHelper = {
@@ -386,5 +402,6 @@ module.exports = global.TestHelper = {
   clearReportsSummaryByWeek: clearReportsSummaryByWeek,
   clearReports: clearReports,
   clearOnetimeToken: clearOnetimeToken,
+  clearEmailSubscription: clearEmailSubscription,
   clearAll: clearAll
 };

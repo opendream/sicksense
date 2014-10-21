@@ -2,10 +2,10 @@ var when = require('when');
 
 module.exports = {
 
-    isSubscribed: function(user) {
+    isSubscribed: function(sicksenseID) {
         return when.promise(function (resolve, reject) {
             return DBService.select('email_subscription', '*', [
-                    { field: '"userId"', value: parseInt(user.id) }
+                    { field: '"userId" = $', value: parseInt(sicksenseID.id) }
                 ])
                 .then(function (result) {
                     resolve(result.rows.length > 0);
@@ -16,14 +16,14 @@ module.exports = {
         });
     },
 
-    subscribe: function(user) {
-        return EmailSubscriptionsService.isSubscribed(user)
+    subscribe: function(sicksenseID) {
+        return EmailSubscriptionsService.isSubscribed(sicksenseID)
             .then(function(isSubscribed) {
                 if (!isSubscribed) {
                     return DBService.insert('email_subscription', [
                         {
                             field: '"userId"',
-                            value: user.id
+                            value: sicksenseID.id
                         },
                         {
                             field: '"notifyTime"',
@@ -42,13 +42,13 @@ module.exports = {
             });
     },
 
-    unsubscribe: function(user) {
+    unsubscribe: function(sicksenseID) {
         return DBService.delete('email_subscription', [{
             field: '"userId"=$',
-            value: user.id
+            value: sicksenseID.id
         }])
         .then(function() {
-            MailService.subscribe(user.email, 'no');
+            MailService.subscribe(sicksenseID.email, 'no');
         });
     },
 
