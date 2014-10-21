@@ -18,39 +18,35 @@ module.exports = {
   verify: verify
 };
 
-function updatePassword(userId, newPassword, shouldRefreshAccessToken) {
+function updatePassword(sicksenseId, newPassword, shouldClearAccessToken) {
   var user;
   return when.promise(function(resolve, reject) {
     // Validate user.
-    return DBService.select('users', '*', [{ field: 'id = $', value: userId }])
+    return DBService.select('sicksense', '*', [{ field: 'id = $', value: sicksenseId }])
       .then(function(result) {
         assert.notEqual(result.rows.length, 0);
         return result.rows[0];
       })
       // Update password.
-      .then(function(user) {
+      .then(function(sicksenseID) {
         passgen(newPassword).hash(sails.config.session.secret, function(err, hashedPassword) {
           var values = [{ field: 'password = $', value: hashedPassword }];
-          var conditions = [{ field: 'id = $', value: user.id }];
-          DBService.update('users', values, conditions)
+          var conditions = [{ field: 'id = $', value: sicksenseId }];
+          DBService.update('sicksense', values, conditions)
             .then(function(result) {
-              var user = result.rows[0];
 
-              // Need refresh access token.
-              if (shouldRefreshAccessToken) {
-                AccessTokenService.refresh(user.id)
-                  .then(function(freshAccessToken) {
-                    resolve(UserService.getUserJSON(user, {accessToken: freshAccessToken.token }));
+              // Clear access tokens.
+              if (shouldClearAccessToken) {
+                AccessTokenService.clearAllBySicksenseId(sicksenseId)
+                  .then(function () {
+                    resolve();
                   })
-                  .catch(function(err) {
+                  .catch(function (err) {
                     reject(err);
                   });
               }
               else {
-                AccessToken.findOneByUserId(user.id).exec(function(err, result) {
-                  if (err) return reject(err);
-                  resolve(UserService.getUserJSON(user, {accessToken: result.token}));
-                });
+                resolve();
               }
             })
             .catch(function(err) {
@@ -372,20 +368,10 @@ function setDefaultDeviceSubscribePushNoti(user, subscribe) {
     });
 }
 
-function verify(user_id) {
-  return DBService.select('sicksense_users', 'sicksense_id', [
-    { field: 'user_id = $', value: user_id }
-  ])
-  .then(function (result) {
-    if (result.rows.length !== 0) {
-      return DBService.update('sicksense', [
-        { field: 'is_verify = $', value: 't' }
-      ], [
-        { field: 'id = $' , value: result.rows[0].sicksense_id }
-      ]);
-    }
-    else {
-      return when.resolve();
-    }
-  });
+function verify(sicksenseId) {
+  return DBService.update('sicksense', [
+    { field: 'is_verify = $', value: 't' }
+  ], [
+    { field: 'id = $' , value: sicksenseId }
+  ]);
 }
