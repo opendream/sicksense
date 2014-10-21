@@ -663,7 +663,7 @@ module.exports = {
             return OnetimeTokenService.create('user.resetPassword', localUser.id, sails.config.onetimeToken.lifetime);
           })
           .then(function(token) {
-            var siteURL = sails.config.siteURL;
+            var siteURL = sails.config.common.siteURL;
             var resetURL = siteURL + '/reset-password.html?token=' + token.token;
             var subject = sails.config.mail.forgotPassword.subject;
             var from = sails.config.mail.forgotPassword.from;
