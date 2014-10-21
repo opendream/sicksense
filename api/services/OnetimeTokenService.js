@@ -47,7 +47,7 @@ module.exports = {
       return when.promise(function (resolve, reject) {
 
         DBService
-        .select('users', 'id', [
+        .select('sicksense', 'id', [
           { field: 'id = $', value: userId }
         ])
         .then(function (result) {
@@ -141,7 +141,7 @@ module.exports = {
     function validate() {
 
       return when.promise(function (resolve, reject) {
-        DBService.select('users', 'id', [
+        DBService.select('sicksense', 'id', [
           { field: 'email = $', value: email }
         ])
         .then(function (result) {

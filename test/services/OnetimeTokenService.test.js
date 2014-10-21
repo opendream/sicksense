@@ -8,9 +8,11 @@ describe('OnetimeToken service test', function () {
 
     // create new user
     DBService
-    .insert('users', [
+    .insert('sicksense', [
       { field: 'email', value: 'onetimetokenuser001@sicksense.org' },
-      { field: 'password', value: 'text-here-is-ignored' }
+      { field: 'password', value: 'text-here-is-ignored' },
+      { field: '"createdAt"', value: new Date() },
+      { field: '"updatedAt"', value: new Date() }
     ])
     .then(function (result) {
       data.user = result.rows[0];
@@ -22,7 +24,7 @@ describe('OnetimeToken service test', function () {
 
   after(function (done) {
 
-    DBService.delete('users', [
+    DBService.delete('sicksense', [
       { field: 'id = $', value: data.user.id }
     ]).then(function () {
       done();
@@ -128,9 +130,11 @@ describe('OnetimeToken service test', function () {
 
       // create new user
       DBService
-      .insert('users', [
+      .insert('sicksense', [
         { field: 'email', value: 'verifyemailtest300@opendream.co.th' },
-        { field: 'password', value: 'text-here-is-ignored' }
+        { field: 'password', value: 'text-here-is-ignored' },
+      { field: '"createdAt"', value: new Date() },
+      { field: '"updatedAt"', value: new Date() }
       ])
       .then(function (result) {
         data.user = result.rows[0];
@@ -194,9 +198,11 @@ describe('OnetimeToken service test', function () {
     ];
 
     before(function (done) {
-      DBService.insert('users', [
+      DBService.insert('sicksense', [
           { field: 'email', value: 'onetimetokenuser002@sicksense.org' },
-          { field: 'password', value: 'text-here-is-ignored' }
+          { field: 'password', value: 'text-here-is-ignored' },
+          { field: '"createdAt"', value: new Date() },
+          { field: '"updatedAt"', value: new Date() }
         ])
         .then(function (result) {
           localUser = result.rows[0];

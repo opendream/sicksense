@@ -2,32 +2,35 @@ var request = require('supertest');
 var when = require('when');
 
 describe('OnetimeTokenController test', function() {
-  var user, user2, onetimeToken, onetimeToken2;
+  var sicksenseID, sicksenseID2, onetimeToken, onetimeToken2;
 
   before(function(done) {
     TestHelper.clearAll()
       .then(function() {
-        return TestHelper.createUser({ email: "john@example.com", password: "12345678" }, true);
+        return TestHelper.createSicksenseID({ email: "john@example.com", password: "12345678" });
       })
       .then(function(_user) {
-        user = _user;
-        return TestHelper.createUser({ email: "adam@example.com", password: "12345678" }, true);
-      })
-      .then(function(_user) {
-        user2 = _user;
+        sicksenseID = _user;
       })
       .then(function() {
-        return OnetimeTokenService.create('test', user.id, sails.config.onetimeToken.lifetime);
+        return OnetimeTokenService.create('test', sicksenseID.id, sails.config.onetimeToken.lifetime);
       })
       .then(function(_onetimeToken) {
         onetimeToken = _onetimeToken;
-        return OnetimeTokenService.create('test', user2.id, -1000);
+      })
+      .then(function() {
+        return TestHelper.createSicksenseID({ email: "adam@example.com", password: "12345678" });
+      })
+      .then(function(_user) {
+        sicksenseID2 = _user;
+      })
+      .then(function() {
+        return OnetimeTokenService.create('test', sicksenseID2.id, -1000);
       })
       .then(function(_onetimeToken) {
         onetimeToken2 = _onetimeToken;
-        sails.log.error(onetimeToken.expired, onetimeToken2.expired);
-        done();
       })
+      .then(done)
       .catch(done);
   });
 
