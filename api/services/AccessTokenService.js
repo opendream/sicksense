@@ -58,16 +58,13 @@ module.exports = {
     });
   },
 
-  clearFromAllSicksenseID: function (sicksenseId) {
+  clearAllBySicksenseId: function (sicksenseId) {
     return when.promise(function (resolve, reject) {
-      return DBService.select('sicksense_users', 'user_id', [
-          { field: 'sicksense_id = $', value: sicksenseId }
-        ])
-        .then(function (result) {
-          if (result.rows.length) return resolve();
-          var users = result.rows;
+      return UserService.getUsersBySicksenseId(sicksenseId)
+        .then(function (users) {
+          if (users.length === 0) return resolve();
           return when.map(users, function (user) {
-            AccessTokenService.delete(user.id);
+            return AccessTokenService.delete(user.id);
           });
         })
         .then(function () {
@@ -75,8 +72,8 @@ module.exports = {
         })
         .catch(function (err) {
           reject(err);
-        })
-    })
+        });
+    });
   }
 
 };

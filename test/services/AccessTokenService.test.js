@@ -118,7 +118,7 @@ describe('AccessTokenService test', function() {
 
   });
 
-  describe('clearFromSicksenseID()', function() {
+  describe('clearAllBySicksenseId()', function() {
 
     it('should clear all users\'s token', function (done) {
 
@@ -127,17 +127,14 @@ describe('AccessTokenService test', function() {
           return AccessTokenService.refresh(data.user2.id)
         })
         .then(function (newAccessToken) {
-          return AccessTokenService.clearFromAllSicksenseID(data.sicksenseID.id);
+          return AccessTokenService.clearAllBySicksenseId(data.sicksenseID.id);
         })
         .then(function () {
-          return DBService.select('sicksense_users', 'user_id', [
-              { field: 'sicksense_id = $', value: data.sicksenseID.id }
-            ]);
+          return UserService.getUsersBySicksenseId(data.sicksenseID.id);
         })
-        .then(function (result) {
-          var users = result.rows;
+        .then(function (users) {
           return when.map(users, function(user) {
-            AccessToken.find({ userId: user.id }).exec(function(err, result) {
+            return AccessToken.find({ userId: user.id }).exec(function(err, result) {
               if (err) return done(err);
               result.length.should.equal(0);
             });
