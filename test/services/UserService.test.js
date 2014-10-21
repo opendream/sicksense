@@ -72,7 +72,6 @@ describe('UserService test', function() {
               { field: '"userId" = $', value: data.user.id }
             ])
             .then(function (result) {
-              console.log(result.rows);
               result.rows.length.should.equal(0);
             })
             .catch(function (err) {
@@ -309,6 +308,57 @@ describe('UserService test', function() {
         })
         .catch(function (err) {
           done(err);
+        });
+
+    });
+
+  });
+
+  describe('getSicksenseIDByEmail()', function () {
+    var data = {};
+
+    beforeEach(function(done) {
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createSicksenseID({ email: "siriwat@opendream.co.th", password: "12345678" });
+        })
+        .then(function(_sicksenseID) {
+          data.sicksenseID = _sicksenseID;
+        })
+        .then(function() {
+          done();
+        })
+        .catch(function(err) {
+          done(err);
+        });
+    });
+
+    afterEach(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should return sicksense id', function (done) {
+
+      UserService.getSicksenseIDByEmail('siriwat@opendream.co.th')
+        .then(function (sicksenseID) {
+          sicksenseID.should.be.ok;
+          sicksenseID.id.should.equal(data.sicksenseID.id);
+          sicksenseID.email.should.equal('siriwat@opendream.co.th');
+          (sicksenseID.password === undefined).should.be.true;
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+
+    });
+
+    it('should error if not found', function (done) {
+
+      UserService.getSicksenseIDByEmail('siriwat2@opendream.co.th')
+        .catch(function (err) {
+          done();
         });
 
     });

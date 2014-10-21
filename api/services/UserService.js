@@ -9,6 +9,7 @@ module.exports = {
   getUserByID: getUserByID,
   getUserByEmail: getUserByEmail,
   getUsersBySicksenseId: getUsersBySicksenseId,
+  getSicksenseIDByEmail: getSicksenseIDByEmail,
   getUserJSON: getUserJSON,
   getDevices: getDevices,
   getDefaultDevice: getDefaultDevice,
@@ -121,6 +122,22 @@ function getUsersBySicksenseId(sicksenseId) {
       })
       .then(function (users) {
         resolve(users);
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+  });
+}
+
+function getSicksenseIDByEmail(email) {
+  return when.promise(function (resolve, reject) {
+    DBService.select('sicksense', '*', [
+        { field: 'email = $', value: email }
+      ])
+      .then(function (result) {
+        if (result.rows.length === 0) return reject(new Error('Sicksense ID not found.'));
+        delete result.rows[0].password;
+        resolve(result.rows[0]);
       })
       .catch(function (err) {
         reject(err);
