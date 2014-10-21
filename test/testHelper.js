@@ -97,6 +97,43 @@ function createUser(values, generateAccessToken) {
   });
 }
 
+function createSicksenseID(values) {
+  var user;
+
+  return when.promise(function (resolve, reject) {
+    passgen(values.password).hash(sails.config.session.secret, function(err, hashedPassword) {
+      if (err) return reject(err);
+      DBService.insert('sicksense', [
+          { field: 'email', value: values.email },
+          { field: 'password', value: hashedPassword },
+          { field: '"createdAt"', value: new Date() },
+          { field: '"updatedAt"', value: new Date() }
+        ])
+        .then(function (result) {
+          resolve(result.rows[0]);
+        })
+        .catch(function (err) {
+          reject(err);
+        });
+    });
+  });
+}
+
+function connectSicksenseAndUser(sicksenseID, user) {
+  return when.promise(function (resolve, reject) {
+    DBService.insert('sicksense_users', [
+        { field: 'sicksense_id', value: sicksenseID.id },
+        { field: 'user_id', value: user.id }
+      ])
+      .then(function (result) {
+        resolve(result.rows[0]);
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+  });
+}
+
 function createReport (values) {
   values = values || {};
 
@@ -307,8 +344,28 @@ function clearOnetimeToken() {
   });
 }
 
+function clearSicksenseIDs() {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
+      if (err) return reject(err);
+
+      client.query('DELETE FROM sicksense', [], function(err, result) {
+        if (err) return reject(err);
+        
+        client.query('DELETE FROM sicksense_users', [], function(err, result) {
+          if (err) return reject(err);
+
+          pgDone();
+          resolve();
+        });
+      });
+    });
+  });
+}
+
 function clearAll () {
   return clearUsers()
+    .then(clearSicksenseIDs)
     .then(clearAccessTokens)
     .then(clearSymptoms)
     .then(clearReports)
@@ -319,6 +376,8 @@ function clearAll () {
 
 module.exports = global.TestHelper = {
   createUser: createUser,
+  createSicksenseID: createSicksenseID,
+  connectSicksenseAndUser: connectSicksenseAndUser,
   createReport: createReport,
   clearUsers: clearUsers,
   clearAccessTokens: clearAccessTokens,
