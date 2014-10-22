@@ -13,7 +13,7 @@ module.exports = {
 
                 UserService.getUserByEmail(client, req.body.recipient)
                     .then(function(user) {
-                        return EmailSubscriptionsService.unsubscribe(client, user);
+                        return EmailSubscriptionsService.unsubscribe(user);
                     })
                     .then(function() {
                         return res.ok({

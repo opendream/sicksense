@@ -28,6 +28,7 @@ module.exports.policies = {
     update: 'tokenAuth',
     userReports: 'tokenAuth',
     getUser: 'tokenAuth',
+    changePassword: 'tokenAuth',
     forgotPassword: true,
     resetPassword: true,
     verify: true
@@ -45,6 +46,11 @@ module.exports.policies = {
 
   'CronController': {
     '*': [ 'sharedToken' ]
+  },
+
+  'LoginController': {
+    '*': true,
+    'connect': 'optionalTokenAuth'
   }
 
 	// Here's an example of mapping some policies to run before
