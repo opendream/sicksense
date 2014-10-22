@@ -102,9 +102,9 @@ describe('NewsController test', function() {
           if (err) return done(err);
 
           res.body.response.news.count.should.equal(3);
-          res.body.response.news.items[0].id.should.equal(news1.id);
+          res.body.response.news.items[0].id.should.equal(news3.id);
           res.body.response.news.items[1].id.should.equal(news2.id);
-          res.body.response.news.items[2].id.should.equal(news3.id);
+          res.body.response.news.items[2].id.should.equal(news1.id);
           done();
         });
     });
@@ -137,7 +137,7 @@ describe('NewsController test', function() {
           if (err) return done(err);
 
           res.body.response.news.count.should.equal(3);
-          res.body.response.news.items[0].id.should.equal(news3.id);
+          res.body.response.news.items[0].id.should.equal(news1.id);
           done();
         });
     });
@@ -153,7 +153,7 @@ describe('NewsController test', function() {
           if (err) return done(err);
 
           res.body.response.news.count.should.equal(3);
-          res.body.response.news.items[0].id.should.equal(news1.id);
+          res.body.response.news.items[0].id.should.equal(news3.id);
           res.body.response.news.items[1].id.should.equal(news2.id);
           done();
         });

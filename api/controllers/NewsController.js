@@ -60,7 +60,7 @@ function index(req, res) {
         offset: 0
       }, req.query);
 
-      DBService.select('news', '*', [], params)
+      DBService.select('news', '*', [], 'ORDER BY "updatedAt" DESC LIMIT ' + params.limit + ' OFFSET ' + params.offset)
         .then(function (result) {
 
           var news = result.rows;
