@@ -15,6 +15,7 @@ module.exports = {
   getDefaultDevice: getDefaultDevice,
   setDevice: setDevice,
   clearDevices: clearDevices,
+  formattedUser: formattedUser,
   removeDefaultUserDevice: removeDefaultUserDevice,
   verify: verify
 };
@@ -175,10 +176,68 @@ function getAccessToken(client, userId, refresh) {
   });
 }
 
-function getUserJSON (user, extra) {
-  extra = extra || {};
+function getUserJSON(userId) {
+  var user, formattedUser, sicksenseID;
+  return when.promise(function (resolve, reject) {
+    return DBService.select('users', '*', [
+        { field: 'id = $', value: userId }
+      ])
+      .then(function (result) {
+        if (result.rows.length === 0) return reject('User not found.');
+        user = result.rows[0];
+      })
+      .then(function () {
+        formattedUser = UserService.formattedUser(user);
+      })
+      .then(function () {
+        return DBService.select('accesstoken', '*', [
+            { field: '"userId" = $', value: user.id }
+          ])
+          .then(function (result) {
+            if (result.rows.length > 0) {
+              formattedUser.accessToken = result.rows[0].token;
+            }
+          })
+          .catch(function (err) {
+            reject(err);
+          });
+      })
+      .then(function () {
+        return UserService.getDefaultDevice(user)
+          .then(function (device) {
+            if (device) {
+              formattedUser.deviceToken = device.id
+            }
+          })
+          .catch(function (err) {
+            reject(err);
+          });
+      })
+      .then(function () {
+        var joinTable = 'sicksense_users su LEFT JOIN sicksense s ON su.sicksense_id = s.id';
+        return DBService.select(joinTable, '*', [
+            { field: 'su.user_id = $', value: user.id }
+          ]);
+      })
+      .then(function (result) {
+        if (result.rows.length === 0) return resolve(formattedUser);
+        sicksenseID = result.rows[0];
+      })
+      .then(function () {
+        formattedUser.email = sicksenseID.email;
+      })
+      .then(function () {
+        resolve(formattedUser);
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+  });
+}
 
-  return _.assign({
+function formattedUser(user, extra) {
+  extra = extra || {};
+  var formattedUser = _.assign({
     id: user.id,
     email: user.email,
     tel: user.tel,
@@ -195,6 +254,7 @@ function getUserJSON (user, extra) {
     },
     platform: user.platform
   }, extra);
+  return formattedUser;
 }
 
 function setDevice(user, device) {

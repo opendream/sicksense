@@ -280,25 +280,12 @@ module.exports = {
     };
 
     function responseJSON() {
-      var extra = {};
-      extra.accessToken = user.accessToken.token;
-
-      return UserService.getDefaultDevice(user)
-        .then(function (device) {
-          if (device) {
-            extra.deviceToken = device.id;
-          }
-
-          if (user.sicksense) {
-            user.email = user.sicksense.email;
-          }
-
-          var json = UserService.getUserJSON(user, extra);
-          // sails.log.error(json, user);
-          return res.ok(json);
+      return UserService.getUserJSON(user.id)
+        .then(function (userJSON) {
+          res.ok(userJSON);
         })
-        .catch(function (err) {
-          return res.serverError(err);
+        .then(function (err) {
+          res.serverError(err);
         });
     };
 
@@ -500,17 +487,13 @@ module.exports = {
           }
 
           return promise.then(function (isSubscribed) {
-            UserService.getDefaultDevice(savedUser)
-              .then(function (device) {
-                var extra = {
-                  accessToken: accessToken.token,
-                  isSubscribed: isSubscribed
-                };
-                if (device) {
-                  extra.deviceToken = device.id;
-                }
-                res.ok(UserService.getUserJSON(savedUser, extra));
-              });
+            return UserService.getUserJSON(savedUser, extra)
+              .then(function (userJSON) {
+                res.ok(userJSON);
+              })
+              .catch(function (err) {
+                res.serverError(err);
+              })
           });
 
         }) // end then()
@@ -750,7 +733,7 @@ module.exports = {
 
       EmailSubscriptionsService.isSubscribed(req.user)
         .then(function (isSubscribed) {
-          var user = UserService.getUserJSON(req.user, {
+          var user = UserService.formattedUser(req.user, {
             isSubscribed: isSubscribed
           });
           res.ok(user);
@@ -852,26 +835,30 @@ module.exports = {
             if (err) return res.serverError(err);
 
             if (accessToken) {
-              returnedUser = UserService.getUserJSON(returnedUser, {
-                accessToken: accessToken.token
-              });
-
-              return res.ok({
-                message: 'Password has been updated.',
-                user: returnedUser
-              });
-            }
-            else {
-              AccessTokenService.refresh(returnedUser.id)
-                .then(function(accessToken) {
-                  returnedUser = UserService.getUserJSON(returnedUser, {
-                    accessToken: accessToken.token
-                  });
-
+              UserService.getUserJSON(returnedUser.id)
+                .then(function (userJSON) {
                   return res.ok({
                     message: 'Password has been updated.',
                     user: returnedUser
                   });
+                })
+                .catch(function (err) {
+                  return res.serverError(err);
+                });
+            }
+            else {
+              AccessTokenService.refresh(returnedUser.id)
+                .then(function(accessToken) {
+                  UserService.getUserJSON(returnedUser.id)
+                    .then(function (userJSON) {
+                      return res.ok({
+                        message: 'Password has been updated.',
+                        user: returnedUser
+                      });
+                    })
+                    .catch(function (err) {
+                      return res.serverError(err);
+                    });
                 })
                 .catch(function(err) {
                   res.serverError(err);
@@ -992,14 +979,16 @@ module.exports = {
           return result.rows[0];
         })
         .then(function(returnedUser) {
-          returnedUser = UserService.getUserJSON(returnedUser, {
-            accessToken: accessToken.token
-          });
-
-          return res.ok({
-            message: 'Password has been changed.',
-            user: returnedUser
-          });
+          UserService.getUserJSON(returnedUser.id)
+            .then(function (userJSON) {
+              return res.ok({
+                message: 'Password has been updated.',
+                user: returnedUser
+              });
+            })
+            .catch(function (err) {
+              return res.serverError(err);
+            });
         })
         .catch(function(err) {
           return res.serverError(err);

@@ -365,4 +365,182 @@ describe('UserService test', function() {
 
   });
 
+  describe('formattedUser()', function (){
+    var data = {};
+
+    beforeEach(function(done) {
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createUser({
+            email: 'A001@sicksense.org',
+            password: 'A001'
+          }, true);
+        })
+        .then(function (user) {
+          data.user = user;
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+    });
+
+    afterEach(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+
+    it('should return formatted user', function (done) {
+      var formatted = UserService.formattedUser(data.user);
+      formatted.id.should.equal(data.user.id);
+      formatted.email.should.equal(data.user.email);
+      formatted.tel.should.equal(data.user.tel);
+      formatted.location.latitude.should.equal(data.user.latitude);
+      formatted.location.longitude.should.equal(data.user.longitude);
+      formatted.address.subdistrict.should.equal(data.user.subdistrict);
+      formatted.address.district.should.equal(data.user.district);
+      formatted.address.city.should.equal(data.user.city);
+      done();
+    });
+
+    it('should contains extra parameters', function (done) {
+      var formatted = UserService.formattedUser(data.user, {
+        accessToken: '1234',
+        whatever: 'something',
+        level1: {
+          level2: 'yeah'
+        }
+      });
+      formatted.accessToken.should.equal('1234');
+      formatted.whatever.should.equal('something');
+      formatted.level1.level2.should.equal('yeah');
+      done();
+    });
+
+  });
+
+  describe('getUserJSON()', function () {
+    var data = {};
+
+    beforeEach(function(done) {
+      TestHelper.clearAll()
+        .then(function() {
+          return TestHelper.createSicksenseID({
+            email: "siriwat@opendream.co.th",
+            password: "12345678"
+          })
+          .then(function(_sicksenseID) {
+            data.sicksenseID = _sicksenseID;
+            return TestHelper.createUser({
+              email: 'A001@sicksense.org',
+              password: 'A001'
+            }, true);
+          })
+          .then(function (user) {
+            data.user = user;
+            return TestHelper.connectSicksenseAndUser(data.sicksenseID, data.user);
+          })
+          .catch(function (err) {
+            done(err);
+          });
+        })
+        .then(function () {
+          return TestHelper.createUser({
+            email: 'A002@sicksense.org',
+            password: 'A002'
+          })
+          .then(function (user) {
+            data.user2 = user;
+          })
+          .catch(function (err) {
+            done(err);
+          });
+        })
+        .then(function () {
+          return TestHelper.createUser({
+            email: 'A003@sicksense.org',
+            password: 'A003'
+          }, true)
+          .then(function (user) {
+            data.user3 = user;
+          })
+          .then(function () {
+            return DBService.insert('devices', [
+                { field: 'user_id', value: data.user3.id },
+                { field: 'subscribe_pushnoti', value: false },
+                { field: 'id', value: 'fake-device-token' },
+                { field: '"createdAt"', value: new Date() },
+                { field: '"updatedAt"', value: new Date() }
+              ]);
+          })
+          .catch(function (err) {
+            done(err);
+          });
+        })
+        .then(function() {
+          done();
+        })
+        .catch(function(err) {
+          done(err);
+        });
+    });
+
+    afterEach(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should contains sicksense email, access token, and demographic', function (done) {
+      UserService.getUserJSON(data.user.id)
+        .then(function (user) {
+          user.id.should.equal(data.user.id);
+          user.email.should.equal(data.sicksenseID.email);
+          user.tel.should.equal(data.user.tel);
+          user.location.latitude.should.equal(data.user.latitude);
+          user.location.longitude.should.equal(data.user.longitude);
+          user.address.subdistrict.should.equal(data.user.subdistrict);
+          user.address.district.should.equal(data.user.district);
+          user.address.city.should.equal(data.user.city);
+          user.accessToken.should.equal(data.user.accessToken);
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+    });
+
+    it('should contains uuid email, no access token', function (done) {
+      UserService.getUserJSON(data.user2.id)
+        .then(function (user) {
+          user.id.should.equal(data.user2.id);
+          user.email.should.equal(data.user2.email);
+          user.tel.should.equal(data.user2.tel);
+          user.location.latitude.should.equal(data.user2.latitude);
+          user.location.longitude.should.equal(data.user2.longitude);
+          user.address.subdistrict.should.equal(data.user2.subdistrict);
+          user.address.district.should.equal(data.user2.district);
+          user.address.city.should.equal(data.user2.city);
+          (user.accessToken === undefined).should.be.true;
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+    });
+
+    it('should contains device token', function (done) {
+      UserService.getUserJSON(data.user3.id)
+        .then(function (user) {
+          user.id.should.equal(data.user3.id);
+          user.deviceToken.should.equal('fake-device-token');
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+    });
+
+  });
+
 });
