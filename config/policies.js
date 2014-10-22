@@ -46,6 +46,11 @@ module.exports.policies = {
 
   'CronController': {
     '*': [ 'sharedToken' ]
+  },
+
+  'LoginController': {
+    '*': true,
+    'connect': 'optionalTokenAuth'
   }
 
 	// Here's an example of mapping some policies to run before

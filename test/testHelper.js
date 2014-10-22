@@ -378,6 +378,21 @@ function clearSicksenseIDs() {
   });
 }
 
+function clearDevices() {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
+      if (err) return reject(err);
+
+      client.query('DELETE FROM devices', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
 function clearAll () {
   return clearUsers()
     .then(clearSicksenseIDs)
@@ -387,6 +402,7 @@ function clearAll () {
     .then(clearReportsSymptoms)
     .then(clearReportsSummaryByWeek)
     .then(clearOnetimeToken)
+    .then(clearDevices)
     .then(clearEmailSubscription);
 }
 
@@ -403,5 +419,6 @@ module.exports = global.TestHelper = {
   clearReports: clearReports,
   clearOnetimeToken: clearOnetimeToken,
   clearEmailSubscription: clearEmailSubscription,
+  clearDevices: clearDevices,
   clearAll: clearAll
 };

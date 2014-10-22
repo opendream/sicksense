@@ -73,6 +73,11 @@ module.exports.routes = {
     action: 'changePassword'
   },
 
+  'post /connect': {
+    controller: 'login',
+    action: 'connect'
+  },
+
   'post /reports': {
     controller: 'reports',
     action: 'create'
