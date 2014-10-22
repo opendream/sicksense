@@ -54,21 +54,28 @@ function create(req, res) {
 function index(req, res) {
   validate()
     .then(function () {
-      // TODO: ADD LIMIT + OFFSET + ORDERING
-      // params = _.extend({
-      //   limit: 10,
-      //   offset: 0
-      // }, req.query);
+      // TODO: ADD ORDERING
+      params = _.extend({
+        limit: 10,
+        offset: 0
+      }, req.query);
 
-
-      DBService.select('news', '*')
+      DBService.select('news', '*', [], params)
         .then(function (result) {
-          return res.ok({
-            news: {
-              count: result.rowCount,
-              items: result.rows
-            }
-          });
+
+          var news = result.rows;
+          DBService.select('news', '*', [])
+            .then(function (result) {
+              return res.ok({
+                news: {
+                  count: result.rowCount,
+                  items: news
+                }
+              });
+            })
+            .catch(function (err) {
+              return res.serverError(err);
+            });
         })
         .catch(function (err) {
           return res.serverError(err);
@@ -81,12 +88,12 @@ function index(req, res) {
 
   function validate() {
     return when.promise(function (resolve, reject) {
-      // if (req.query.limit) {
-      //   req.checkQuery('limit', '`limit` field is not valid').isInt();
-      // }
-      // if (req.query.offset) {
-      //   req.checkQuery('offset', '`offset` field is not valid').isInt();
-      // }
+      if (req.query.limit) {
+        req.checkQuery('limit', '`limit` field is not valid').isInt();
+      }
+      if (req.query.offset) {
+        req.checkQuery('offset', '`offset` field is not valid').isInt();
+      }
 
       var errors = req.validationErrors();
       var paramErrors = req.validationErrors(true);

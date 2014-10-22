@@ -109,6 +109,73 @@ describe('NewsController test', function() {
         });
     });
 
+    it('should return error when offset and limit is not int', function(done) {
+      request(sails.hooks.http.app)
+        .get('/news')
+        .query({
+          offset: 'offset',
+          limit: 'limit'
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.offset.match(/offset. is not valid/);
+          res.body.meta.invalidFields.limit.match(/limit. is not valid/);
+          done();
+        });
+    });
+
+    it('should return news list with offset', function(done) {
+      request(sails.hooks.http.app)
+        .get('/news')
+        .query({
+          offset: 2
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.news.count.should.equal(3);
+          res.body.response.news.items[0].id.should.equal(news3.id);
+          done();
+        });
+    });
+
+    it('should return news list with limit', function(done) {
+      request(sails.hooks.http.app)
+        .get('/news')
+        .query({
+          limit: 2
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.news.count.should.equal(3);
+          res.body.response.news.items[0].id.should.equal(news1.id);
+          res.body.response.news.items[1].id.should.equal(news2.id);
+          done();
+        });
+    });
+
+    it('should return news list with limit and offset', function(done) {
+      request(sails.hooks.http.app)
+        .get('/news')
+        .query({
+          offset: 1,
+          limit: 1
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.news.count.should.equal(3);
+          res.body.response.news.items[0].id.should.equal(news2.id);
+          done();
+        });
+    });
+
   });
 
   describe('[POST] /news/:id', function () {

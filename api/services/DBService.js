@@ -8,11 +8,15 @@ module.exports = {
   delete: _delete
 };
 
-function select(table, fieldStr, conditions) {
+function select(table, fieldStr, conditions, extra) {
   var values = [];
   var conditionStr = '';
+  var orderingStr = '';
+  var limitStr = '';
+  var offsetStr = '';
+  var extra = extra || {};
 
-  if (conditions) {
+  if (conditions && conditions.length) {
     conditionStr = ' WHERE ' + _.map(_.range(conditions.length), function (index) {
       var item = conditions[index];
 
@@ -21,7 +25,15 @@ function select(table, fieldStr, conditions) {
     }).join(' AND ');
   }
 
-  var query = util.format("SELECT %s FROM %s %s", fieldStr, table, conditionStr);
+  if (extra.limit) {
+    limitStr = ' LIMIT ' + extra.limit;
+  }
+
+  if (extra.offset) {
+    offsetStr = ' OFFSET ' + extra.offset;
+  }
+
+  var query = util.format("SELECT %s FROM %s %s %s %s", fieldStr, table, conditionStr, limitStr, offsetStr);
 
   return when.promise(function (resolve, reject) {
     var now = (new Date()).getTime();
