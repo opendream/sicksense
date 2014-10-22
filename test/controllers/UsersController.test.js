@@ -770,7 +770,6 @@ describe('UserController test', function() {
               result.rows.length.should.equal(1);
               return EmailSubscriptionsService.isSubscribed({ id: result.rows[0].sicksense_id })
                 .then(function (isSubscribed) {
-                  console.log('isSubscribed', isSubscribed);
                   isSubscribed.should.be.true;
                   done();
                 });
@@ -1339,8 +1338,6 @@ describe('UserController test', function() {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(err);
-            res.body.response.id.should.exist;
-            res.body.response.accessToken.should.exist;
 
             // Should mark user as verified.
             DBService.select('sicksense', 'is_verify', [
@@ -1376,16 +1373,10 @@ describe('UserController test', function() {
         { field: 'email', value: 'request-verify-001@sicksense.org' },
         { field: 'password', value: 'text-here-is-ignored' }
       ])
+      // create sicksense id
       .then(function (result) {
         data.user = result.rows[0];
-        // assign verification token
-        return OnetimeTokenService.create('test', data.user.id, 10)
-          .then(function (tokenObject) {
-            data.tokenObject = tokenObject;
-          });
-      })
-      // create sicksense id
-      .then(function () {
+
         return DBService.insert('sicksense', [
           { field: 'email', value: 'request-verify-001@opendream.co.th' },
           { field: 'password', value: 'password-here-is-ignored' },
@@ -1394,6 +1385,13 @@ describe('UserController test', function() {
       })
       .then(function (result) {
         data.sicksense = result.rows[0];
+        // assign verification token
+        return OnetimeTokenService.create('test', data.sicksense.id, 10)
+          .then(function (tokenObject) {
+            data.tokenObject = tokenObject;
+          });
+      })
+      .then(function (result) {
         return DBService.insert('sicksense_users', [
           { field: 'sicksense_id', value: data.sicksense.id },
           { field: 'user_id', value: data.user.id }
@@ -1578,7 +1576,6 @@ describe('UserController test', function() {
         })
         .expect(200)
         .end(function(err, res) {
-          console.log(res.body);
           if (err) return done(err);
 
           DBService.select('sicksense', 'password', [

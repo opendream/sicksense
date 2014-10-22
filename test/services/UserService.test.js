@@ -225,16 +225,9 @@ describe('UserService test', function() {
         { field: 'email', value: 'doesSicksenseIDExist001@sicksense.org' },
         { field: 'password', value: 'text-here-is-ignored' }
       ])
+      // create sicksense id
       .then(function (result) {
         data.user = result.rows[0];
-        // assign verification token
-        return OnetimeTokenService.create('test', data.user.id, 10)
-          .then(function (tokenObject) {
-            data.tokenObject = tokenObject;
-          });
-      })
-      // create sicksense id
-      .then(function () {
         return DBService.insert('sicksense', [
           { field: 'email', value: 'doesSicksenseIDExist001@opendream.co.th' },
           { field: 'password', value: 'password-here-is-ignored' },
@@ -243,6 +236,13 @@ describe('UserService test', function() {
       })
       .then(function (result) {
         data.sicksense = result.rows[0];
+        // assign verification token
+        return OnetimeTokenService.create('test', data.sicksense.id, 10)
+          .then(function (tokenObject) {
+            data.tokenObject = tokenObject;
+          });
+      })
+      .then(function (result) {
         return DBService.insert('sicksense_users', [
           { field: 'sicksense_id', value: data.sicksense.id },
           { field: 'user_id', value: data.user.id }

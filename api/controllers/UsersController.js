@@ -413,7 +413,6 @@ module.exports = {
         .then(function (userJSON) {
           userJSON = _.assign(userJSON, extra);
           res.ok(userJSON);
-          console.log('11111 return');
         })
         .catch(function (err) {
           res.serverError(err);
@@ -491,12 +490,10 @@ module.exports = {
 
           var savedUser = users.rows[0];
           if (req.body.subscribe) {
-            console.log('11111 sub');
             promise = EmailSubscriptionsService.subscribe(savedUser).then(function () {
               return true;
             });
           } else {
-            console.log('11111 unsub');
             promise = EmailSubscriptionsService.unsubscribe(savedUser).then(function () {
               return false;
             });
@@ -994,7 +991,7 @@ module.exports = {
               return OnetimeTokenService.delete(tokenObject.user_id, tokenObject.type);
             })
             .then(function () {
-              res.ok({});
+              res.ok();
             })
             .catch(function (err) {
               sails.log.error('UsersController.verify()::', err);
@@ -1018,11 +1015,14 @@ module.exports = {
       return res.badRequest(_.first(errors).msg, paramErrors);
     }
 
+    var data = {};
+
     // Check if e-mail exists
     UserService.doesSicksenseIDExist(req.body.email)
       .then(function (result) {
         // -- if yes
         if (result) {
+          data.sicksense = result;
           // load user object
           return DBService.select('sicksense_users', 'user_id', [
             { field: 'sicksense_id = $', value: result.id }
@@ -1046,10 +1046,10 @@ module.exports = {
       })
       .then(function (user) {
         // 1. delete old token
-        return OnetimeTokenService.delete(user.id, 'user.verifyEmail')
+        return OnetimeTokenService.delete(data.sicksense.id, 'user.verifyEmail')
         // 2. generate the new one
         .then(function () {
-          return OnetimeTokenService.create('user.verifyEmail', user.id, sails.config.onetimeToken.lifetime);
+          return OnetimeTokenService.create('user.verifyEmail', data.sicksense.id, sails.config.onetimeToken.lifetime);
         })
         // 3. send e-mail
         .then(function (tokenObject) {
