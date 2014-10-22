@@ -848,6 +848,84 @@ module.exports = {
       });
   },
 
+  requestVerify: function(req, res) {
+    req.checkBody('email', 'E-mail field is required').notEmpty();
+    req.checkBody('email', 'E-mail field is not valid').isEmail();
+
+    var errors = req.validationErrors();
+    var paramErrors = req.validationErrors(true);
+    if (errors) {
+      return res.badRequest(_.first(errors).msg, paramErrors);
+    }
+
+    // Check if e-mail exists
+    UserService.doesSicksenseIDExist(req.body.email)
+      .then(function (result) {
+        // -- if yes
+        if (result) {
+          // load user object
+          return DBService.select('sicksense_users', 'user_id', [
+            { field: 'sicksense_id = $', value: result.id }
+          ])
+          .then(function (result) {
+            return DBService.select('users', '*', [
+              { field: 'id = $', value: result.rows[0].user_id }
+            ]);
+          })
+          .then(function (result) {
+            return when.resolve(result.rows[0]);
+          });
+        }
+        // -- else
+        else {
+          // 1. show bad request.
+          var error = new Error('E-mail address not found. Please register first');
+          error.statusCode = 400;
+          return when.reject(error);
+        }
+      })
+      .then(function (user) {
+        // 1. delete old token
+        return OnetimeTokenService.delete(user.id, 'user.verifyEmail')
+        // 2. generate the new one
+        .then(function () {
+          return OnetimeTokenService.create('user.verifyEmail', user.id, sails.config.onetimeToken.lifetime);
+        })
+        // 3. send e-mail
+        .then(function (tokenObject) {
+            // check if subscribed account then send verification e-mail.
+            var config = sails.config.mail.verificationEmail,
+                subject = config.subject,
+                body = config.body,
+                from = config.from,
+                to = user.email,
+                html = config.html;
+
+            var url = req.getWWWUrl(sails.config.common.verifyEndpoint, {
+              token: tokenObject.token
+            });
+
+            // substitute value in body, html
+            body = body.replace(/\%token%/, url);
+            html = html.replace(/\%token%/, url);
+
+            return MailService.send(subject, body, from, to, html);
+        });
+      })
+      .then(function () {
+        res.ok({ status: 'ok' });
+      })
+      .catch(function (err) {
+        if (err.statusCode == 400) {
+          res.badRequest(err);
+        }
+        else {
+          sails.log.error('UsersController.requestVerify()::', err);
+          res.serverError('Server error, Cannot send verification e-mail', err);
+        }
+      });
+  },
+
   changePassword: function(req, res) {
     // Check own access token first.
     AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {

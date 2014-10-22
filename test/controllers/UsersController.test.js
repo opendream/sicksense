@@ -1245,7 +1245,6 @@ describe('UserController test', function() {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(err);
-            console.log('--', res.body);
 
             res.body.response.id.should.exist;
             res.body.response.accessToken.should.exist;
@@ -1270,6 +1269,109 @@ describe('UserController test', function() {
           });
       });
 
+    });
+  });
+
+  describe('[POST] /users/request-verify : re-send verification e-mail', function () {
+    var data = {};
+
+    before(function (done) {
+
+      // create new user
+      DBService
+      .insert('users', [
+        { field: 'email', value: 'request-verify-001@sicksense.org' },
+        { field: 'password', value: 'text-here-is-ignored' }
+      ])
+      .then(function (result) {
+        data.user = result.rows[0];
+        // assign verification token
+        return OnetimeTokenService.create('test', data.user.id, 10)
+          .then(function (tokenObject) {
+            data.tokenObject = tokenObject;
+          });
+      })
+      // create sicksense id
+      .then(function () {
+        return DBService.insert('sicksense', [
+          { field: 'email', value: 'request-verify-001@opendream.co.th' },
+          { field: 'password', value: 'password-here-is-ignored' },
+          { field: '"createdAt"', value: new Date() }
+        ]);
+      })
+      .then(function (result) {
+        data.sicksense = result.rows[0];
+        return DBService.insert('sicksense_users', [
+          { field: 'sicksense_id', value: data.sicksense.id },
+          { field: 'user_id', value: data.user.id }
+        ]);
+      })
+      .then(function () {
+        done();
+      })
+      .catch(done);
+
+    });
+
+    it('should validate `email` is required', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users/request-verify')
+          .expect(400)
+          .end(function (err) {
+            if (err) return done(new Error(err));
+            done();
+          });
+    });
+
+    it('should validate `email` is valid', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users/request-verify')
+          .send({
+            email: 'this-is-not-valid@email',
+          })
+          .expect(400)
+          .end(function (err) {
+            if (err) return done(new Error(err));
+            done();
+          });
+    });
+
+    it('should validate `email` exists', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users/request-verify')
+          .send({
+            email: 'this-doesnt-exits@email.com',
+          })
+          .expect(400)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            res.body.meta.errorMessage.should.match(/(not found)|(ไม่พบ)/);
+
+            done();
+          });
+    });
+
+    it.skip('should re-send `email` if all parameter is ok', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users/request-verify')
+          .send({
+            email: 'verifyemailtest001@opendream.co.th',
+          })
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            DBService.select('onetimetoken', 'token', [
+              { field: 'token = $', value: data.tokenObject.token }
+            ])
+            .then(function (result) {
+              result.rows.should.have.length(0);
+
+              done();
+            })
+            .catch(done);
+          });
     });
   });
 

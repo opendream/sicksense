@@ -38,6 +38,11 @@ module.exports.routes = {
     action: 'verify'
   },
 
+  'post /users/request-verify': {
+    controller: 'users',
+    action: 'requestVerify'
+  },
+
   'post /users/forgot-password': {
     controller: 'users',
     action: 'forgotPassword'

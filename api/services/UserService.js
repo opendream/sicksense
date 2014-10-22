@@ -14,7 +14,8 @@ module.exports = {
   setDevice: setDevice,
   clearDevices: clearDevices,
   removeDefaultUserDevice: removeDefaultUserDevice,
-  verify: verify
+  verify: verify,
+  doesSicksenseIDExist: doesSicksenseIDExist
 };
 
 function updatePassword(userId, newPassword, shouldRefreshAccessToken) {
@@ -366,6 +367,20 @@ function verify(user_id) {
     }
     else {
       return when.resolve();
+    }
+  });
+}
+
+function doesSicksenseIDExist(email) {
+  return DBService.select('sicksense', '*', [
+    { field: 'email = $', value: email }
+  ])
+  .then(function (result) {
+    if (result.rows.length !== 0) {
+      return when.resolve(result.rows[0]);
+    }
+    else {
+      return when.resolve(false);
     }
   });
 }

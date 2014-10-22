@@ -145,4 +145,65 @@ describe('UserService test', function() {
 
   });
 
+  describe('doesSicksenseIDExist(:email)', function () {
+
+    var data = {};
+
+    before(function (done) {
+
+      // create new user
+      DBService
+      .insert('users', [
+        { field: 'email', value: 'doesSicksenseIDExist001@sicksense.org' },
+        { field: 'password', value: 'text-here-is-ignored' }
+      ])
+      .then(function (result) {
+        data.user = result.rows[0];
+        // assign verification token
+        return OnetimeTokenService.create('test', data.user.id, 10)
+          .then(function (tokenObject) {
+            data.tokenObject = tokenObject;
+          });
+      })
+      // create sicksense id
+      .then(function () {
+        return DBService.insert('sicksense', [
+          { field: 'email', value: 'doesSicksenseIDExist001@opendream.co.th' },
+          { field: 'password', value: 'password-here-is-ignored' },
+          { field: '"createdAt"', value: new Date() }
+        ]);
+      })
+      .then(function (result) {
+        data.sicksense = result.rows[0];
+        return DBService.insert('sicksense_users', [
+          { field: 'sicksense_id', value: data.sicksense.id },
+          { field: 'user_id', value: data.user.id }
+        ]);
+      })
+      .then(function () {
+        done();
+      })
+      .catch(done);
+
+    });
+
+    it('should resolve sicksense object if exists', function (done) {
+      UserService.doesSicksenseIDExist('doesSicksenseIDExist001@opendream.co.th')
+        .then(function (result) {
+          result.id.should.exists;
+          result.email.should.equal('doesSicksenseIDExist001@opendream.co.th');
+          done();
+        });
+    });
+
+    it('should resolve false if else', function (done) {
+      UserService.doesSicksenseIDExist('no-no-no-i-am-none@opendream.co.th')
+        .then(function (result) {
+          result.should.equal(false);
+          done();
+        });
+    });
+
+  });
+
 });
