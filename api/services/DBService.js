@@ -10,15 +10,18 @@ module.exports = {
 
 function select(table, fieldStr, conditions) {
   var values = [];
+  var conditionStr = '';
 
-  var conditionStr = _.map(_.range(conditions.length), function (index) {
-    var item = conditions[index];
+  if (conditions) {
+    conditionStr = ' WHERE ' + _.map(_.range(conditions.length), function (index) {
+      var item = conditions[index];
 
-    values.push(item.value);
-    return item.field.replace(/\$/, '$' + (index + 1));
-  }).join(' AND ');
+      values.push(item.value);
+      return item.field.replace(/\$/, '$' + (index + 1));
+    }).join(' AND ');
+  }
 
-  var query = util.format("SELECT %s FROM %s WHERE %s", fieldStr, table, conditionStr);
+  var query = util.format("SELECT %s FROM %s %s", fieldStr, table, conditionStr);
 
   return when.promise(function (resolve, reject) {
     var now = (new Date()).getTime();

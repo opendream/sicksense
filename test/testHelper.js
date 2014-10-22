@@ -238,6 +238,26 @@ function _createReport (values) {
   });
 }
 
+function createNews(values) {
+  values = values || {};
+
+  return when.promise(function(resolve, reject) {
+    DBService
+      .insert('news', [
+        { field: '"title"', value: values.title || Faker.lorem.sentence() },
+        { field: '"content"', value: values.content || Faker.lorem.paragraph() },
+        { field: '"createdAt"', value: values.createdAt || new Date() },
+        { field: '"updatedAt"', value: values.updatedAt || new Date() }
+      ])
+      .then(function (result) {
+        resolve(result.rows[0]);
+      })
+      .catch(function (err) {
+        reject(err);
+      });
+  });
+}
+
 function clearReports () {
   return when.promise(function(resolve, reject) {
     pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
@@ -307,6 +327,21 @@ function clearOnetimeToken() {
   });
 }
 
+function clearNews() {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
+      if (err) return reject(err);
+
+      client.query('DELETE FROM news', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
 function clearAll () {
   return clearUsers()
     .then(clearAccessTokens)
@@ -314,12 +349,14 @@ function clearAll () {
     .then(clearReports)
     .then(clearReportsSymptoms)
     .then(clearReportsSummaryByWeek)
-    .then(clearOnetimeToken);
+    .then(clearOnetimeToken)
+    .then(clearNews);
 }
 
 module.exports = global.TestHelper = {
   createUser: createUser,
   createReport: createReport,
+  createNews: createNews,
   clearUsers: clearUsers,
   clearAccessTokens: clearAccessTokens,
   clearSymptoms: clearSymptoms,
@@ -327,5 +364,6 @@ module.exports = global.TestHelper = {
   clearReportsSummaryByWeek: clearReportsSummaryByWeek,
   clearReports: clearReports,
   clearOnetimeToken: clearOnetimeToken,
+  clearNews: clearNews,
   clearAll: clearAll
 };
