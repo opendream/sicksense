@@ -5,6 +5,12 @@ var when = require('when');
 describe('NewsController test', function() {
 
   before(function(done) {
+
+    sails.config.sharedTokens = [{
+      token: '1234',
+      username: 'haroro'
+    }];
+
     TestHelper.clearAll()
       .then(done, done);
   });
@@ -14,11 +20,23 @@ describe('NewsController test', function() {
       .then(done, done);
   });
 
-  describe('[POST] /news', function() {
+  describe('[POST] /news', function () {
+
+    it('should forbidden for unauthorization user', function(done) {
+      request(sails.hooks.http.app)
+        .post('/news')
+        .query({token: '1234xxxx'})
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
 
     it('should error when nothing is provided', function(done) {
       request(sails.hooks.http.app)
         .post('/news')
+        .query({token: '1234'})
         .expect(400)
         .end(function(err, res) {
           if (err) return done(err);
@@ -29,6 +47,7 @@ describe('NewsController test', function() {
     it('should error when title is longer than 100 characters', function(done) {
       request(sails.hooks.http.app)
         .post('/news')
+        .query({token: '1234'})
         .send({
           title: '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890x',
           content: 'abcd'
@@ -45,6 +64,7 @@ describe('NewsController test', function() {
     it('should create news', function (done) {
       request(sails.hooks.http.app)
         .post('/news')
+        .query({token: '1234'})
         .send({
           title: '소녀시대 Taeyeon expresses her dislike of standing in front of cameras',
           content: 'The episode showed an awkward Taeyeon during her first meeting with the production crew.'
@@ -199,6 +219,90 @@ describe('NewsController test', function() {
         .then(done, done);
     });
 
+    it('should forbidden for unauthorization user', function(done) {
+      request(sails.hooks.http.app)
+        .post('/news/' + news.id)
+        .query({token: '1234xxxx'})
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when nothing is provided', function(done) {
+      request(sails.hooks.http.app)
+        .post('/news/' + news.id)
+        .query({token: '1234'})
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should error when title is longer than 100 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/news/' + news.id)
+        .query({token: '1234'})
+        .send({
+          title: '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890x',
+          content: 'abcd'
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.title.match(/title.*must less than 100 characters/);
+          done();
+        });
+    });
+
+    it('should update news', function (done) {
+      request(sails.hooks.http.app)
+        .post('/news/' + news.id)
+        .query({token: '1234'})
+        .send({
+          title: 'Hehe. Why was Girls Days Hyeri worried?',
+          content: 'Girl\'s Day\'s Hyeri reveals people worried about Minah\'s appearance on "1 vs. 100"'
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.id.should.ok;
+          res.body.response.title.should.equal('Hehe. Why was Girls Days Hyeri worried?');
+          res.body.response.content.should.equal('Girl\'s Day\'s Hyeri reveals people worried about Minah\'s appearance on "1 vs. 100"');
+          res.body.response.createdAt.should.ok;
+          res.body.response.updatedAt.should.ok;
+
+          done();
+        });
+    });
+
+  });
+
+  describe('[GET] /news/:id', function () {
+
+    var news;
+
+    before(function(done) {
+      TestHelper.clearAll()
+        .then(function () {
+          return TestHelper.createNews()
+        })
+        .then(function (_news) {
+          news = _news;
+          done();
+        })
+        .catch(done);
+    });
+
+    after(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
     it('should return news item', function (done) {
       request(sails.hooks.http.app)
         .get('/news/' + news.id)
@@ -250,9 +354,21 @@ describe('NewsController test', function() {
         .then(done, done);
     });
 
+    it('should forbidden for unauthorization user', function(done) {
+      request(sails.hooks.http.app)
+        .delete('/news/' + news.id)
+        .query({token: '1234xxxx'})
+        .expect(403)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
     it('should delete news', function (done) {
       request(sails.hooks.http.app)
         .delete('/news/' + news.id)
+        .query({token: '1234'})
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);
@@ -271,6 +387,7 @@ describe('NewsController test', function() {
     it('should error when delete inexist news', function (done) {
       request(sails.hooks.http.app)
         .delete('/news/' + news.id)
+        .query({token: '1234'})
         .expect(404)
         .end(function(err, res) {
           if (err) return done(err);

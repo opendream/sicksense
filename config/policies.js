@@ -44,6 +44,12 @@ module.exports.policies = {
     'send': 'mailgunToken',
   },
 
+  'NewsController': {
+    create: 'sharedToken',
+    update: 'sharedToken',
+    destroy: 'sharedToken'
+  },
+
   'CronController': {
     '*': [ 'sharedToken' ]
   }
