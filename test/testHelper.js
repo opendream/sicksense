@@ -241,21 +241,10 @@ function _createReport (values) {
 function createNews(values) {
   values = values || {};
 
-  return when.promise(function(resolve, reject) {
-    DBService
-      .insert('news', [
-        { field: '"title"', value: values.title || Faker.lorem.sentence() },
-        { field: '"content"', value: values.content || Faker.lorem.paragraph() },
-        { field: '"createdAt"', value: values.createdAt || new Date() },
-        { field: '"updatedAt"', value: values.updatedAt || new Date() }
-      ])
-      .then(function (result) {
-        resolve(result.rows[0]);
-      })
-      .catch(function (err) {
-        reject(err);
-      });
-  });
+  var title = values.title || Faker.lorem.sentence();
+  var content = values.content || Faker.lorem.paragraph();
+
+  return NewsService.create(title, content);
 }
 
 function clearReports () {

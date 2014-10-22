@@ -13,21 +13,10 @@ function create(req, res) {
 
   validate()
     .then(function () {
-
-      var now = new Date();
-      DBService
-        .insert('news', [
-          { field: '"title"', value: req.body.title },
-          { field: '"content"', value: req.body.content },
-          { field: '"createdAt"', value: now },
-          { field: '"updatedAt"', value: now }
-        ])
-        .then(function (result) {
-          return res.ok(result.rows[0]);
-        })
-        .catch(function (err) {
-          return res.serverError(err);
-        });
+      return NewsService.create(req.body.title, req.body.content)
+    })
+    .then(function (news) {
+      res.ok(news);
     })
     .catch(function(err) {
       res.serverError(err);
@@ -164,7 +153,7 @@ function update(req, res) {
 }
 
 function getNews(req, res) {
-  getNews()
+  NewsService.get(req.params.news_id)
     .then(function (news) {
       if (news) {
         return res.ok(news);
@@ -175,25 +164,11 @@ function getNews(req, res) {
     })
     .catch(function (err) {
       return res.serverError(err);
-    })
-
-  function getNews() {
-    return when.promise(function(resolve, reject) {
-      DBService.select('news', '*', [
-        { field: 'id = $', value: req.params.news_id }
-      ])
-      .then(function (result) {
-        resolve(result.rows[0])
-      })
-      .catch(function (err) {
-        reject(err);
-      })
     });
-  }
 }
 
 function destroy(req, res) {
-  getNews()
+  NewsService.get(req.params.news_id)
     .then(function (news) {
       if (news) {
         DBService.delete('news', [
@@ -212,19 +187,5 @@ function destroy(req, res) {
     })
     .catch(function (err) {
       return res.serverError(err);
-    })
-
-  function getNews() {
-    return when.promise(function(resolve, reject) {
-      DBService.select('news', '*', [
-        { field: 'id = $', value: req.params.news_id }
-      ])
-      .then(function (result) {
-        resolve(result.rows[0])
-      })
-      .catch(function (err) {
-        reject(err);
-      })
     });
-  }
 }
