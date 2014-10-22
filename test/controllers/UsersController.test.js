@@ -535,17 +535,37 @@ describe('UserController test', function() {
 
   describe('[POST] /user/:id', function() {
 
-    var user;
+    var user, sicksenseID;
     before(function(done) {
       TestHelper.clearAll()
         .then(function () {
-          return TestHelper.createUser({ email: "siriwat-before-real@opendream.co.th", password: "12345678" }, true);
+          return TestHelper.createUser({
+            email: 'A001@sicksense.org',
+            password: 'A001'
+          }, true);
         })
         .then(function() {
-          return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+          return TestHelper.createUser({
+            email: 'A002@sicksense.org',
+            password: 'A002'
+          }, true);
         })
         .then(function(_user) {
           user = _user;
+        })
+        .then(function () {
+          return TestHelper.createSicksenseID({
+            email: 'siriwat@opendream.co.th',
+            password: '12345678'
+          });
+        })
+        .then(function (_sicksenseID) {
+          sicksenseID = _sicksenseID;
+        })
+        .then(function () {
+          return TestHelper.connectSicksenseAndUser(sicksenseID, user);
+        })
+        .then(function () {
           done();
         })
         .catch(done);
@@ -579,7 +599,6 @@ describe('UserController test', function() {
           accessToken: user.accessToken
         })
         .send({
-          email: "siriwat-not-real@opendream.co.th",
           password: "12345678",
           tel: "0841291342",
           gender: "male",
@@ -637,7 +656,7 @@ describe('UserController test', function() {
         });
     });
 
-    it('should allow update only e-mail', function(done) {
+    /*it('should allow update only e-mail', function(done) {
       request(sails.hooks.http.app)
         .post('/users/' + user.id)
         .query({
@@ -697,7 +716,7 @@ describe('UserController test', function() {
               done();
             });
         });
-    });
+    });*/
 
     it('should allow user to update password', function(done) {
       request(sails.hooks.http.app)
@@ -712,28 +731,20 @@ describe('UserController test', function() {
         .end(function(err, res) {
           if (err) return done(new Error(err));
 
-          request(sails.hooks.http.app)
-            .post('/login')
-            .send({
-              email: "siriwat+updated-email@opendream.co.th",
-              password: "1qaz2wsx"
-            })
-            .expect(200)
-            .end(function (err, res) {
-              if (err) return done(new Error(err));
-
-              res.body.meta.status.should.equal(200);
-              res.body.response.id.should.equal(user.id);
-              res.body.response.email.should.equal("siriwat+updated-email@opendream.co.th");
-              res.body.response.gender.should.equal('female');
-              res.body.response.birthYear.should.equal(1990);
-              res.body.response.address.subdistrict.should.equal('Suan Luang');
-              res.body.response.address.district.should.equal('Amphoe Krathum Baen');
-              res.body.response.address.city.should.equal('Samut Sakhon');
-              res.body.response.platform.should.equal('doctormeandroid');
-
-              done();
-            });
+          passgen('1qaz2wsx').hash(sails.config.session.secret, function (err, hashedPassword) {
+            if (err) return done(err);
+            DBService.select('sicksense', '*', [
+                { field: 'id = $', value: sicksenseID.id }
+              ])
+              .then(function (result) {
+                result.rows.length.should.equal(1);
+                result.rows[0].password.should.equal(hashedPassword);
+                done();
+              })
+              .catch(function (err) {
+                done(err);
+              });
+          });
         });
     });
 
@@ -752,10 +763,17 @@ describe('UserController test', function() {
 
           res.body.response.isSubscribed.should.be.true;
 
-          EmailSubscriptionsService.isSubscribed(res.body.response)
-            .then(function (isSubscribed) {
-              isSubscribed.should.be.true;
-              done();
+          DBService.select('sicksense_users', 'sicksense_id', [
+              { field: 'user_id = $', value: res.body.response.id }
+            ])
+            .then(function (result) {
+              result.rows.length.should.equal(1);
+              return EmailSubscriptionsService.isSubscribed({ id: result.rows[0].sicksense_id })
+                .then(function (isSubscribed) {
+                  console.log('isSubscribed', isSubscribed);
+                  isSubscribed.should.be.true;
+                  done();
+                });
             })
             .catch(function (err) {
               done(err);
@@ -776,13 +794,18 @@ describe('UserController test', function() {
         .expect(200)
         .end(function(err, res) {
           if (err) return done(new Error(err));
-
           res.body.response.isSubscribed.should.be.false;
 
-          EmailSubscriptionsService.isSubscribed(res.body.response)
-            .then(function (isSubscribed) {
-              isSubscribed.should.be.false;
-              done();
+          DBService.select('sicksense_users', 'sicksense_id', [
+              { field: 'user_id = $', value: res.body.response.id }
+            ])
+            .then(function (result) {
+              result.rows.length.should.equal(1);
+              return EmailSubscriptionsService.isSubscribed({ id: result.rows[0].sicksense_id })
+                .then(function (isSubscribed) {
+                  isSubscribed.should.be.false;
+                  done();
+                });
             })
             .catch(function (err) {
               done(err);
@@ -1057,7 +1080,7 @@ describe('UserController test', function() {
   });
 
   describe('[POST] /users/reset-password', function() {
-    var user, token, mailserviceSend;
+    var user, sicksenseID, token, mailserviceSend;
     var mockTokens = [
       {
         token: '12345678',
@@ -1071,21 +1094,35 @@ describe('UserController test', function() {
       }
     ];
 
-    before(function(done) {
+    beforeEach(function(done) {
       mailserviceSend = MailService.send;
       MailService.send = when.resolve;
 
       TestHelper.clearAll()
-        .then(function() {
-          return TestHelper.createUser({ email: "john@example.com", password: "12345678" }, false);
-        })
-        .then(function(_user) {
-          user = _user;
+        .then(function () {
+          return TestHelper.createSicksenseID({
+            email: 'nirut@opendream.co.th',
+            password: '12345678',
+          })
+          .then(function (_sicksenseID) {
+            sicksenseID = _sicksenseID;
+            return TestHelper.createUser({
+              email: 'A001@sicksense.org',
+              password: 'A001'
+            }, false);
+          })
+          .then(function (_user) {
+            user = _user;
+            return TestHelper.connectSicksenseAndUser(sicksenseID, user);
+          })
+          .catch(function (err) {
+            done(err);
+          });
         })
         .then(function() {
           return when.map(mockTokens, function(token) {
             return DBService.insert('onetimetoken', [
-              { field: 'user_id', value: user.id },
+              { field: 'user_id', value: sicksenseID.id },
               { field: 'token', value: token.token },
               { field: 'type', value: token.type },
               { field: 'expired', value: token.expired }
@@ -1098,7 +1135,7 @@ describe('UserController test', function() {
         .catch(done);
     });
 
-    after(function(done) {
+    afterEach(function(done) {
       MailService.send = mailserviceSend;
 
       TestHelper.clearAll()
@@ -1167,30 +1204,28 @@ describe('UserController test', function() {
         .end(function(err, res) {
           if (err) return done(err);
 
-          DBService.select('users', 'password', [
-              { field: 'email = $', value : user.email }
+          DBService.select('sicksense', 'password', [
+              { field: 'id = $', value : sicksenseID.id }
             ])
             .then(function(result) {
               passgen('new-password').hash(sails.config.session.secret, function(err, hashedPassword) {
                 result.rows[0].password.should.equal(hashedPassword);
 
                 DBService.select('onetimetoken', '*', [
-                    { field: 'user_id = $', value: user.id },
+                    { field: 'user_id = $', value: sicksenseID.id },
                     { field: 'type = $', value: 'user.resetPassword' }
                   ])
                 .then(function(result) {
                   result.rows.length.should.equal(0);
                 })
                 .then(function() {
-                  res.body.response.user.should.be.ok;
-                  res.body.response.user.id.should.equal(user.id);
-                  (res.body.response.user.password === undefined).should.be.true;
-                  res.body.response.user.accessToken.should.be.ok;
-
-                  AccessToken.findOneByUserId(user.id).exec(function(err, result) {
-                    result.should.be.ok;
-                    done();
-                  });
+                  return DBService.select('accesstoken', '*', [
+                      { field: '"userId" = $', value: user.id }
+                    ])
+                })
+                .then(function (result) {
+                  result.rows.length.should.equal(0);
+                  done();
                 })
                 .catch(done);
               })
@@ -1329,28 +1364,36 @@ describe('UserController test', function() {
   });
 
   describe('[POST] /users/:id/change-password', function () {
-    var user;
-    before(function(done) {
+    var user, sicksenseID;
+
+    beforeEach(function(done) {
       TestHelper.clearAll()
         .then(function() {
-          return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+          return TestHelper.createSicksenseID({
+            email: "siriwat@opendream.co.th",
+            password: "12345678"
+          });
+        })
+        .then(function (_sicksenseID) {
+          sicksenseID = _sicksenseID;
+          return TestHelper.createUser({
+            email: 'A001@sicksense.org',
+            password: 'A001'
+          }, true);
         })
         .then(function(_user) {
           user = _user;
+          return TestHelper.connectSicksenseAndUser(sicksenseID, user);
+        })
+        .then(function () {
           done();
         })
         .catch(done);
     });
 
-    after(function(done) {
-      TestHelper.clearUsers()
-        .then(TestHelper.clearAccessTokens)
-        .then(function() {
-          done();
-        })
-        .catch(function(err) {
-          done(err);
-        });
+    afterEach(function(done) {
+      TestHelper.clearAll()
+        .then(done, done);
     });
 
     it('should error when nothing is provided', function(done) {
@@ -1430,32 +1473,22 @@ describe('UserController test', function() {
         })
         .expect(200)
         .end(function(err, res) {
+          console.log(res.body);
           if (err) return done(err);
 
-          DBService.select('users', 'password', [
-              { field: 'email = $', value : user.email }
+          DBService.select('sicksense', 'password', [
+              { field: 'id = $', value : sicksenseID.id }
             ])
-            .then(function(result) {
+            .then(function (result) {
               passgen('new-password').hash(sails.config.session.secret, function(err, hashedPassword) {
                 result.rows[0].password.should.equal(hashedPassword);
 
-                DBService.select('onetimetoken', '*', [
-                    { field: 'user_id = $', value: user.id },
-                    { field: 'type = $', value: 'user.resetPassword' }
+                DBService.select('accesstoken', '*', [
+                    { field: '"userId" = $', value: user.id }
                   ])
                 .then(function(result) {
                   result.rows.length.should.equal(0);
-                })
-                .then(function() {
-                  res.body.response.user.should.be.ok;
-                  res.body.response.user.id.should.equal(user.id);
-                  (res.body.response.user.password === undefined).should.be.true;
-                  res.body.response.user.accessToken.should.be.ok;
-
-                  AccessToken.findOneByUserId(user.id).exec(function(err, result) {
-                    result.should.be.ok;
-                    done();
-                  });
+                  done();
                 })
                 .catch(done);
               })

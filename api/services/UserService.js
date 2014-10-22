@@ -222,11 +222,7 @@ function getUserJSON(userId) {
       .then(function (result) {
         if (result.rows.length === 0) return resolve(formattedUser);
         sicksenseID = result.rows[0];
-      })
-      .then(function () {
         formattedUser.email = sicksenseID.email;
-      })
-      .then(function () {
         resolve(formattedUser);
       })
       .catch(function (err) {
