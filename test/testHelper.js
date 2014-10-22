@@ -275,6 +275,15 @@ function _createReport (values) {
   });
 }
 
+function createNews(values) {
+  values = values || {};
+
+  var title = values.title || Faker.lorem.sentence();
+  var content = values.content || Faker.lorem.paragraph();
+
+  return NewsService.create(title, content);
+}
+
 function clearReports () {
   return when.promise(function(resolve, reject) {
     pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
@@ -359,6 +368,21 @@ function clearEmailSubscription() {
   });
 }
 
+function clearNews() {
+  return when.promise(function(resolve, reject) {
+    pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
+      if (err) return reject(err);
+
+      client.query('DELETE FROM news', [], function(err, result) {
+        pgDone();
+
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+  });
+}
+
 function clearSicksenseIDs() {
   return when.promise(function(resolve, reject) {
     pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
@@ -403,7 +427,8 @@ function clearAll () {
     .then(clearReportsSummaryByWeek)
     .then(clearOnetimeToken)
     .then(clearDevices)
-    .then(clearEmailSubscription);
+    .then(clearEmailSubscription)
+    .then(clearNews);
 }
 
 module.exports = global.TestHelper = {
@@ -411,6 +436,7 @@ module.exports = global.TestHelper = {
   createSicksenseID: createSicksenseID,
   connectSicksenseAndUser: connectSicksenseAndUser,
   createReport: createReport,
+  createNews: createNews,
   clearUsers: clearUsers,
   clearAccessTokens: clearAccessTokens,
   clearSymptoms: clearSymptoms,
@@ -420,5 +446,6 @@ module.exports = global.TestHelper = {
   clearOnetimeToken: clearOnetimeToken,
   clearEmailSubscription: clearEmailSubscription,
   clearDevices: clearDevices,
+  clearNews: clearNews,
   clearAll: clearAll
 };

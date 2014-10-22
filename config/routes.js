@@ -38,6 +38,11 @@ module.exports.routes = {
     action: 'verify'
   },
 
+  'post /users/request-verify': {
+    controller: 'users',
+    action: 'requestVerify'
+  },
+
   'post /users/forgot-password': {
     controller: 'users',
     action: 'forgotPassword'
@@ -130,6 +135,31 @@ module.exports.routes = {
   'post /onetimetoken/validate': {
     controller: 'onetimetoken',
     action: 'validate'
+  },
+
+  'post /news': {
+    controller: 'news',
+    action: 'create'
+  },
+
+  'get /news': {
+    controller: 'news',
+    action: 'index'
+  },
+
+  'post /news/:news_id': {
+    controller: 'news',
+    action: 'update'
+  },
+
+  'get /news/:news_id': {
+    controller: 'news',
+    action: 'getNews'
+  },
+
+  'delete /news/:news_id': {
+    controller: 'news',
+    action: 'destroy'
   }
 
   // If a request to a URL doesn't match any of the custom routes above,
