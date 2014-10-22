@@ -326,7 +326,6 @@ describe('UserController test', function() {
             if (err) return done(err);
             counter.onetimetoken.should.equal(0);
             counter.mail.should.equal(0);
-            console.log('COUNTER: ', counter);
             done();
           });
       });
@@ -517,7 +516,6 @@ describe('UserController test', function() {
                   ]);
               })
               .then(function (result) {
-                console.log(res.body.response);
                 result.rows.length.should.equal(1);
                 result.rows[0].userId.should.equal(sicksenseId);
                 result.rows[0].notifyTime.substr(0, 8).should.equal('08:00:00');
