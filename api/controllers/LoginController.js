@@ -244,7 +244,12 @@ module.exports = {
       return res.badRequest(_.first(errors).msg, paramErrors);
     }
 
-    res.ok({});
+    DBService.delete('sicksense_users', [
+        { field: 'user_id = $', value: req.user.id }
+      ])
+      .then(function (result) {
+        res.ok({});
+      });
   }
 
 };

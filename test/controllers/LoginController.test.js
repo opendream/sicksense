@@ -460,6 +460,28 @@ describe('LoginController test', function() {
         });
     });
 
+    it('should unlink from sicksense id', function (done) {
+      request(sails.hooks.http.app)
+        .post('/unlink')
+        .query({ accessToken: data.user.accessToken })
+        .send({ uuid: 'A001' })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          DBService.select('sicksense_users', '*', [
+              { field: 'user_id = $', value: data.user.id }
+            ])
+            .then(function (result) {
+              result.rows.length.should.equal(0);
+              done();
+            })
+            .catch(function (err) {
+              done(err);
+            });
+        });
+    });
+
   });
 
 });
