@@ -411,7 +411,7 @@ function getILILogs(client, source, startDate, endDate, limit) {
       if (err) {
         sails.log.error('-- ILILOGS stat error (sql)', err);
         var error = new Error("Could not connect to database");
-        error.statusCode = 500;
+        error.status = 500;
         return reject(err);
       }
 

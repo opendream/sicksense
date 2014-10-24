@@ -21,7 +21,7 @@ function create (values) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
-        error.statusCode = 500;
+        error.status = 500;
         return reject(error);
       }
       sails.log.debug('[ReportService:create]', now);
@@ -95,7 +95,7 @@ function create (values) {
         if (err) {
           sails.log.error(err);
           var error = new Error("Could not perform your request");
-          error.statusCode = 500;
+          error.status = 500;
           return reject(error);
         }
 
@@ -127,7 +127,7 @@ function saveSymptoms(report, symptoms) {
         if (err) {
           sails.log.error(err);
           var error = new Error("Could not perform your request");
-          error.statusCode = 500;
+          error.status = 500;
           return deferred.reject(error);
         }
 
@@ -141,7 +141,7 @@ function saveSymptoms(report, symptoms) {
         if (err) {
           sails.log.error(err);
           var error = new Error("Could not connect to database");
-          error.statusCode = 500;
+          error.status = 500;
           return reject(error);
         }
         sails.log.debug('[ReportService:saveSymptoms]', now);
@@ -165,7 +165,7 @@ function saveSymptoms(report, symptoms) {
           if (err) {
             sails.log.error(err);
             var error = new Error("Could not perform your request");
-            error.statusCode = 500;
+            error.status = 500;
             return reject(error);
           }
 
@@ -184,7 +184,7 @@ function loadSymptoms(report) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
-        error.statusCode = 500;
+        error.status = 500;
         return reject(error);
       }
       sails.log.debug('[ReportService:loadSymptoms]', now);
@@ -201,7 +201,7 @@ function loadSymptoms(report) {
         if (err) {
           sails.log.error(err);
           var error = new Error("Could not perform your request");
-          error.statusCode = 500;
+          error.status = 500;
           return reject(error);
         }
 
@@ -223,7 +223,7 @@ function loadUserAddress(report) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
-        error.statusCode = 500;
+        error.status = 500;
         return reject(error);
       }
       sails.log.debug('[ReportService:loadUserAddress]', now);
@@ -235,7 +235,7 @@ function loadUserAddress(report) {
 
           if (!user) {
             var error = new Error("User not found");
-            error.statusCode = 404;
+            error.status = 404;
             sails.log.error(error);
             return reject(error);
           }
@@ -249,7 +249,7 @@ function loadUserAddress(report) {
         .catch(function(err) {
           sails.log.error(err);
           var error = new Error("Could not perform your request");
-          error.statusCode = 500;
+          error.status = 500;
           return reject(error);
         });
     });
@@ -263,7 +263,7 @@ function loadLocationByAddress(address) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
-        error.statusCode = 500;
+        error.status = 500;
         return reject(error);
       }
       sails.log.debug('[ReportService:loadLocationByAddress]', now);
@@ -280,7 +280,7 @@ function loadLocationByAddress(address) {
         if (err) {
           sails.log.error(err);
           var error = new Error("Could not perform your request");
-          error.statusCode = 500;
+          error.status = 500;
           return reject(error);
         }
 
@@ -352,7 +352,7 @@ function getILI(city, startDate, endDate) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
-        error.statusCode = 500;
+        error.status = 500;
         return reject(err);
       }
       sails.log.debug('[ReportService:getILI]', now);
@@ -361,7 +361,7 @@ function getILI(city, startDate, endDate) {
         if (err) {
           sails.log.error('-- iliresult', err);
           var error = new Error("Could not perform your request");
-          error.statusCode = 500;
+          error.status = 500;
           return reject(err);
         }
 
@@ -383,7 +383,7 @@ function getILI(city, startDate, endDate) {
           if (err) {
             sails.log.error('-- countili', err);
             var error = new Error("Could not perform your request");
-            error.statusCode = 500;
+            error.status = 500;
             return reject(err);
           }
 

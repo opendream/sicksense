@@ -201,7 +201,7 @@ function _createReport (values) {
       if (err) {
         sails.log.error(err);
         var error = new Error("Could not connect to database");
-        error.statusCode = 500;
+        error.status = 500;
         return reject(error);
       }
 
@@ -255,7 +255,7 @@ function _createReport (values) {
         if (err) {
           sails.log.error(err);
           var error = new Error("Could not perform your request");
-          error.statusCode = 500;
+          error.status = 500;
           return reject(error);
         }
 
@@ -391,7 +391,7 @@ function clearSicksenseIDs() {
 
       client.query('DELETE FROM sicksense', [], function(err, result) {
         if (err) return reject(err);
-        
+
         client.query('DELETE FROM sicksense_users', [], function(err, result) {
           if (err) return reject(err);
 
