@@ -197,9 +197,9 @@ module.exports = {
     values.userId = req.user.id;
     values.address = req.user.address;
     values.is_anonymous = true;
-    if (req.user.sicksense_id) {
-      values.sicksense_id = req.user.sicksense_id;
-      if (req.user.is_verified) {
+    if (req.user.sicksenseId) {
+      values.sicksense_id = req.user.sicksenseId;
+      if (req.user.isVerified) {
         values.is_anonymous = false;
       }
     }

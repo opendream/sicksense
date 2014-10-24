@@ -224,8 +224,8 @@ function getUserJSON(userId) {
         if (result.rows.length === 0) return resolve(formattedUser);
         sicksenseID = result.rows[0];
         formattedUser.email = sicksenseID.email;
-        formattedUser.sicksense_id = sicksenseID.id;
-        formattedUser.is_verified = sicksenseID.is_verify;
+        formattedUser.sicksenseId = sicksenseID.id;
+        formattedUser.isVerified = sicksenseID.is_verify;
         resolve(formattedUser);
       })
       .catch(function (err) {
@@ -252,8 +252,8 @@ function formattedUser(user, extra) {
       latitude: user.latitude
     },
     platform: user.platform,
-    is_verified: user.is_verify || null,
-    sicksense_id: user.sicksense_id || null
+    isVerified: user.is_verify || null,
+    sicksenseId: user.sicksense_id || null
   }, extra);
   return formattedUser;
 }

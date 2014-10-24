@@ -547,8 +547,8 @@ describe('LoginController test', function() {
           res.body.response.should.not.have.property('password');
           res.body.response.address.should.be.Object;
           res.body.response.location.should.be.Object;
-          (res.body.response.sicksense_id === null).should.be.true;
-          (res.body.response.is_verified === null).should.be.true;
+          (res.body.response.sicksenseId === null).should.be.true;
+          (res.body.response.isVerified === null).should.be.true;
 
           DBService.select('sicksense_users', '*', [
               { field: 'user_id = $', value: data.user.id }

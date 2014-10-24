@@ -566,8 +566,8 @@ describe('UserService test', function() {
           user.address.district.should.equal(data.user.district);
           user.address.city.should.equal(data.user.city);
           user.accessToken.should.equal(data.user.accessToken);
-          user.sicksense_id.should.be.ok;
-          user.is_verified.should.be.false;
+          user.sicksenseId.should.be.ok;
+          user.isVerified.should.be.false;
           done();
         })
         .catch(function (err) {
@@ -587,8 +587,8 @@ describe('UserService test', function() {
           user.address.district.should.equal(data.user2.district);
           user.address.city.should.equal(data.user2.city);
           (user.accessToken === undefined).should.be.true;
-          (user.sicksense_id === null).should.be.true;
-          (user.is_verified === null).should.be.true;
+          (user.sicksenseId === null).should.be.true;
+          (user.isVerified === null).should.be.true;
           done();
         })
         .catch(function (err) {
