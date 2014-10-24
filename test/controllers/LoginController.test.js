@@ -449,6 +449,17 @@ describe('LoginController test', function() {
         });
     });
 
+    it('should validate accessToken', function (done) {
+      request(sails.hooks.http.app)
+        .post('/unlink')
+        .query({ accessToken: '1234qwer' })
+        .expect(403)
+        .end(function (err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
     it('should require uuid', function (done) {
       request(sails.hooks.http.app)
         .post('/unlink')
