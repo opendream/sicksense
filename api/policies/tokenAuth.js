@@ -11,19 +11,16 @@ module.exports = function(req, res, next) {
       }
       else {
         var now = (new Date()).getTime();
-        pgconnect(function(err, client, pgDone) {
-          sails.log.debug('[tokenAuth]', now);
-          if (err) return res.serverError(new Error("Could not connect to database"));
-          UserService.getUserByID(client, accessToken.userId)
-            .then(function(user) {
-              req.user = user;
-              next();
-            })
-            .finally(function() {
-              pgDone();
-              sails.log.debug('[tokenAuth]', now);
-            });
-        });
+        sails.log.debug('[tokenAuth]', now);
+        UserService.getUserJSON(accessToken.userId)
+          .then(function (userJSON) {
+            req.user = userJSON;
+            next();
+          })
+          .catch(function (err) {
+            sails.log.debug('[tokenAuth]', now);
+            res.serverError(new Error('Could not connect to database.'));
+          });
       }
     });
   }

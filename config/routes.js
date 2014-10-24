@@ -38,6 +38,11 @@ module.exports.routes = {
     action: 'verify'
   },
 
+  'post /users/request-verify': {
+    controller: 'users',
+    action: 'requestVerify'
+  },
+
   'post /users/forgot-password': {
     controller: 'users',
     action: 'forgotPassword'
@@ -71,6 +76,16 @@ module.exports.routes = {
   'post /users/:id/change-password': {
     controller: 'users',
     action: 'changePassword'
+  },
+
+  'post /connect': {
+    controller: 'login',
+    action: 'connect'
+  },
+
+  'post /unlink': {
+    controller: 'login',
+    action: 'unlink'
   },
 
   'post /reports': {

@@ -17,7 +17,7 @@ module.exports = {
 
     subscribe: function(email, subscribed) {
         var settings = sails.config.mailgun;
-        
+
         var mailgun = MailService.getInstance();
         var list = mailgun.lists(settings.mailingList + '@' + settings.domain);
 
@@ -52,6 +52,7 @@ module.exports = {
             html: html,
             'recipient-variables': '{}'
         };
+
         return mailgun.messages().send(params)
         .then(function(resp) {
             sails.log.info(resp.message);
