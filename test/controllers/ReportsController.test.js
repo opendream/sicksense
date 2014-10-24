@@ -20,7 +20,7 @@ describe('ReportController test', function() {
       .then(function (result) {
         location = result.rows[0];
         return TestHelper.createUser({
-          email: 'A001@sicksense.org',
+          email: 'A001@sicksense.com',
           password: 'A001',
           address: {
             subdistrict: location.tambon_en,
@@ -43,7 +43,7 @@ describe('ReportController test', function() {
       .then(function (_sicksenseID) {
         sicksenseID = _sicksenseID;
         return TestHelper.createUser({
-          email: 'A002@sicksense.org',
+          email: 'A002@sicksense.com',
           password: 'A002'
         }, true);
       })

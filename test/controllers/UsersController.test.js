@@ -69,7 +69,7 @@ describe('UserController test', function() {
       request(sails.hooks.http.app)
         .post('/users')
         .send({
-          email: "UUID-SICKSENSE-TEST1@sicksense.org",
+          email: "UUID-SICKSENSE-TEST1@sicksense.com",
           password: "UUID-SICKSENSE-TEST1",
           tel: "0841291342",
           gender: "male",
@@ -99,7 +99,7 @@ describe('UserController test', function() {
       request(sails.hooks.http.app)
         .post('/users')
         .send({
-          email: "UUID-SICKSENSE-TEST1@sicksense.org",
+          email: "UUID-SICKSENSE-TEST1@sicksense.com",
           password: "UUID-SICKSENSE-TEST1",
           uuid: 'UUID-SICKSENSE-TEST1'
         })
@@ -115,7 +115,7 @@ describe('UserController test', function() {
       request(sails.hooks.http.app)
         .post('/users')
         .send({
-          email: "UUID-SICKSENSE-TEST2@sicksense.org",
+          email: "UUID-SICKSENSE-TEST2@sicksense.com",
           password: "UUID-SICKSENSE-TEST2",
           tel: "0841291342",
           gender: "male",
@@ -139,7 +139,7 @@ describe('UserController test', function() {
           res.body.meta.status.should.equal(200);
           res.body.response.should.not.have.property('password');
           res.body.response.id.should.ok;
-          res.body.response.email.should.equal("UUID-SICKSENSE-TEST2@sicksense.org");
+          res.body.response.email.should.equal("UUID-SICKSENSE-TEST2@sicksense.com");
           res.body.response.tel.should.equal("0841291342");
           res.body.response.gender.should.equal("male");
           res.body.response.birthYear.should.equal(1986);
@@ -183,7 +183,7 @@ describe('UserController test', function() {
       request(sails.hooks.http.app)
         .post('/users')
         .send({
-          email: "UUID-SICKSENSE-TEST3@sicksense.org",
+          email: "UUID-SICKSENSE-TEST3@sicksense.com",
           password: "UUID-SICKSENSE-TEST3",
           tel: "0841291342",
           gender: "male",
@@ -208,7 +208,7 @@ describe('UserController test', function() {
       request(sails.hooks.http.app)
         .post('/users')
         .send({
-          email: "UUID-SICKSENSE-TEST4@sicksense.org",
+          email: "UUID-SICKSENSE-TEST4@sicksense.com",
           password: "UUID-SICKSENSE-TEST4",
           tel: "0841291342",
           gender: "male",
@@ -234,7 +234,7 @@ describe('UserController test', function() {
       request(sails.hooks.http.app)
         .post('/users')
         .send({
-          email: "UUID-SICKSENSE-TEST5@sicksense.org",
+          email: "UUID-SICKSENSE-TEST5@sicksense.com",
           password: "UUID-SICKSENSE-TEST5",
           tel: "0841291342",
           gender: "male",
@@ -255,7 +255,7 @@ describe('UserController test', function() {
       request(sails.hooks.http.app)
         .post('/users')
         .send({
-          email: "UUID-SICKSENSE-TEST6@sicksense.org",
+          email: "UUID-SICKSENSE-TEST6@sicksense.com",
           password: "UUID-SICKSENSE-TEST6",
           tel: "0841291342",
           gender: "male",
@@ -316,7 +316,7 @@ describe('UserController test', function() {
         request(sails.hooks.http.app)
           .post('/users')
           .send({
-            email: "UUID-SICKSENSE-TEST7@sicksense.org",
+            email: "UUID-SICKSENSE-TEST7@sicksense.com",
             password: "UUID-SICKSENSE-TEST7",
             uuid: 'UUID-SICKSENSE-TEST7'
           })
@@ -336,7 +336,7 @@ describe('UserController test', function() {
         sails.config.mail.verificationEmail = {
           subject: '[sicksense] Please verify your e-mail',
           body: 'Use this link %token%',
-          from: 'sicksense.org',
+          from: 'sicksense.com',
           html: 'Use this link %token%',
           lifetime: (60 * 60) * 3000 // 3 hours
         };
@@ -408,7 +408,7 @@ describe('UserController test', function() {
       request(sails.hooks.http.app)
         .post('/users')
         .send({
-          email: "UUID-SICKSENSE-TEST1@sicksense.org",
+          email: "UUID-SICKSENSE-TEST1@sicksense.com",
           password: "UUID-SICKSENSE-TEST1",
           tel: "0841291342",
           gender: "male",
@@ -540,13 +540,13 @@ describe('UserController test', function() {
       TestHelper.clearAll()
         .then(function () {
           return TestHelper.createUser({
-            email: 'A001@sicksense.org',
+            email: 'A001@sicksense.com',
             password: 'A001'
           }, true);
         })
         .then(function() {
           return TestHelper.createUser({
-            email: 'A002@sicksense.org',
+            email: 'A002@sicksense.com',
             password: 'A002'
           }, true);
         })
@@ -1106,7 +1106,7 @@ describe('UserController test', function() {
           .then(function (_sicksenseID) {
             sicksenseID = _sicksenseID;
             return TestHelper.createUser({
-              email: 'A001@sicksense.org',
+              email: 'A001@sicksense.com',
               password: 'A001'
             }, false);
           })
@@ -1253,7 +1253,7 @@ describe('UserController test', function() {
         })
         .then(function () {
           return TestHelper.createUser({
-            email: 'randomedtotestverify001@sicksense.org',
+            email: 'randomedtotestverify001@sicksense.com',
             password: 'password-here-is-ignored'
           });
         })
@@ -1370,7 +1370,7 @@ describe('UserController test', function() {
       // create new user
       DBService
       .insert('users', [
-        { field: 'email', value: 'request-verify-001@sicksense.org' },
+        { field: 'email', value: 'request-verify-001@sicksense.com' },
         { field: 'password', value: 'text-here-is-ignored' }
       ])
       // create sicksense id
@@ -1515,7 +1515,7 @@ describe('UserController test', function() {
         .then(function (_sicksenseID) {
           sicksenseID = _sicksenseID;
           return TestHelper.createUser({
-            email: 'A001@sicksense.org',
+            email: 'A001@sicksense.com',
             password: 'A001'
           }, true);
         })

@@ -9,7 +9,7 @@ describe('OnetimeToken service test', function () {
     // create new user
     DBService
     .insert('sicksense', [
-      { field: 'email', value: 'onetimetokenuser001@sicksense.org' },
+      { field: 'email', value: 'onetimetokenuser001@sicksense.com' },
       { field: 'password', value: 'text-here-is-ignored' },
       { field: '"createdAt"', value: new Date() },
       { field: '"updatedAt"', value: new Date() }
@@ -199,7 +199,7 @@ describe('OnetimeToken service test', function () {
 
     before(function (done) {
       DBService.insert('sicksense', [
-          { field: 'email', value: 'onetimetokenuser002@sicksense.org' },
+          { field: 'email', value: 'onetimetokenuser002@sicksense.com' },
           { field: 'password', value: 'text-here-is-ignored' },
           { field: '"createdAt"', value: new Date() },
           { field: '"updatedAt"', value: new Date() }

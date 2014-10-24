@@ -119,7 +119,7 @@ describe('LoginController test', function() {
           .then(function (sicksenseID) {
             data.sicksenseID = sicksenseID;
             return TestHelper.createUser({
-              email: 'A001@sicksense.org',
+              email: 'A001@sicksense.com',
               password: 'A001'
             }, true);
           })
@@ -140,7 +140,7 @@ describe('LoginController test', function() {
           .then(function (sicksenseID) {
             data.sicksenseID2 = sicksenseID;
             return TestHelper.createUser({
-              email: 'A002@sicksense.org',
+              email: 'A002@sicksense.com',
               password: 'A002'
             }, true);
           })
@@ -164,7 +164,7 @@ describe('LoginController test', function() {
         // Only User.
         .then(function () {
           return TestHelper.createUser({
-            email: 'A004@sicksense.org',
+            email: 'A004@sicksense.com',
             password: 'A004'
           }, true);
         })
@@ -472,7 +472,7 @@ describe('LoginController test', function() {
           .then(function (sicksenseID) {
             data.sicksenseID = sicksenseID;
             return TestHelper.createUser({
-              email: 'A001@sicksense.org',
+              email: 'A001@sicksense.com',
               password: 'A001'
             }, true);
           })
@@ -483,7 +483,7 @@ describe('LoginController test', function() {
         })
         .then(function () {
           return TestHelper.createUser({
-            email: 'A002@sicksense.org',
+            email: 'A002@sicksense.com',
             password: 'A002',
           }, true);
         })

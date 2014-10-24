@@ -165,7 +165,7 @@ module.exports = {
 
                     // Create new user.
                     DBService.insert('users', [
-                        { field: 'email', value: uuid + '@sicksense.org' },
+                        { field: 'email', value: uuid + '@sicksense.com' },
                         { field: 'password', value: hashedUUID },
                         { field: 'tel', value: latest.tel },
                         { field: 'gender', value: latest.gender },

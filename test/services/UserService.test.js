@@ -15,13 +15,13 @@ describe('UserService test', function() {
           data.sicksenseID = _sicksenseID;
         })
         .then(function() {
-          return TestHelper.createUser({ email: "A001@sicksense.org", password: "A001" }, true);
+          return TestHelper.createUser({ email: "A001@sicksense.com", password: "A001" }, true);
         })
         .then(function (_user) {
           data.user = _user;
         })
         .then(function () {
-          return TestHelper.createUser({ email: "A002@sicksense.org", password: "A002" }, true);
+          return TestHelper.createUser({ email: "A002@sicksense.com", password: "A002" }, true);
         })
         .then(function (_user) {
           data.user2 = _user;
@@ -167,7 +167,7 @@ describe('UserService test', function() {
       })
       .then(function () {
         return TestHelper.createUser({
-          emai: 'randomedtotestverify001@sicksense.org',
+          emai: 'randomedtotestverify001@sicksense.com',
           password: 'password-here-is-ignored'
         }, true);
       })
@@ -222,7 +222,7 @@ describe('UserService test', function() {
       // create new user
       DBService
       .insert('users', [
-        { field: 'email', value: 'doesSicksenseIDExist001@sicksense.org' },
+        { field: 'email', value: 'doesSicksenseIDExist001@sicksense.com' },
         { field: 'password', value: 'text-here-is-ignored' }
       ])
       // create sicksense id
@@ -288,13 +288,13 @@ describe('UserService test', function() {
           data.sicksenseID = _sicksenseID;
         })
         .then(function() {
-          return TestHelper.createUser({ email: "A001@sicksense.org", password: "A001" }, true);
+          return TestHelper.createUser({ email: "A001@sicksense.com", password: "A001" }, true);
         })
         .then(function (_user) {
           data.user = _user;
         })
         .then(function () {
-          return TestHelper.createUser({ email: "A002@sicksense.org", password: "A002" }, true);
+          return TestHelper.createUser({ email: "A002@sicksense.com", password: "A002" }, true);
         })
         .then(function (_user) {
           data.user2 = _user;
@@ -435,7 +435,7 @@ describe('UserService test', function() {
       TestHelper.clearAll()
         .then(function() {
           return TestHelper.createUser({
-            email: 'A001@sicksense.org',
+            email: 'A001@sicksense.com',
             password: 'A001'
           }, true);
         })
@@ -496,7 +496,7 @@ describe('UserService test', function() {
           .then(function(_sicksenseID) {
             data.sicksenseID = _sicksenseID;
             return TestHelper.createUser({
-              email: 'A001@sicksense.org',
+              email: 'A001@sicksense.com',
               password: 'A001'
             }, true);
           })
@@ -510,7 +510,7 @@ describe('UserService test', function() {
         })
         .then(function () {
           return TestHelper.createUser({
-            email: 'A002@sicksense.org',
+            email: 'A002@sicksense.com',
             password: 'A002'
           })
           .then(function (user) {
@@ -522,7 +522,7 @@ describe('UserService test', function() {
         })
         .then(function () {
           return TestHelper.createUser({
-            email: 'A003@sicksense.org',
+            email: 'A003@sicksense.com',
             password: 'A003'
           }, true)
           .then(function (user) {
