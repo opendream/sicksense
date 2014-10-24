@@ -145,53 +145,58 @@ module.exports = {
           // Found sicksense ID.
           sicksenseID = result.rows[0];
 
-          // User not found.
-          if (!user) {
+          if (sicksenseID.is_verify) {
+            // User not found.
+            if (!user) {
 
-            // Find latest connected user with sicksense id.
-            var joinTable = 'sicksense_users su LEFT JOIN users u ON su.user_id = u.id';
-            DBService.select(joinTable, 'u.*', [
-                { field: 'su.sicksense_id = $', value: sicksenseID.id }
-              ], 'ORDER BY u.id DESC LIMIT 1 OFFSET 0')
-              .then(function (result) {
-                var latest = {};
-                if (result.rows.length === 1) {
-                  latest = result.rows[0];
-                }
+              // Find latest connected user with sicksense id.
+              var joinTable = 'sicksense_users su LEFT JOIN users u ON su.user_id = u.id';
+              DBService.select(joinTable, 'u.*', [
+                  { field: 'su.sicksense_id = $', value: sicksenseID.id }
+                ], 'ORDER BY u.id DESC LIMIT 1 OFFSET 0')
+                .then(function (result) {
+                  var latest = {};
+                  if (result.rows.length === 1) {
+                    latest = result.rows[0];
+                  }
 
-                passgen(uuid).hash(sails.config.session.secret, function (err, hashedUUID) {
-                  if (err) return res.serverError(err);
+                  passgen(uuid).hash(sails.config.session.secret, function (err, hashedUUID) {
+                    if (err) return res.serverError(err);
 
-                  // Create new user.
-                  DBService.insert('users', [
-                      { field: 'email', value: uuid + '@sicksense.org' },
-                      { field: 'password', value: hashedUUID },
-                      { field: 'tel', value: latest.tel },
-                      { field: 'gender', value: latest.gender },
-                      { field: '"birthYear"', value: latest.birthYear },
-                      { field: 'subdistrict', value: latest.subdistrict },
-                      { field: 'district', value: latest.district },
-                      { field: 'city', value: latest.city },
-                      { field: 'latitude', value: latest.latitude },
-                      { field: 'longitude', value: latest.longitude },
-                      { field: 'geom', value: latest.geom },
-                      { field: '"createdAt"', value: new Date() },
-                      { field: '"updatedAt"', value: new Date() }
-                    ])
-                    .then(function (result) {
-                      if (result.rows.length === 0) {
-                        return res.serverError('Could perform the request.');
-                      }
-                      user = result.rows[0];
-                      connectSicksenseIDAndUser();
-                    })
-                    .catch(raiseError);
-                });
-              })
-              .catch(raiseError);
+                    // Create new user.
+                    DBService.insert('users', [
+                        { field: 'email', value: uuid + '@sicksense.org' },
+                        { field: 'password', value: hashedUUID },
+                        { field: 'tel', value: latest.tel },
+                        { field: 'gender', value: latest.gender },
+                        { field: '"birthYear"', value: latest.birthYear },
+                        { field: 'subdistrict', value: latest.subdistrict },
+                        { field: 'district', value: latest.district },
+                        { field: 'city', value: latest.city },
+                        { field: 'latitude', value: latest.latitude },
+                        { field: 'longitude', value: latest.longitude },
+                        { field: 'geom', value: latest.geom },
+                        { field: '"createdAt"', value: new Date() },
+                        { field: '"updatedAt"', value: new Date() }
+                      ])
+                      .then(function (result) {
+                        if (result.rows.length === 0) {
+                          return res.serverError('Could perform the request.');
+                        }
+                        user = result.rows[0];
+                        connectSicksenseIDAndUser();
+                      })
+                      .catch(raiseError);
+                  });
+                })
+                .catch(raiseError);
+            }
+            else {
+              return connectSicksenseIDAndUser();
+            }
           }
           else {
-            return connectSicksenseIDAndUser();
+            return res.forbidden('Please verify email.');
           }
         })
         .catch(raiseError);

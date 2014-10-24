@@ -94,7 +94,7 @@ describe('LoginController test', function() {
           return TestHelper.createSicksenseID({
             email: "siriwat@opendream.co.th",
             password: "12345678",
-          })
+          }, true)
           .then(function (sicksenseID) {
             data.sicksenseID = sicksenseID;
             return TestHelper.createUser({
@@ -115,7 +115,7 @@ describe('LoginController test', function() {
           return TestHelper.createSicksenseID({
             email: "siriwat2@opendream.co.th",
             password: "12345678",
-          })
+          }, true)
           .then(function (sicksenseID) {
             data.sicksenseID2 = sicksenseID;
             return TestHelper.createUser({
@@ -135,7 +135,7 @@ describe('LoginController test', function() {
           return TestHelper.createSicksenseID({
             email: "siriwat3@opendream.co.th",
             password: "12345678",
-          })
+          }, true)
           .then(function (sicksenseID) {
             data.sicksenseID3 = sicksenseID;
           })
@@ -392,6 +392,39 @@ describe('LoginController test', function() {
             .catch(function (err) {
               done(err);
             });
+        });
+    });
+
+    it('should be invalid login if sicksense id is un-verifed', function (done) {
+      DBService.update('sicksense', [
+          { field: 'is_verify = $', value: 'f' },
+        ], [
+          { field: 'id = $', value: data.sicksenseID2.id }
+        ])
+        .then(function () {
+          request(sails.hooks.http.app)
+            .post('/connect')
+            .query({ accessToken: data.user2.accessToken })
+            .send({
+              email: data.sicksenseID2.email,
+              password: '12345678',
+              uuid: 'A002'
+            })
+            .expect(403)
+            .end(function (err, res) {
+              if (err) return done(err);
+              UserService.getUsersBySicksenseId(data.sicksenseID2.id)
+                .then(function (users) {
+                  users.length.should.equal(0);
+                  done();
+                })
+                .catch(function (err) {
+                  done(err);
+                });
+            });
+        })
+        .catch(function (err) {
+          done(err);
         });
     });
 

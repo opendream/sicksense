@@ -97,7 +97,7 @@ function createUser(values, generateAccessToken) {
   });
 }
 
-function createSicksenseID(values) {
+function createSicksenseID(values, verified) {
   var user;
 
   return when.promise(function (resolve, reject) {
@@ -106,6 +106,7 @@ function createSicksenseID(values) {
       DBService.insert('sicksense', [
           { field: 'email', value: values.email },
           { field: 'password', value: hashedPassword },
+          { field: 'is_verify', value: verified ? 't' : 'f' },
           { field: '"createdAt"', value: new Date() },
           { field: '"updatedAt"', value: new Date() }
         ])
