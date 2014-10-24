@@ -13,7 +13,7 @@
  * ```
  */
 
-module.exports = function forbidden (err, viewOrRedirect) {
+module.exports = function forbidden (err, subType, viewOrRedirect) {
 
   // Get access to `req` & `res`
   var req = this.req;
@@ -43,6 +43,15 @@ module.exports = function forbidden (err, viewOrRedirect) {
   if (err) {
     this.req._sails.log.verbose(err);
   }
+
+  err = {
+    meta: {
+      status: 403,
+      errorType: 'Forbidden',
+      errorSubType: subType || null,
+      errorMessage: err
+    }
+  };
 
   // If the user-agent wants JSON, always respond with JSON
   if (req.wantsJSON) {
