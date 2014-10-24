@@ -168,8 +168,18 @@ describe('LoginController test', function() {
             password: 'A004'
           }, true);
         })
+        // Unverified user.
         .then(function (user) {
           data.user4 = user;
+          return TestHelper.createSicksenseID({
+            email: "siriwat400@opendream.co.th",
+            password: "12345678",
+          }, false)
+          .then(function (sicksenseID) {
+            data.sicksenseID4 = sicksenseID;
+          });
+        })
+        .then(function () {
           done();
         })
         .catch(function(err) {
@@ -386,7 +396,7 @@ describe('LoginController test', function() {
         })
         .expect(200)
         .end(function (err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
 
           res.body.response.id.should.equal(data.user4.id);
           res.body.response.email.should.equal('siriwat4@opendream.co.th');
@@ -425,35 +435,25 @@ describe('LoginController test', function() {
     });
 
     it('should be invalid login if sicksense id is un-verifed', function (done) {
-      DBService.update('sicksense', [
-          { field: 'is_verify = $', value: 'f' },
-        ], [
-          { field: 'id = $', value: data.sicksenseID2.id }
-        ])
-        .then(function () {
-          request(sails.hooks.http.app)
-            .post('/connect')
-            .query({ accessToken: data.user2.accessToken })
-            .send({
-              email: data.sicksenseID2.email,
-              password: '12345678',
-              uuid: 'A002'
-            })
-            .expect(403)
-            .end(function (err, res) {
-              if (err) return done(err);
-              UserService.getUsersBySicksenseId(data.sicksenseID2.id)
-                .then(function (users) {
-                  users.length.should.equal(0);
-                  done();
-                })
-                .catch(function (err) {
-                  done(err);
-                });
-            });
+      request(sails.hooks.http.app)
+        .post('/connect')
+        .query({ accessToken: data.user2.accessToken })
+        .send({
+          email: data.sicksenseID4.email,
+          password: '12345678',
+          uuid: 'A002'
         })
-        .catch(function (err) {
-          done(err);
+        .expect(403)
+        .end(function (err, res) {
+          if (err) return done(err);
+          UserService.getUsersBySicksenseId(data.sicksenseID2.id)
+            .then(function (users) {
+              users.length.should.equal(0);
+              done();
+            })
+            .catch(function (err) {
+              done(err);
+            });
         });
     });
 
