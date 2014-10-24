@@ -1115,16 +1115,16 @@ module.exports = {
                   .then(responseJSON)
                   .catch(function (err) {
                     sails.log.error(err);
-                    res.serverError('Could not perform your request.44');
+                    res.serverError('Could not perform your request.');
                   });
               })
               .catch(function (err) {
-                res.serverError('Could not perform your request.33');
+                res.serverError('Could not perform your request.');
               });
           });
         })
         .catch(function (err) {
-          res.serverError('Could not perform your request.11');
+          res.serverError('Could not perform your request.');
         });
     });
 
@@ -1134,8 +1134,8 @@ module.exports = {
           res.ok(userJSON);
         })
         .catch(function (err) {
-          res.serverError('Could not perform your request.22');
-        })
+          res.serverError('Could not perform your request.');
+        });
     }
 
     function validate() {
