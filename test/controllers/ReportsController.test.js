@@ -458,6 +458,7 @@ describe('ReportController test', function() {
 
           res.body.response.platform.should.equal('doctormeandroid');
           (res.body.response.sicksenseId === undefined).should.be.true;
+          res.body.response.isAnonymous.should.be.true;
 
           // Also check in DB too.
           pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
@@ -527,7 +528,46 @@ describe('ReportController test', function() {
         .end(function(err, res) {
           if (err) return done(err);
           res.body.response.sicksenseId.should.equal(sicksenseID.id);
+          res.body.response.isAnonymous.should.be.true;
           done();
+        });
+    });
+
+    it('should indicate that report is by verifed sicksense id', function(done) {
+      DBService.update('sicksense', [
+          { field: 'is_verify = $', value: true }
+        ], [
+          { field: 'id = $', value: sicksenseID.id }
+        ])
+        .then(function () {
+          var startedAt = (new Date()).addDays(-3);
+          request(sails.hooks.http.app)
+            .post('/reports')
+            .query({ accessToken: user2.accessToken })
+            .send({
+              isFine: false,
+              symptoms: [ "diarrhea", "jointache" ],
+              animalContact: true,
+              startedAt: startedAt,
+              location: {
+                latitude: 13.791343,
+                longitude: 100.587473
+              },
+              moreInfo: "Symptoms of H1N1 swine flu are like regular flu symptoms and include fever, \
+              cough, sore throat, runny nose, body aches, headache, chills, and fatigue. Many people\
+               with swine flu have had diarrhea and vomiting.",
+              platform: 'doctormeandroid'
+            })
+            .expect(200)
+            .end(function(err, res) {
+              if (err) return done(err);
+              res.body.response.sicksenseId.should.equal(sicksenseID.id);
+              res.body.response.isAnonymous.should.be.false;
+              done();
+            });
+        })
+        .catch(function (err) {
+          done(err);
         });
     });
   });

@@ -52,7 +52,6 @@ function create (values) {
       // reports in the stat or graph.
       values.is_sicksense = isSicksenseReport(values);
 
-
       var preparedValues = [
         Boolean(values.isFine),
         Boolean(values.animalContact),
@@ -75,7 +74,8 @@ function create (values) {
         values.updatedAt || new Date(),
         values.platform || 'doctormeios',
         values.is_sicksense,
-        values.sicksense_id
+        values.sicksense_id,
+        values.is_anonymous
       ];
 
       client.query('\
@@ -83,9 +83,11 @@ function create (values) {
         INTO reports\
           ("isFine", "animalContact", "startedAt", "year", "week", "location_id", "subdistrict", "district", "city", \
            "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", "moreInfo", \
-           "userId", "isILI", "createdAt", "updatedAt", "platform", "is_sicksense", "sicksense_id")\
+           "userId", "isILI", "createdAt", "updatedAt", "platform", "is_sicksense", \
+           "sicksense_id", "is_anonymous")\
         VALUES\
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) RETURNING * \
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, \
+          $20, $21, $22, $23) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
         sails.log.debug('[ReportService:create]', now);

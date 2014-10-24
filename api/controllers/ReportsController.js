@@ -196,7 +196,13 @@ module.exports = {
     var values = req.body;
     values.userId = req.user.id;
     values.address = req.user.address;
-    values.sicksense_id = req.user.sicksense_id;
+    values.is_anonymous = true;
+    if (req.user.sicksense_id) {
+      values.sicksense_id = req.user.sicksense_id;
+      if (req.user.is_verified) {
+        values.is_anonymous = false;
+      }
+    }
     values.platform = req.body.platform || req.query.platform || req.user.platform;
 
     var report, symptoms, userAddress, locationByUserAddress;
@@ -229,7 +235,8 @@ module.exports = {
           symptoms: symptoms,
           userAddress: userAddress,
           locationByAddress: values.locationByAddress,
-          locationByUserAddress: locationByUserAddress
+          locationByUserAddress: locationByUserAddress,
+          isAnonymous: report.is_anonymous
         };
 
         if (report.sicksense_id) {
