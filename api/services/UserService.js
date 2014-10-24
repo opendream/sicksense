@@ -251,7 +251,9 @@ function formattedUser(user, extra) {
       longitude: user.longitude,
       latitude: user.latitude
     },
-    platform: user.platform
+    platform: user.platform,
+    is_verified: user.is_verify || null,
+    sicksense_id: user.sicksense_id || null
   }, extra);
   return formattedUser;
 }

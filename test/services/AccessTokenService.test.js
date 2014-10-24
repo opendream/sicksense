@@ -16,7 +16,7 @@ describe('AccessTokenService test', function() {
       })
       .then(function() {
         return TestHelper.createUser({
-          email: "A001@sicksense.org",
+          email: "A001@sicksense.com",
           password: "A001"
         }, false);
       })
@@ -25,7 +25,7 @@ describe('AccessTokenService test', function() {
       })
       .then(function() {
         return TestHelper.createUser({
-          email: "A002@sicksense.org",
+          email: "A002@sicksense.com",
           password: "A002"
         }, true);
       })

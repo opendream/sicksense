@@ -5,6 +5,15 @@ var passgen = require('password-hash-and-salt');
 pg.defaults.application_name = 'sicksense_test';
 
 describe('LoginController test', function() {
+  var MailService_send;
+
+  before(function (done) {
+    MailService_send = MailService.send;
+    MailService.send = when.resolve;
+    done();
+  });
+
+  before
 
   /*describe('[POST] login', function() {
     before(function(done) {
@@ -86,19 +95,31 @@ describe('LoginController test', function() {
 
   describe('[POST] connect', function() {
     var data = {};
+    var MailService_send;
+    var mailData = { counter: 0 };
 
     beforeEach(function(done) {
+      MailService_send = MailService.send;
+      MailService.send = function(subject, body, from, to, html) {
+        mailData.subject = subject;
+        mailData.body = body;
+        mailData.from = from;
+        mailData.to = to;
+        mailData.html = html;
+        mailData.counter++;
+      };
+
       TestHelper.clearAll()
         // User, SicksenseID, Connected.
         .then(function() {
           return TestHelper.createSicksenseID({
             email: "siriwat@opendream.co.th",
             password: "12345678",
-          })
+          }, true)
           .then(function (sicksenseID) {
             data.sicksenseID = sicksenseID;
             return TestHelper.createUser({
-              email: 'A001@sicksense.org',
+              email: 'A001@sicksense.com',
               password: 'A001'
             }, true);
           })
@@ -115,11 +136,11 @@ describe('LoginController test', function() {
           return TestHelper.createSicksenseID({
             email: "siriwat2@opendream.co.th",
             password: "12345678",
-          })
+          }, true)
           .then(function (sicksenseID) {
             data.sicksenseID2 = sicksenseID;
             return TestHelper.createUser({
-              email: 'A002@sicksense.org',
+              email: 'A002@sicksense.com',
               password: 'A002'
             }, true);
           })
@@ -135,7 +156,7 @@ describe('LoginController test', function() {
           return TestHelper.createSicksenseID({
             email: "siriwat3@opendream.co.th",
             password: "12345678",
-          })
+          }, true)
           .then(function (sicksenseID) {
             data.sicksenseID3 = sicksenseID;
           })
@@ -143,7 +164,7 @@ describe('LoginController test', function() {
         // Only User.
         .then(function () {
           return TestHelper.createUser({
-            email: 'A004@sicksense.org',
+            email: 'A004@sicksense.com',
             password: 'A004'
           }, true);
         })
@@ -157,8 +178,14 @@ describe('LoginController test', function() {
     });
 
     afterEach(function(done) {
+      mailData = { counter: 0 };
       TestHelper.clearAll()
         .then(done, done);
+    });
+
+    after(function (done) {
+      MailService.send = MailService_send;
+      done();
     });
 
     describe('validate parameters', function () {
@@ -364,6 +391,8 @@ describe('LoginController test', function() {
           res.body.response.id.should.equal(data.user4.id);
           res.body.response.email.should.equal('siriwat4@opendream.co.th');
           res.body.response.accessToken.should.be.ok;
+          mailData.counter.should.equal(1);
+          mailData.to.should.equal('siriwat4@opendream.co.th');
 
           DBService.select('sicksense_users', '*', [
               { field: 'user_id = $', value: data.user4.id }
@@ -395,6 +424,39 @@ describe('LoginController test', function() {
         });
     });
 
+    it('should be invalid login if sicksense id is un-verifed', function (done) {
+      DBService.update('sicksense', [
+          { field: 'is_verify = $', value: 'f' },
+        ], [
+          { field: 'id = $', value: data.sicksenseID2.id }
+        ])
+        .then(function () {
+          request(sails.hooks.http.app)
+            .post('/connect')
+            .query({ accessToken: data.user2.accessToken })
+            .send({
+              email: data.sicksenseID2.email,
+              password: '12345678',
+              uuid: 'A002'
+            })
+            .expect(403)
+            .end(function (err, res) {
+              if (err) return done(err);
+              UserService.getUsersBySicksenseId(data.sicksenseID2.id)
+                .then(function (users) {
+                  users.length.should.equal(0);
+                  done();
+                })
+                .catch(function (err) {
+                  done(err);
+                });
+            });
+        })
+        .catch(function (err) {
+          done(err);
+        });
+    });
+
   });
 
   describe('[POST] unlink', function() {
@@ -410,7 +472,7 @@ describe('LoginController test', function() {
           .then(function (sicksenseID) {
             data.sicksenseID = sicksenseID;
             return TestHelper.createUser({
-              email: 'A001@sicksense.org',
+              email: 'A001@sicksense.com',
               password: 'A001'
             }, true);
           })
@@ -421,7 +483,7 @@ describe('LoginController test', function() {
         })
         .then(function () {
           return TestHelper.createUser({
-            email: 'A002@sicksense.org',
+            email: 'A002@sicksense.com',
             password: 'A002',
           }, true);
         })
@@ -471,7 +533,7 @@ describe('LoginController test', function() {
         });
     });
 
-    it('should unlink from sicksense id', function (done) {
+    it('should unlink from sicksense id and response unlinked user object', function (done) {
       request(sails.hooks.http.app)
         .post('/unlink')
         .query({ accessToken: data.user.accessToken })
@@ -479,6 +541,14 @@ describe('LoginController test', function() {
         .expect(200)
         .end(function (err, res) {
           if (err) return done(err);
+
+          res.body.response.id.should.equal(data.user.id);
+          res.body.response.email.should.equal(data.user.email);
+          res.body.response.should.not.have.property('password');
+          res.body.response.address.should.be.Object;
+          res.body.response.location.should.be.Object;
+          (res.body.response.sicksense_id === null).should.be.true;
+          (res.body.response.is_verified === null).should.be.true;
 
           DBService.select('sicksense_users', '*', [
               { field: 'user_id = $', value: data.user.id }

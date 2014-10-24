@@ -104,7 +104,7 @@ module.exports = {
         };
       }
 
-      data.email = body.uuid + '@sicksense.org';
+      data.email = body.uuid + '@sicksense.com';
       data.password = body.uuid;
       data.tel = body.tel;
       data.birthYear = body.birthYear;
@@ -192,7 +192,7 @@ module.exports = {
     };
 
     function isSicksenseID(email) {
-      return !email.match(/\@(www\.)?sicksense\.org$/);
+      return !email.match(/\@(www\.)?sicksense\.com$/);
     };
 
     function checkSicksenseEmailExists(email) {
