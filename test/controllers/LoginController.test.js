@@ -446,6 +446,9 @@ describe('LoginController test', function() {
         .expect(403)
         .end(function (err, res) {
           if (err) return done(err);
+
+          res.body.meta.errorSubType.should.equal('unverified_email');
+
           UserService.getUsersBySicksenseId(data.sicksenseID2.id)
             .then(function (users) {
               users.length.should.equal(0);
