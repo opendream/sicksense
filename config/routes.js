@@ -22,6 +22,8 @@
 
 module.exports.routes = {
 
+  "OPTIONS /*": function (req, res) { res.send(200); },
+
 
   // Make the view located at `views/homepage.ejs` (or `views/homepage.jade`, etc. depending on your
   // default view engine) your home page.
