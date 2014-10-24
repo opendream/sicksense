@@ -1058,7 +1058,7 @@ module.exports = {
                 subject = config.subject,
                 body = config.body,
                 from = config.from,
-                to = user.email,
+                to = data.sicksense.email,
                 html = config.html;
 
             var url = req.getWWWUrl(sails.config.common.verifyEndpoint, {
