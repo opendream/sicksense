@@ -397,4 +397,58 @@ describe('LoginController test', function() {
 
   });
 
+  describe('[POST] unlink', function() {
+    var data = {};
+
+    beforeEach(function(done) {
+      TestHelper.clearAll()
+        .then(function () {
+          return TestHelper.createSicksenseID({
+            email: 'siriwat@opendream.co.th',
+            password: '12345678'
+          })
+          .then(function (sicksenseID) {
+            data.sicksenseID = sicksenseID;
+            return TestHelper.createUser({
+              email: 'A001@sicksense.org',
+              password: 'A001'
+            }, true);
+          })
+          .then(function (user) {
+            data.user = user;
+            return TestHelper.connectSicksenseAndUser(data.sicksenseID, data.user);
+          });
+        })
+        .then(function () {
+          return TestHelper.createUser({
+            email: 'A002@sicksense.org',
+            password: 'A002',
+          }, true);
+        })
+        .then(function (user) {
+          data.user2 = user;
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+    });
+
+    afterEach(function (done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should require accessToken', function (done) {
+      request(sails.hooks.http.app)
+        .post('/unlink')
+        .expect(403)
+        .end(function (err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+  });
+
 });

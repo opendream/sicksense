@@ -233,6 +233,10 @@ module.exports = {
     function raiseError(err) {
       return res.serverError(err);
     }
+  },
+
+  unlink: function(req, res) {
+    res.ok({});
   }
 
 };
