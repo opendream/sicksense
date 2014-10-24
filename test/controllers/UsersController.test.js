@@ -1475,6 +1475,8 @@ describe('UserController test', function() {
 
               tmp.count.should.equal(1);
               tmp.body.should.containEql(tmp.resultNew.rows[0].token);
+              tmp.html.should.containEql(tmp.resultNew.rows[0].token);
+              tmp.to.should.equal('request-verify-001@opendream.co.th');
 
               done();
             })
@@ -1485,8 +1487,10 @@ describe('UserController test', function() {
         function _before() {
           tmp.count = 0;
           tmp.send = MailService.send;
-          MailService.send = function (subject, body) {
+          MailService.send = function (subject, body, from, to, html) {
             tmp.body = body;
+            tmp.html = html;
+            tmp.to = to;
             tmp.count++;
           };
         }
