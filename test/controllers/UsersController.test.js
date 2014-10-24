@@ -1386,7 +1386,7 @@ describe('UserController test', function() {
       .then(function (result) {
         data.sicksense = result.rows[0];
         // assign verification token
-        return OnetimeTokenService.create('test', data.sicksense.id, 10)
+        return OnetimeTokenService.create('user.verifyEmail', data.sicksense.id, 10)
           .then(function (tokenObject) {
             data.tokenObject = tokenObject;
           });
@@ -1443,11 +1443,15 @@ describe('UserController test', function() {
           });
     });
 
-    it.skip('should re-send `email` if all parameter is ok', function (done) {
+    it('should re-send `email` if all parameter is ok', function (done) {
+        var tmp = {};
+
+        _before();
+
         request(sails.hooks.http.app)
           .post('/users/request-verify')
           .send({
-            email: 'verifyemailtest001@opendream.co.th',
+            email: 'request-verify-001@opendream.co.th',
           })
           .expect(200)
           .end(function (err, res) {
@@ -1457,12 +1461,39 @@ describe('UserController test', function() {
               { field: 'token = $', value: data.tokenObject.token }
             ])
             .then(function (result) {
-              result.rows.should.have.length(0);
+              tmp.resultOld = result;
+              return DBService.select('onetimetoken', 'token', [
+                { field: 'user_id = $', value: data.sicksense.id }
+              ]);
+            })
+            .then(function (result) {
+              tmp.resultNew = result;
+            })
+            .then(function () {
+              tmp.resultOld.rows.should.have.length(0);
+              tmp.resultNew.rows.should.have.length(1);
+
+              tmp.count.should.equal(1);
+              tmp.body.should.containEql(tmp.resultNew.rows[0].token);
 
               done();
             })
-            .catch(done);
+            .catch(done)
+            .finally(_after);
           });
+
+        function _before() {
+          tmp.count = 0;
+          tmp.send = MailService.send;
+          MailService.send = function (subject, body) {
+            tmp.body = body;
+            tmp.count++;
+          };
+        }
+
+        function _after() {
+          MailService.send = tmp.send;
+        }
     });
   });
 
