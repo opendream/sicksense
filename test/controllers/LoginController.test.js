@@ -5,6 +5,15 @@ var passgen = require('password-hash-and-salt');
 pg.defaults.application_name = 'sicksense_test';
 
 describe('LoginController test', function() {
+  var MailService_send;
+
+  before(function (done) {
+    MailService_send = MailService.send;
+    MailService.send = when.resolve;
+    done();
+  });
+
+  before
 
   /*describe('[POST] login', function() {
     before(function(done) {
@@ -86,8 +95,20 @@ describe('LoginController test', function() {
 
   describe('[POST] connect', function() {
     var data = {};
+    var MailService_send;
+    var mailData = { counter: 0 };
 
     beforeEach(function(done) {
+      MailService_send = MailService.send;
+      MailService.send = function(subject, body, from, to, html) {
+        mailData.subject = subject;
+        mailData.body = body;
+        mailData.from = from;
+        mailData.to = to;
+        mailData.html = html;
+        mailData.counter++;
+      };
+
       TestHelper.clearAll()
         // User, SicksenseID, Connected.
         .then(function() {
@@ -157,8 +178,14 @@ describe('LoginController test', function() {
     });
 
     afterEach(function(done) {
+      mailData = { counter: 0 };
       TestHelper.clearAll()
         .then(done, done);
+    });
+
+    after(function (done) {
+      MailService.send = MailService_send;
+      done();
     });
 
     describe('validate parameters', function () {
@@ -364,6 +391,8 @@ describe('LoginController test', function() {
           res.body.response.id.should.equal(data.user4.id);
           res.body.response.email.should.equal('siriwat4@opendream.co.th');
           res.body.response.accessToken.should.be.ok;
+          mailData.counter.should.equal(1);
+          mailData.to.should.equal('siriwat4@opendream.co.th');
 
           DBService.select('sicksense_users', '*', [
               { field: 'user_id = $', value: data.user4.id }

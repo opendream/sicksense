@@ -118,7 +118,6 @@ module.exports = {
                 ])
                 .then(function (result) {
                   if (result.rows.length === 0) {
-                    // TODO send email verify.
                     return DBService.insert('sicksense', [
                         { field: 'email', value: email },
                         { field: 'password', value: hashedPassword },
@@ -128,6 +127,7 @@ module.exports = {
                       .then(function (result) {
                         sicksenseID = result.rows[0];
                       })
+                      .then(sendEmailVerification)
                       .then(connectSicksenseIDAndUser)
                       .catch(raiseError);
                   }
@@ -234,6 +234,35 @@ module.exports = {
         })
         .catch(raiseError);
     }
+
+    function sendEmailVerification() {
+      // check if subscribed account then send verification e-mail.
+      var config = sails.config.mail.verificationEmail,
+          subject = config.subject,
+          body = config.body,
+          from = config.from,
+          to = sicksenseID.email,
+          html = config.html;
+
+      // Async here. User can still successful register if this method fail.
+      return OnetimeTokenService.create('user.verifyEmail', sicksenseID.id, sails.config.onetimeToken.lifetime)
+        .then(function (tokenObject) {
+          var url = req.getWWWUrl(sails.config.common.verifyEndpoint, {
+            token: tokenObject.token
+          });
+
+          // substitute value in body, html
+          body = body.replace(/\%token%/, url);
+          html = html.replace(/\%token%/, url);
+
+          return MailService.send(subject, body, from, to, html);
+        })
+        .catch(function (err) {
+          sails.log.error(new Error('Can not send verification e-mail'), err);
+          sails.log.error(err);
+          res.serverError(err);
+        });
+    };
 
     function raiseError(err) {
       return res.serverError(err);
