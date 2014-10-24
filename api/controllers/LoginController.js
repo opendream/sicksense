@@ -236,6 +236,14 @@ module.exports = {
   },
 
   unlink: function(req, res) {
+    req.checkBody('uuid', 'UUID field is required').notEmpty();
+
+    var errors = req.validationErrors();
+    var paramErrors = req.validationErrors(true);
+    if (errors) {
+      return res.badRequest(_.first(errors).msg, paramErrors);
+    }
+
     res.ok({});
   }
 

@@ -449,6 +449,17 @@ describe('LoginController test', function() {
         });
     });
 
+    it('should require uuid', function (done) {
+      request(sails.hooks.http.app)
+        .post('/unlink')
+        .query({ accessToken: data.user.accessToken })
+        .expect(400)
+        .end(function (err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
   });
 
 });
