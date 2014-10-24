@@ -252,8 +252,8 @@ function formattedUser(user, extra) {
       latitude: user.latitude
     },
     platform: user.platform,
-    is_verified: user.is_verify || false,
-    sicksense_id: user.sicksense_id || ''
+    is_verified: user.is_verify || null,
+    sicksense_id: user.sicksense_id || null
   }, extra);
   return formattedUser;
 }
