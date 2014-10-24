@@ -587,8 +587,8 @@ describe('UserService test', function() {
           user.address.district.should.equal(data.user2.district);
           user.address.city.should.equal(data.user2.city);
           (user.accessToken === undefined).should.be.true;
-          (user.sicksense_id === undefined).should.be.true;
-          (user.is_verified === undefined).should.be.true;
+          user.sicksense_id.should.be.empty;
+          user.is_verified.should.be.empty;
           done();
         })
         .catch(function (err) {
