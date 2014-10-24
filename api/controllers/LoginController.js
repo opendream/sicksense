@@ -63,7 +63,7 @@ module.exports = {
           });
         })
         .catch(function(err) {
-          if (err.statusCode == 403) {
+          if (err.status == 403) {
             res.forbidden(err);
           }
           else {

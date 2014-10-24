@@ -71,14 +71,14 @@ function getUserByEmailPassword(client, email, password) {
         [ email, hashedPassword ],
         function(err, result) {
           if (err) {
-            err.statusCode = 500;
+            err.status = 500;
             reject(err);
             return;
           }
 
           if (result.rows.length === 0) {
             var error = new Error("E-mail and Password pair is not valid");
-            error.statusCode = 403;
+            error.status = 403;
             reject(error);
             return;
           }
@@ -166,7 +166,7 @@ function getAccessToken(client, userId, refresh) {
         }
         else {
           var error = new Error("AccessToken not found");
-          error.statusCode = 404;
+          error.status = 404;
           return reject(error);
         }
       }

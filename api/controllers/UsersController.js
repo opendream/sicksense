@@ -1040,7 +1040,7 @@ module.exports = {
         else {
           // 1. show bad request.
           var error = new Error('E-mail address not found. Please register first');
-          error.statusCode = 400;
+          error.status = 400;
           return when.reject(error);
         }
       })
@@ -1076,7 +1076,7 @@ module.exports = {
         res.ok({ status: 'ok' });
       })
       .catch(function (err) {
-        if (err.statusCode == 400) {
+        if (err.status == 400) {
           res.badRequest(err);
         }
         else {
