@@ -253,7 +253,13 @@ module.exports = {
         { field: 'user_id = $', value: req.user.id }
       ])
       .then(function (result) {
-        res.ok({});
+        return UserService.getUserJSON(req.user.id);
+      })
+      .then(function (userJSON) {
+        res.ok(userJSON);
+      })
+      .catch(function (err) {
+        res.serverError('Could not perform your request.');
       });
   }
 

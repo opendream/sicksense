@@ -504,7 +504,7 @@ describe('LoginController test', function() {
         });
     });
 
-    it('should unlink from sicksense id', function (done) {
+    it('should unlink from sicksense id and response unlinked user object', function (done) {
       request(sails.hooks.http.app)
         .post('/unlink')
         .query({ accessToken: data.user.accessToken })
@@ -512,6 +512,14 @@ describe('LoginController test', function() {
         .expect(200)
         .end(function (err, res) {
           if (err) return done(err);
+
+          res.body.response.id.should.equal(data.user.id);
+          res.body.response.email.should.equal(data.user.email);
+          res.body.response.should.not.have.property('password');
+          res.body.response.address.should.be.Object;
+          res.body.response.location.should.be.Object;
+          res.body.response.should.not.have.property('sicksense_id');
+          res.body.response.should.not.have.property('is_verified');
 
           DBService.select('sicksense_users', '*', [
               { field: 'user_id = $', value: data.user.id }
