@@ -196,7 +196,7 @@ module.exports = {
             }
           }
           else {
-            return res.forbidden('Please verify email.');
+            return res.forbidden('Please verify email.', 'unverified_email');
           }
         })
         .catch(raiseError);
