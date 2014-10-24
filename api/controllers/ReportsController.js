@@ -195,11 +195,8 @@ module.exports = {
 
     var values = req.body;
     values.userId = req.user.id;
-    values.address = {
-      subdistrict: req.user.subdistrict,
-      district: req.user.district,
-      city: req.user.city
-    };
+    values.address = req.user.address;
+    values.sicksense_id = req.user.sicksense_id;
     values.platform = req.body.platform || req.query.platform || req.user.platform;
 
     var report, symptoms, userAddress, locationByUserAddress;
@@ -228,12 +225,19 @@ module.exports = {
         locationByUserAddress = result;
       })
       .then(function() {
-        return res.ok(ReportService.getReportJSON(report, {
+        var extras = {
           symptoms: symptoms,
           userAddress: userAddress,
           locationByAddress: values.locationByAddress,
           locationByUserAddress: locationByUserAddress
-        }));
+        };
+
+        if (report.sicksense_id) {
+          extras.sicksenseId = report.sicksense_id;
+        }
+
+        var reportJSON = ReportService.getReportJSON(report, extras);
+        return res.ok(reportJSON);
       })
       .catch(function(err) {
         res.serverError(err);

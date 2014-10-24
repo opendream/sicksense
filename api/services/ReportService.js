@@ -74,17 +74,18 @@ function create (values) {
         values.createdAt || new Date(),
         values.updatedAt || new Date(),
         values.platform || 'doctormeios',
-        values.is_sicksense
+        values.is_sicksense,
+        values.sicksense_id
       ];
 
       client.query('\
         INSERT\
         INTO reports\
           ("isFine", "animalContact", "startedAt", "year", "week", "location_id", "subdistrict", "district", "city", \
-           "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", \
-           "moreInfo", "userId", "isILI", "createdAt", "updatedAt", "platform", "is_sicksense")\
+           "addressLatitude", "addressLongitude", "latitude", "longitude", "geom", "moreInfo", \
+           "userId", "isILI", "createdAt", "updatedAt", "platform", "is_sicksense", "sicksense_id")\
         VALUES\
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING * \
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) RETURNING * \
       ', preparedValues, function(err, result) {
         pgDone();
         sails.log.debug('[ReportService:create]', now);

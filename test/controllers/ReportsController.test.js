@@ -6,33 +6,22 @@ var moment = require('moment');
 require('date-utils');
 
 describe('ReportController test', function() {
-  var user, accessToken, location;
+  var user, user2, sicksenseID, accessToken, location;
 
   before(function(done) {
     TestHelper.clearAll()
       // get location data.
       .then(function() {
-        return when.promise(function(resolve, reject) {
-
-          pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
-            if (err) return reject(err);
-
-            client.query("SELECT * FROM locations WHERE tambon_en = 'Samsen Nok' and amphoe_en = 'Huai Khwang'", function(err, result) {
-              pgDone();
-
-              if (err) return reject(err);
-
-              location = result.rows[0];
-              resolve();
-            });
-          });
-
-        });
+        return DBService.select('locations', '*', [
+            { field: 'tambon_en = $', value: 'Samsen Nok' },
+            { field: 'amphoe_en = $', value: 'Huai Khwang' }
+          ]);
       })
-      .then(function() {
+      .then(function (result) {
+        location = result.rows[0];
         return TestHelper.createUser({
-          email: "siriwat@opendream.co.th",
-          password: "12345678",
+          email: 'A001@sicksense.org',
+          password: 'A001',
           address: {
             subdistrict: location.tambon_en,
             district: location.amphoe_en,
@@ -40,15 +29,30 @@ describe('ReportController test', function() {
           },
           latitude: 13.781730,
           longitude: 100.545357
-        });
+        }, true);
       })
       .then(function(_user) {
         user = _user;
-
-        AccessTokenService.refresh(user.id).then(function(result) {
-          accessToken = result;
-          done();
+      })
+      .then(function () {
+        return TestHelper.createSicksenseID({
+          email: 'siriwat@opendream.co.th',
+          password: '12345678'
         });
+      })
+      .then(function (_sicksenseID) {
+        sicksenseID = _sicksenseID;
+        return TestHelper.createUser({
+          email: 'A002@sicksense.org',
+          password: 'A002'
+        }, true);
+      })
+      .then(function (_user) {
+        user2 = _user;
+        return TestHelper.connectSicksenseAndUser(sicksenseID, user2);
+      })
+      .then(function () {
+        done();
       })
       .catch(done);
   });
@@ -170,7 +174,7 @@ describe('ReportController test', function() {
       it('should validate `isFine` field', function(done) {
         request(sails.hooks.http.app)
           .post('/reports')
-          .query({ accessToken: accessToken.token })
+          .query({ accessToken: user.accessToken })
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
@@ -183,7 +187,7 @@ describe('ReportController test', function() {
         it('should require if `isFine` has no value', function(done) {
           request(sails.hooks.http.app)
             .post('/reports')
-            .query({ accessToken: accessToken.token })
+            .query({ accessToken: user.accessToken })
             .expect(400)
             .end(function(err, res) {
               if (err) return done(err);
@@ -195,7 +199,7 @@ describe('ReportController test', function() {
         it('should require if `isFine` is `false`', function(done) {
           request(sails.hooks.http.app)
             .post('/reports')
-            .query({ accessToken: accessToken.token })
+            .query({ accessToken: user.accessToken })
             .send({ isFine: false })
             .expect(400)
             .end(function(err, res) {
@@ -208,7 +212,7 @@ describe('ReportController test', function() {
         it('should not require if `isFine` is `true`', function(done) {
           request(sails.hooks.http.app)
             .post('/reports')
-            .query({ accessToken: accessToken.token })
+            .query({ accessToken: user.accessToken })
             .send({ isFine: true })
             .expect(400)
             .end(function(err, res) {
@@ -221,7 +225,7 @@ describe('ReportController test', function() {
         it('should not pass validation, if value is not array', function(done) {
           request(sails.hooks.http.app)
             .post('/reports')
-            .query({ accessToken: accessToken.token })
+            .query({ accessToken: user.accessToken })
             .send({ symptoms: "string value" })
             .expect(400)
             .end(function(err, res) {
@@ -234,7 +238,7 @@ describe('ReportController test', function() {
         it('should not pass validation, if `isFine` is `false` but provide empty array', function(done) {
           request(sails.hooks.http.app)
             .post('/reports')
-            .query({ accessToken: accessToken.token })
+            .query({ accessToken: user.accessToken })
             .send({ symptoms: [] })
             .expect(400)
             .end(function(err, res) {
@@ -248,7 +252,7 @@ describe('ReportController test', function() {
       it('should validate `animalContact` field', function(done) {
         request(sails.hooks.http.app)
           .post('/reports')
-          .query({ accessToken: accessToken.token })
+          .query({ accessToken: user.accessToken })
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
@@ -260,7 +264,7 @@ describe('ReportController test', function() {
       it('should validate `startedAt` field', function(done) {
         request(sails.hooks.http.app)
           .post('/reports')
-          .query({ accessToken: accessToken.token })
+          .query({ accessToken: user.accessToken })
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
@@ -269,7 +273,7 @@ describe('ReportController test', function() {
             // Check if is valid date value.
             request(sails.hooks.http.app)
               .post('/reports')
-              .query({ accessToken: accessToken.token })
+              .query({ accessToken: user.accessToken })
               .send({ startedAt: "this is not a date" })
               .expect(400)
               .end(function(err, res) {
@@ -285,7 +289,7 @@ describe('ReportController test', function() {
 
         request(sails.hooks.http.app)
           .post('/reports')
-          .query({ accessToken: accessToken.token })
+          .query({ accessToken: user.accessToken })
           .send({ startedAt: testDate })
           .expect(400)
           .end(function(err, res) {
@@ -301,7 +305,7 @@ describe('ReportController test', function() {
 
         request(sails.hooks.http.app)
           .post('/reports')
-          .query({ accessToken: accessToken.token })
+          .query({ accessToken: user.accessToken })
           .send({ startedAt: testDate })
           .expect(400)
           .end(function(err, res) {
@@ -315,7 +319,7 @@ describe('ReportController test', function() {
       it('should validate `location` field', function(done) {
         request(sails.hooks.http.app)
           .post('/reports')
-          .query({ accessToken: accessToken.token })
+          .query({ accessToken: user.accessToken })
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
@@ -326,14 +330,14 @@ describe('ReportController test', function() {
       it('should validate `location.latitude` field', function(done) {
         request(sails.hooks.http.app)
           .post('/reports')
-          .query({ accessToken: accessToken.token })
+          .query({ accessToken: user.accessToken })
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
 
             request(sails.hooks.http.app)
               .post('/reports')
-              .query({ accessToken: accessToken.token })
+              .query({ accessToken: user.accessToken })
               .send({
                 location: {
                   latitude: 200.00
@@ -351,14 +355,14 @@ describe('ReportController test', function() {
       it('should validate `location.longitude` field', function(done) {
         request(sails.hooks.http.app)
           .post('/reports')
-          .query({ accessToken: accessToken.token })
+          .query({ accessToken: user.accessToken })
           .expect(400)
           .end(function(err, res) {
             if (err) return done(err);
 
             request(sails.hooks.http.app)
               .post('/reports')
-              .query({ accessToken: accessToken.token })
+              .query({ accessToken: user.accessToken })
               .send({
                 location: {
                   longitude: 200.00
@@ -378,7 +382,7 @@ describe('ReportController test', function() {
       var startedAt = (new Date()).addDays(-3);
       request(sails.hooks.http.app)
         .post('/reports')
-        .query({ accessToken: accessToken.token })
+        .query({ accessToken: user.accessToken })
         .send({
           isFine: false,
           symptoms: [ "symptom_1", "symptom_2" ],
@@ -400,7 +404,7 @@ describe('ReportController test', function() {
       var startedAt = (new Date()).addDays(-3);
       request(sails.hooks.http.app)
         .post('/reports')
-        .query({ accessToken: accessToken.token })
+        .query({ accessToken: user.accessToken })
         .send({
           isFine: false,
           symptoms: [ "diarrhea", "jointache" ],
@@ -453,6 +457,7 @@ describe('ReportController test', function() {
           res.body.response.should.not.have.properties([ 'userId' ]);
 
           res.body.response.platform.should.equal('doctormeandroid');
+          (res.body.response.sicksenseId === undefined).should.be.true;
 
           // Also check in DB too.
           pg.connect(sails.config.connections.postgresql, function(err, client, pgDone) {
@@ -496,6 +501,33 @@ describe('ReportController test', function() {
               });
             });
           });
+        });
+    });
+
+    it('should indicate that report is by registered sicksense id', function(done) {
+      var startedAt = (new Date()).addDays(-3);
+      request(sails.hooks.http.app)
+        .post('/reports')
+        .query({ accessToken: user2.accessToken })
+        .send({
+          isFine: false,
+          symptoms: [ "diarrhea", "jointache" ],
+          animalContact: true,
+          startedAt: startedAt,
+          location: {
+            latitude: 13.791343,
+            longitude: 100.587473
+          },
+          moreInfo: "Symptoms of H1N1 swine flu are like regular flu symptoms and include fever, \
+          cough, sore throat, runny nose, body aches, headache, chills, and fatigue. Many people\
+           with swine flu have had diarrhea and vomiting.",
+          platform: 'doctormeandroid'
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+          res.body.response.sicksenseId.should.equal(sicksenseID.id);
+          done();
         });
     });
   });
