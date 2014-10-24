@@ -476,9 +476,9 @@ module.exports = {
         { field: '"updatedAt" = $', value: new Date() },
       ];
 
-      if (password) {
-        data.push({ field: 'password = $', value: password });
-      }
+      // if (password) {
+      //   data.push({ field: 'password = $', value: password });
+      // }
 
       var conditions = [
         { field: 'id = $', value: id }
@@ -846,12 +846,16 @@ module.exports = {
         return res.forbidden(new Error("You can not get another user's reports"));
       }
 
-      EmailSubscriptionsService.isSubscribed(req.user)
-        .then(function (isSubscribed) {
-          var user = UserService.formattedUser(req.user, {
-            isSubscribed: isSubscribed
-          });
-          res.ok(user);
+      UserService.getUserJSON(req.user.id)
+        .then(function (userJSON) {
+          EmailSubscriptionsService.isSubscribed(req.user)
+            .then(function (isSubscribed) {
+              userJSON.isSubscribed = isSubscribed;
+              res.ok(userJSON);
+            })
+            .catch(function (err) {
+              res.serverError('Could not connect to database.');
+            });
         })
         .catch(function (err) {
           res.serverError('Could not connect to database.');

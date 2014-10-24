@@ -718,7 +718,7 @@ describe('UserController test', function() {
         });
     });*/
 
-    it('should allow user to update password', function(done) {
+    it('should not allow user to update password', function(done) {
       request(sails.hooks.http.app)
         .post('/users/' + user.id)
         .query({
@@ -731,7 +731,7 @@ describe('UserController test', function() {
         .end(function(err, res) {
           if (err) return done(new Error(err));
 
-          passgen('1qaz2wsx').hash(sails.config.session.secret, function (err, hashedPassword) {
+          passgen('12345678').hash(sails.config.session.secret, function (err, hashedPassword) {
             if (err) return done(err);
             DBService.select('sicksense', '*', [
                 { field: 'id = $', value: sicksenseID.id }
