@@ -554,7 +554,7 @@ describe('UserService test', function() {
         .then(done, done);
     });
 
-    it('should contains sicksense email, access token, and demographic', function (done) {
+    it('should contains sicksense email, sicksense id, is_verify, access token, and demographic', function (done) {
       UserService.getUserJSON(data.user.id)
         .then(function (user) {
           user.id.should.equal(data.user.id);
@@ -566,6 +566,8 @@ describe('UserService test', function() {
           user.address.district.should.equal(data.user.district);
           user.address.city.should.equal(data.user.city);
           user.accessToken.should.equal(data.user.accessToken);
+          user.sicksense_id.should.be.ok;
+          user.is_verified.should.be.false;
           done();
         })
         .catch(function (err) {
@@ -585,6 +587,8 @@ describe('UserService test', function() {
           user.address.district.should.equal(data.user2.district);
           user.address.city.should.equal(data.user2.city);
           (user.accessToken === undefined).should.be.true;
+          (user.sicksense_id === undefined).should.be.true;
+          (user.is_verified === undefined).should.be.true;
           done();
         })
         .catch(function (err) {

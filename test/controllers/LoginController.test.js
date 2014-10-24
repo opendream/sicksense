@@ -397,4 +397,102 @@ describe('LoginController test', function() {
 
   });
 
+  describe('[POST] unlink', function() {
+    var data = {};
+
+    beforeEach(function(done) {
+      TestHelper.clearAll()
+        .then(function () {
+          return TestHelper.createSicksenseID({
+            email: 'siriwat@opendream.co.th',
+            password: '12345678'
+          })
+          .then(function (sicksenseID) {
+            data.sicksenseID = sicksenseID;
+            return TestHelper.createUser({
+              email: 'A001@sicksense.org',
+              password: 'A001'
+            }, true);
+          })
+          .then(function (user) {
+            data.user = user;
+            return TestHelper.connectSicksenseAndUser(data.sicksenseID, data.user);
+          });
+        })
+        .then(function () {
+          return TestHelper.createUser({
+            email: 'A002@sicksense.org',
+            password: 'A002',
+          }, true);
+        })
+        .then(function (user) {
+          data.user2 = user;
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+    });
+
+    afterEach(function (done) {
+      TestHelper.clearAll()
+        .then(done, done);
+    });
+
+    it('should require accessToken', function (done) {
+      request(sails.hooks.http.app)
+        .post('/unlink')
+        .expect(403)
+        .end(function (err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should validate accessToken', function (done) {
+      request(sails.hooks.http.app)
+        .post('/unlink')
+        .query({ accessToken: '1234qwer' })
+        .expect(403)
+        .end(function (err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should require uuid', function (done) {
+      request(sails.hooks.http.app)
+        .post('/unlink')
+        .query({ accessToken: data.user.accessToken })
+        .expect(400)
+        .end(function (err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    it('should unlink from sicksense id', function (done) {
+      request(sails.hooks.http.app)
+        .post('/unlink')
+        .query({ accessToken: data.user.accessToken })
+        .send({ uuid: 'A001' })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          DBService.select('sicksense_users', '*', [
+              { field: 'user_id = $', value: data.user.id }
+            ])
+            .then(function (result) {
+              result.rows.length.should.equal(0);
+              done();
+            })
+            .catch(function (err) {
+              done(err);
+            });
+        });
+    });
+
+  });
+
 });

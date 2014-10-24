@@ -50,7 +50,8 @@ module.exports.policies = {
 
   'LoginController': {
     '*': true,
-    'connect': 'optionalTokenAuth'
+    'connect': 'optionalTokenAuth',
+    'unlink': 'tokenAuth'
   }
 
 	// Here's an example of mapping some policies to run before

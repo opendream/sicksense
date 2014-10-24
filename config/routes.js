@@ -83,6 +83,11 @@ module.exports.routes = {
     action: 'connect'
   },
 
+  'post /unlink': {
+    controller: 'login',
+    action: 'unlink'
+  },
+
   'post /reports': {
     controller: 'reports',
     action: 'create'

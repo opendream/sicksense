@@ -224,6 +224,8 @@ function getUserJSON(userId) {
         if (result.rows.length === 0) return resolve(formattedUser);
         sicksenseID = result.rows[0];
         formattedUser.email = sicksenseID.email;
+        formattedUser.sicksense_id = sicksenseID.id;
+        formattedUser.is_verified = sicksenseID.is_verify;
         resolve(formattedUser);
       })
       .catch(function (err) {

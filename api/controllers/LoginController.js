@@ -233,6 +233,23 @@ module.exports = {
     function raiseError(err) {
       return res.serverError(err);
     }
+  },
+
+  unlink: function(req, res) {
+    req.checkBody('uuid', 'UUID field is required').notEmpty();
+
+    var errors = req.validationErrors();
+    var paramErrors = req.validationErrors(true);
+    if (errors) {
+      return res.badRequest(_.first(errors).msg, paramErrors);
+    }
+
+    DBService.delete('sicksense_users', [
+        { field: 'user_id = $', value: req.user.id }
+      ])
+      .then(function (result) {
+        res.ok({});
+      });
   }
 
 };
