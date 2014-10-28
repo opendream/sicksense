@@ -6,12 +6,11 @@ function loadFile(filePath) {
 
 module.exports.mail = {
 
-  verificationEmail: {
+  verification: {
     subject: 'Please verify your e-mail',
-    body: 'Use this link %token%',
     from: 'John Doe <john@example.com>',
-    html: 'Use this link %token%',
-    lifetime: (60 * 60) * 3000 // 3 hours
+    html: loadFile('./assets/templates/email/verification.html'),
+    text: loadFile('./assets/templates/email/verification.txt')
   },
 
   notification: {

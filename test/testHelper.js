@@ -106,6 +106,7 @@ function createSicksenseID(values, verified) {
       DBService.insert('sicksense', [
           { field: 'email', value: values.email },
           { field: 'password', value: hashedPassword },
+          { field: 'data', value: values.data || {} },
           { field: 'is_verify', value: verified ? 't' : 'f' },
           { field: '"createdAt"', value: new Date() },
           { field: '"updatedAt"', value: new Date() }
@@ -122,12 +123,32 @@ function createSicksenseID(values, verified) {
 
 function connectSicksenseAndUser(sicksenseID, user) {
   return when.promise(function (resolve, reject) {
+    var sicksenseUser;
     DBService.insert('sicksense_users', [
         { field: 'sicksense_id', value: sicksenseID.id },
         { field: 'user_id', value: user.id }
       ])
       .then(function (result) {
-        resolve(result.rows[0]);
+        sicksenseUser = result.rows[0];
+
+        var sicksenseData = {
+          tel: user.tel,
+          gender: user.gender,
+          birthYear: user.birthYear,
+          subdistrict: user.subdistrict,
+          district: user.district,
+          city: user.city,
+          latitude: user.latitude,
+          longitude: user.longitude,
+          geom: user.geom
+        };
+
+        var values = [ { field: 'data = $', value: sicksenseData } ];
+        var conditions = [ { field: 'id = $', value: sicksenseID.id } ];
+        return DBService.update('sicksense', values, conditions);
+      })
+      .then(function () {
+        resolve(sicksenseUser);
       })
       .catch(function (err) {
         reject(err);

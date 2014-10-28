@@ -52,7 +52,6 @@ describe('UserController test', function() {
 
           res.body.meta.status.should.equal(400);
           res.body.meta.errorType.should.equal("Bad Request");
-          res.body.meta.errorMessage.should.match(/is required/);
 
           res.body.meta.invalidFields.should.have.properties([ 'email', 'password', 'uuid' ]);
 
@@ -287,9 +286,9 @@ describe('UserController test', function() {
         mailserviceSend = sails.services.mailservice.send;
         onetimetokenserviceCreate = sails.services.onetimetokenservice.create;
 
-        sails.services.mailservice.send = function send(subject, body, from, to, html) {
+        sails.services.mailservice.send = function send(subject, text, from, to, html) {
           counter.mail++;
-          mail.body = body;
+          mail.text = text;
           mail.to = to;
           mail.html = html;
         };
@@ -331,13 +330,13 @@ describe('UserController test', function() {
       });
 
       it('should save new record and send e-mail if user is a subscribed account', function(done) {
-        var mailConfig = sails.config.mail.verificationEmail;
+        var mailConfig = sails.config.mail.verification;
         // Override.
-        sails.config.mail.verificationEmail = {
+        sails.config.mail.verification = {
           subject: '[sicksense] Please verify your e-mail',
-          body: 'Use this link %token%',
+          text: 'Use this link %verification_url%',
           from: 'sicksense.com',
-          html: 'Use this link %token%',
+          html: 'Use this link %verification_url%',
           lifetime: (60 * 60) * 3000 // 3 hours
         };
 
@@ -372,12 +371,12 @@ describe('UserController test', function() {
                   result.rows.length.should.equal(1);
                   var token = result.rows[0].token;
 
-                  mail.body.should.containEql(token);
+                  mail.text.should.containEql(token);
                   mail.to.should.equal("siriwat600@opendream.co.th");
                   mail.html.should.containEql(token);
 
                   // revert to default value.
-                  sails.config.mail.verificationEmail = mailConfig;
+                  sails.config.mail.verification = mailConfig;
 
                   done();
                 })
@@ -431,7 +430,6 @@ describe('UserController test', function() {
 
           res.body.meta.status.should.equal(409);
           res.body.meta.errorType.should.equal('Conflict');
-          res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
 
           done();
         });
@@ -475,7 +473,6 @@ describe('UserController test', function() {
             if (err) return done(err);
 
             res.body.meta.errorType.should.equal('Conflict');
-            res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
 
             done();
           });
@@ -522,6 +519,63 @@ describe('UserController test', function() {
                 result.rows[0].createdAt.should.be.ok;
                 result.rows[0].updatedAt.should.be.ok;
                 done();
+              })
+              .catch(function (err) {
+                done(err);
+              });
+          });
+      });
+
+      it('should save demographic into data column (sicksense id)', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense3@opendream.co.th",
+            password: "12345678",
+            uuid: 'UUID-SIRIWAT-TEST12',
+            tel: "0841291342",
+            gender: "male",
+            birthYear: 1986,
+            address: {
+              subdistrict: "Samsen Nok",
+              district: "Huai Khwang",
+              city: "Bangkok"
+            },
+            location: {
+              latitude: 13.1135,
+              longitude: 105.0014
+            }
+          })
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(err);
+
+            DBService.select('sicksense', 'data', [
+                { field: 'id = $', value: res.body.response.sicksenseId }
+              ])
+              .then(function (result) {
+                var profile = result.rows[0].data;
+
+                DBService.select('users', '*', [
+                    { field: 'id = $', value: res.body.response.id }
+                  ])
+                  .then(function (result) {
+                    var _user = result.rows[0];
+                    _user.tel.should.equal(profile.tel);
+                    _user.gender.should.equal(profile.gender);
+                    _user.birthYear.should.equal(profile.birthYear);
+                    _user.subdistrict.should.equal(profile.subdistrict);
+                    _user.district.should.equal(profile.district);
+                    _user.city.should.equal(profile.city);
+                    _user.latitude.should.equal(profile.latitude);
+                    _user.longitude.should.equal(profile.longitude);
+                    _user.geom.should.equal(profile.geom);
+                    done();
+                  })
+                  .catch(function (err) {
+                    done(err);
+                  })
               })
               .catch(function (err) {
                 done(err);
@@ -653,6 +707,58 @@ describe('UserController test', function() {
           res.body.response.platform.should.equal('doctormeandroid');
 
           done();
+        });
+    });
+
+    it('should update sicksense data column', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          tel: '0909876543',
+          gender: "male",
+          birthYear: 1998,
+          address: {
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
+            city: "Bangkok"
+          },
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          DBService.select('sicksense', 'data', [
+             { field: 'id = $', value: sicksenseID.id }
+            ])
+            .then(function (result) {
+              var profile = result.rows[0].data;
+
+              DBService.select('users', '*', [
+                  { field: 'id = $', value: user.id }
+                ])
+                .then(function (result) {
+                  var _user = result.rows[0];
+                  _user.tel.should.equal(profile.tel);
+                  _user.gender.should.equal(profile.gender);
+                  _user.birthYear.should.equal(profile.birthYear);
+                  _user.subdistrict.should.equal(profile.subdistrict);
+                  _user.district.should.equal(profile.district);
+                  _user.city.should.equal(profile.city);
+                  _user.latitude.should.equal(profile.latitude);
+                  _user.longitude.should.equal(profile.longitude);
+                  _user.geom.should.equal(profile.geom);
+                  done();
+                })
+                .catch(function (err) {
+                  done(err);
+                });
+            })
+            .catch(function (err) {
+              done(err);
+            });
         });
     });
 
@@ -1287,7 +1393,6 @@ describe('UserController test', function() {
 
           res.body.meta.status.should.equal(400);
           res.body.meta.errorType.should.equal("Bad Request");
-          res.body.meta.errorMessage.should.match(/is required/);
 
           done();
         });
@@ -1484,7 +1589,7 @@ describe('UserController test', function() {
               tmp.resultNew.rows.should.have.length(1);
 
               tmp.count.should.equal(1);
-              tmp.body.should.containEql(tmp.resultNew.rows[0].token);
+              tmp.text.should.containEql(tmp.resultNew.rows[0].token);
               tmp.html.should.containEql(tmp.resultNew.rows[0].token);
               tmp.to.should.equal('request-verify-001@opendream.co.th');
 
@@ -1497,8 +1602,8 @@ describe('UserController test', function() {
         function _before() {
           tmp.count = 0;
           tmp.send = MailService.send;
-          MailService.send = function (subject, body, from, to, html) {
-            tmp.body = body;
+          MailService.send = function (subject, text, from, to, html) {
+            tmp.text = text;
             tmp.html = html;
             tmp.to = to;
             tmp.count++;

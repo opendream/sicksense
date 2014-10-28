@@ -4,11 +4,11 @@ var passgen = require('password-hash-and-salt');
 module.exports = {
 
   index: function(req, res) {
-    req.checkBody('email', 'E-mail field is required').notEmpty();
-    req.checkBody('email', 'E-mail field is not valid').isEmail();
+    req.checkBody('email', 'กรุณากรอกอีเมล').notEmpty();
+    req.checkBody('email', 'กรุณากรอกอีเมลให้ถูกต้อง').isEmail();
 
-    req.checkBody('password', 'Password field is required').notEmpty();
-    req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+    req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
+    req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร').isLength(8);
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -22,7 +22,7 @@ module.exports = {
 
     var now = (new Date()).getTime();
     pgconnect(function(err, client, pgDone) {
-      if (err) return res.serverError("Could not connect to database");
+      if (err) return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       sails.log.debug('[LoginController:index]', now);
 
       var user;
@@ -78,13 +78,13 @@ module.exports = {
   },
 
   connect: function(req, res) {
-    req.checkBody('email', 'E-mail field is required').notEmpty();
-    req.checkBody('email', 'E-mail field is not valid').isEmail();
+    req.checkBody('email', 'กรุณากรอกอีเมล').notEmpty();
+    req.checkBody('email', 'กรุณากรอกอีเมลให้ถูกต้อง').isEmail();
 
-    req.checkBody('password', 'Password field is required').notEmpty();
-    req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+    req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
+    req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร').isLength(8);
 
-    req.checkBody('uuid', 'UUID field is required.').notEmpty();
+    req.checkBody('uuid', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง').notEmpty();
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -132,64 +132,53 @@ module.exports = {
                       .catch(raiseError);
                   }
 
-                  return res.forbidden('Invalid email and password.');
+                  return res.forbidden('อีเมลหรือรหัสผ่านของคุณไม่ถูกต้อง');
                 })
                 .catch(raiseError);
             }
             // User not found.
             else {
-              return res.forbidden('Invalid email and password.');
+              return res.forbidden('อีเมลหรือรหัสผ่านของคุณไม่ถูกต้อง');
             }
           }
 
           // Found sicksense ID.
           sicksenseID = result.rows[0];
+          var sicksenseData = sicksenseID.data || {};
 
           if (sicksenseID.is_verify) {
             // User not found.
             if (!user) {
 
-              // Find latest connected user with sicksense id.
-              var joinTable = 'sicksense_users su LEFT JOIN users u ON su.user_id = u.id';
-              DBService.select(joinTable, 'u.*', [
-                  { field: 'su.sicksense_id = $', value: sicksenseID.id }
-                ], 'ORDER BY u.id DESC LIMIT 1 OFFSET 0')
-                .then(function (result) {
-                  var latest = {};
-                  if (result.rows.length === 1) {
-                    latest = result.rows[0];
-                  }
+              // Duplicate user from data column.
+              passgen(uuid).hash(sails.config.session.secret, function (err, hashedUUID) {
+                if (err) return res.serverError(err);
 
-                  passgen(uuid).hash(sails.config.session.secret, function (err, hashedUUID) {
-                    if (err) return res.serverError(err);
-
-                    // Create new user.
-                    DBService.insert('users', [
-                        { field: 'email', value: uuid + '@sicksense.com' },
-                        { field: 'password', value: hashedUUID },
-                        { field: 'tel', value: latest.tel },
-                        { field: 'gender', value: latest.gender },
-                        { field: '"birthYear"', value: latest.birthYear },
-                        { field: 'subdistrict', value: latest.subdistrict },
-                        { field: 'district', value: latest.district },
-                        { field: 'city', value: latest.city },
-                        { field: 'latitude', value: latest.latitude },
-                        { field: 'longitude', value: latest.longitude },
-                        { field: 'geom', value: latest.geom },
-                        { field: '"createdAt"', value: new Date() },
-                        { field: '"updatedAt"', value: new Date() }
-                      ])
-                      .then(function (result) {
-                        if (result.rows.length === 0) {
-                          return res.serverError('Could perform the request.');
-                        }
-                        user = result.rows[0];
-                        connectSicksenseIDAndUser();
-                      })
-                      .catch(raiseError);
-                  });
-                })
-                .catch(raiseError);
+                // Create new user.
+                DBService.insert('users', [
+                    { field: 'email', value: uuid + '@sicksense.com' },
+                    { field: 'password', value: hashedUUID },
+                    { field: 'tel', value: sicksenseData.tel },
+                    { field: 'gender', value: sicksenseData.gender },
+                    { field: '"birthYear"', value: sicksenseData.birthYear },
+                    { field: 'subdistrict', value: sicksenseData.subdistrict },
+                    { field: 'district', value: sicksenseData.district },
+                    { field: 'city', value: sicksenseData.city },
+                    { field: 'latitude', value: sicksenseData.latitude },
+                    { field: 'longitude', value: sicksenseData.longitude },
+                    { field: 'geom', value: sicksenseData.geom },
+                    { field: '"createdAt"', value: new Date() },
+                    { field: '"updatedAt"', value: new Date() }
+                  ])
+                  .then(function (result) {
+                    if (result.rows.length === 0) {
+                      return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                    }
+                    user = result.rows[0];
+                    connectSicksenseIDAndUser();
+                  })
+                  .catch(raiseError);
+              });
             }
             else {
               return connectSicksenseIDAndUser();
@@ -239,9 +228,9 @@ module.exports = {
 
     function sendEmailVerification() {
       // check if subscribed account then send verification e-mail.
-      var config = sails.config.mail.verificationEmail,
+      var config = sails.config.mail.verification,
           subject = config.subject,
-          body = config.body,
+          text = config.text,
           from = config.from,
           to = sicksenseID.email,
           html = config.html;
@@ -253,16 +242,16 @@ module.exports = {
             token: tokenObject.token
           });
 
-          // substitute value in body, html
-          body = body.replace(/\%token%/, url);
-          html = html.replace(/\%token%/, url);
+          // substitute value in text, html
+          text = text.replace(/\%verification_url%/, url);
+          html = html.replace(/\%verification_url%/, url);
 
-          return MailService.send(subject, body, from, to, html);
+          return MailService.send(subject, text, from, to, html);
         })
         .catch(function (err) {
           sails.log.error(new Error('Can not send verification e-mail'), err);
           sails.log.error(err);
-          res.serverError(err);
+          res.serverError('ไม่สามารถส่งอีเมลยืนยันได้');
         });
     };
 
@@ -272,7 +261,7 @@ module.exports = {
   },
 
   unlink: function(req, res) {
-    req.checkBody('uuid', 'UUID field is required').notEmpty();
+    req.checkBody('uuid', 'เกิดข้อผิดพลาด ไม่สามารถยกเลิกการเชื่อมต่อได้').notEmpty();
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -290,7 +279,7 @@ module.exports = {
         res.ok(userJSON);
       })
       .catch(function (err) {
-        res.serverError('Could not perform your request.');
+        res.serverError('เกิดข้อผิดพลาด ไม่สามารถยกเลิกการเชื่อมต่อได้');
       });
   }
 

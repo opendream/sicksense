@@ -1,5 +1,6 @@
 var request = require('supertest');
 var when = require('when');
+var wkt = require('terraformer-wkt-parser');
 var pg = require('pg');
 var passgen = require('password-hash-and-salt');
 pg.defaults.application_name = 'sicksense_test';
@@ -114,13 +115,21 @@ describe('LoginController test', function() {
         .then(function() {
           return TestHelper.createSicksenseID({
             email: "siriwat@opendream.co.th",
-            password: "12345678",
+            password: "12345678"
           }, true)
           .then(function (sicksenseID) {
             data.sicksenseID = sicksenseID;
             return TestHelper.createUser({
               email: 'A001@sicksense.com',
-              password: 'A001'
+              password: 'A001',
+              tel: '0812345678',
+              gender: "male",
+              birthYear: 1998,
+              subdistrict: "Samsen Nok",
+              district: "Huai Khwang",
+              city: "Bangkok",
+              latitude: 13.1135,
+              longitude: 105.0014
             }, true);
           })
           .then(function (user) {
@@ -349,7 +358,7 @@ describe('LoginController test', function() {
         });
     });
 
-    it('should create new user by duplicate the latest one if sicksense id is exists', function (done) {
+    it('should create new user by duplicate data column if sicksense id is exists', function (done) {
       request(sails.hooks.http.app)
         .post('/connect')
         .send({
@@ -363,21 +372,34 @@ describe('LoginController test', function() {
 
           res.body.response.id.should.be.ok;
           res.body.response.email.should.equal(data.sicksenseID.email);
-          res.body.response.tel.should.equal(data.user.tel);
-          res.body.response.gender.should.equal(data.user.gender);
-          res.body.response.birthYear.should.equal(data.user.birthYear);
-          res.body.response.address.subdistrict.should.equal(data.user.subdistrict);
-          res.body.response.address.district.should.equal(data.user.district);
-          res.body.response.address.city.should.equal(data.user.city);
-          res.body.response.location.latitude.should.equal(data.user.latitude);
-          res.body.response.location.longitude.should.equal(data.user.longitude);
           res.body.response.accessToken.should.be.ok;
 
-          UserService.getUsersBySicksenseId(data.sicksenseID.id)
-            .then(function (users) {
-              users.length.should.equal(2);
-              _.find(users, { id: res.body.response.id }).id.should.be.ok;
-              done();
+          DBService.select('sicksense', 'data', [
+              { field: 'id = $', value: data.sicksenseID.id }
+            ])
+            .then(function (result) {
+              var profile = result.rows[0].data;
+
+              DBService.select('users', '*', [
+                  { field: 'id = $', value: res.body.response.id }
+                ])
+                .then(function (result) {
+                  var user = result.rows[0];
+                  result.rows.length.should.equal(1);
+                  user.tel.should.equal(profile.tel);
+                  user.gender.should.equal(profile.gender);
+                  user.birthYear.should.equal(profile.birthYear);
+                  user.subdistrict.should.equal(profile.subdistrict);
+                  user.district.should.equal(profile.district);
+                  user.city.should.equal(profile.city);
+                  user.latitude.should.equal(profile.latitude);
+                  user.longitude.should.equal(profile.longitude);
+                  user.geom.should.equal(profile.geom);
+                  done();
+                })
+                .catch(function (err) {
+                  done(err);
+                });
             })
             .catch(function (err) {
               done(err);
