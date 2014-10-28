@@ -6,12 +6,11 @@ function loadFile(filePath) {
 
 module.exports.mail = {
 
-  verificationEmail: {
+  verification: {
     subject: 'Please verify your e-mail',
-    body: 'Use this link %token%',
     from: 'John Doe <john@example.com>',
-    html: 'Use this link %token%',
-    lifetime: (60 * 60) * 3000 // 3 hours
+    html: loadFile('./assets/templates/email/verification.html'),
+    body: loadFile('./assets/templates/email/verification.txt')
   },
 
   notification: {
@@ -21,14 +20,14 @@ module.exports.mail = {
     ],
     from: 'John Doe <john@example.com>',
     html: loadFile('./assets/templates/email/notification.html'),
-    text: loadFile('./assets/templates/email/notification.txt')
+    body: loadFile('./assets/templates/email/notification.txt')
   },
 
   forgotPassword: {
     subject: 'Forgot password',
     from: 'John Doe <john@example.com>',
     html: loadFile('./assets/templates/email/forgot_password.html'),
-    text: loadFile('./assets/templates/email/forgot_password.txt')
+    body: loadFile('./assets/templates/email/forgot_password.txt')
   }
 
 };

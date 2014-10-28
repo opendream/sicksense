@@ -42,13 +42,13 @@ module.exports = {
         });
     },
 
-    send: function(subject, body, from, to, html) {
+    send: function(subject, text, from, to, html) {
         var mailgun = MailService.getInstance();
         var params = {
             from: from,
             to: to,
             subject: subject,
-            text: body,
+            text: text,
             html: html,
             'recipient-variables': '{}'
         };

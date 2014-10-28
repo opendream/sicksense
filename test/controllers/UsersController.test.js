@@ -331,9 +331,9 @@ describe('UserController test', function() {
       });
 
       it('should save new record and send e-mail if user is a subscribed account', function(done) {
-        var mailConfig = sails.config.mail.verificationEmail;
+        var mailConfig = sails.config.mail.verification;
         // Override.
-        sails.config.mail.verificationEmail = {
+        sails.config.mail.verification = {
           subject: '[sicksense] Please verify your e-mail',
           body: 'Use this link %token%',
           from: 'sicksense.com',
@@ -377,7 +377,7 @@ describe('UserController test', function() {
                   mail.html.should.containEql(token);
 
                   // revert to default value.
-                  sails.config.mail.verificationEmail = mailConfig;
+                  sails.config.mail.verification = mailConfig;
 
                   done();
                 })

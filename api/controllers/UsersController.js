@@ -246,9 +246,9 @@ module.exports = {
 
     function sendEmailVerification() {
       // check if subscribed account then send verification e-mail.
-      var config = sails.config.mail.verificationEmail,
+      var config = sails.config.mail.verification,
           subject = config.subject,
-          body = config.body,
+          text = config.text,
           from = config.from,
           to = user.sicksense.email,
           html = config.html;
@@ -260,11 +260,11 @@ module.exports = {
             token: tokenObject.token
           });
 
-          // substitute value in body, html
-          body = body.replace(/\%token%/, url);
-          html = html.replace(/\%token%/, url);
+          // substitute value in text, html
+          text = text.replace(/\%verification_url%/, url);
+          html = html.replace(/\%verification_url%/, url);
 
-          return MailService.send(subject, body, from, to, html);
+          return MailService.send(subject, text, from, to, html);
         })
         .catch(function (err) {
           sails.log.error(new Error('Can not send verification e-mail'), err);
@@ -892,13 +892,13 @@ module.exports = {
             var subject = sails.config.mail.forgotPassword.subject;
             var from = sails.config.mail.forgotPassword.from;
             var to = sicksenseID.email;
-            var body = sails.config.mail.forgotPassword.text.replace(/\%reset_password_url\%/g, resetURL);
+            var text = sails.config.mail.forgotPassword.text.replace(/\%reset_password_url\%/g, resetURL);
             var html = sails.config.mail.forgotPassword.html.replace(/\%reset_password_url\%/g, resetURL);
-            return MailService.send(subject, body, from, to, html);
+            return MailService.send(subject, text, from, to, html);
           })
           .then(function() {
             return res.ok({
-              'message': 'E-mail has been sent to ' + email + '.'
+              'message': 'วิธีตั้งค่ารหัสผ่านใหม่ถูกส่งไปยังเมล ' + email + 'แล้ว'
             });
           })
           .catch(function(err) {
@@ -1058,9 +1058,9 @@ module.exports = {
         // 3. send e-mail
         .then(function (tokenObject) {
             // check if subscribed account then send verification e-mail.
-            var config = sails.config.mail.verificationEmail,
+            var config = sails.config.mail.verification,
                 subject = config.subject,
-                body = config.body,
+                text = config.text,
                 from = config.from,
                 to = data.sicksense.email,
                 html = config.html;
@@ -1069,11 +1069,11 @@ module.exports = {
               token: tokenObject.token
             });
 
-            // substitute value in body, html
-            body = body.replace(/\%token%/, url);
-            html = html.replace(/\%token%/, url);
+            // substitute value in text, html
+            text = text.replace(/\%verification_url%/, url);
+            html = html.replace(/\%verification_url%/, url);
 
-            return MailService.send(subject, body, from, to, html);
+            return MailService.send(subject, text, from, to, html);
         });
       })
       .then(function () {
