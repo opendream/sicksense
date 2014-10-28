@@ -49,7 +49,7 @@ module.exports = function forbidden (err, viewOrRedirect) {
       status: 403,
       errorType: 'Forbidden',
       errorSubType: err.subType || null,
-      errorMessage: err
+      errorMessage: err.toString()
     }
   };
 
