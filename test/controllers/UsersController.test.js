@@ -1510,6 +1510,50 @@ describe('UserController test', function() {
         }
     });
 
+    it('should warn and won\'t send e-mail if users are already verified', function (done) {
+        var tmp = {};
+
+        _before();
+
+        DBService.update('sicksense', [
+          { field: 'is_verify = $', value: 't' }
+        ], [
+          { field: 'id = $' , value: data.sicksense.id }
+        ])
+        .then(function () {
+          request(sails.hooks.http.app)
+            .post('/users/request-verify')
+            .send({
+              email: 'request-verify-001@opendream.co.th',
+            })
+            .expect(400)
+            .end(function (err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.meta.errorSubType.should.equal('email_is_already_verified');
+              tmp.count.should.equal(0);
+
+              _after();
+              done();
+            });
+        });
+
+        function _before() {
+          tmp.count = 0;
+          tmp.send = MailService.send;
+          MailService.send = function (subject, body, from, to, html) {
+            tmp.body = body;
+            tmp.html = html;
+            tmp.to = to;
+            tmp.count++;
+          };
+        }
+
+        function _after() {
+          MailService.send = tmp.send;
+        }
+    });
+
     it('should not required any devices(users) to request verification e-mail', function (done) {
         var tmp = {};
 
@@ -1523,6 +1567,11 @@ describe('UserController test', function() {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(new Error(err));
+
+            tmp.count.should.equal(1);
+            tmp.to.should.equal('request-verify-002@opendream.co.th');
+
+            _after();
             done();
           });
 

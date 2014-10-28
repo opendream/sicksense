@@ -117,7 +117,6 @@ module.exports = {
 
     function checkUserEmailExists(email) {
       return when.promise(function (resolve, reject) {
-        console.log('--', email);
         DBService.select('users', 'email', [
             { field: 'email = $', value: email }
           ])
@@ -1024,10 +1023,20 @@ module.exports = {
 
     // Check if e-mail exists
     UserService.doesSicksenseIDExist(req.body.email)
+      // check if this e-mail is already verified.
       .then(function (result) {
+        data.sicksense = result;
+
+        if (data.sicksense.is_verify) {
+          var error = new Error('This e-mail is already verified');
+          error.status = 400;
+          error.subType = 'email_is_already_verified';
+          return when.reject(error);
+        }
+      })
+      .then(function () {
         // -- if yes
-        if (result) {
-          data.sicksense = result;
+        if (data.sicksense) {
           return when.resolve();
         }
         // -- else

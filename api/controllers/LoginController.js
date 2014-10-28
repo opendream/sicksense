@@ -196,7 +196,9 @@ module.exports = {
             }
           }
           else {
-            return res.forbidden('Please verify email.', 'unverified_email');
+            var error = new Error('Please verify email.');
+            error.subType = 'unverified_email';
+            return res.forbidden(error);
           }
         })
         .catch(raiseError);
