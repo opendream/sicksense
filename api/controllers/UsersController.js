@@ -214,9 +214,22 @@ module.exports = {
         passgen(data.sicksense.password).hash(sails.config.session.secret, function (err, hashedPassword) {
           if (err) return reject(err);
 
+          var sicksenseData = {
+            tel: user.tel,
+            gender: user.gender,
+            birthYear: user.birthYear,
+            subdistrict: user.subdistrict,
+            district: user.district,
+            city: user.city,
+            latitude: user.latitude,
+            longitude: user.longitude,
+            geom: user.geom
+          };
+
           DBService.insert('sicksense', [
               { field: 'email', value: data.sicksense.email },
               { field: 'password', value: hashedPassword },
+              { field: 'data', value: sicksenseData },
               { field: '"createdAt"', value: new Date() },
               { field: '"updatedAt"', value: new Date() }
             ])
@@ -364,7 +377,7 @@ module.exports = {
   },
 
   update: function(req, res) {
-    var accessToken;
+    var accessToken, user;
 
     // Check own access token first.
     AccessToken.findOneByToken(req.query.accessToken).exec(function(err, _accessToken) {
@@ -451,17 +464,17 @@ module.exports = {
 
       return DBService.update('users', data, conditions)
         .then(function (users) {
-          var savedUser = users.rows[0];
+          user = users.rows[0];
 
           if (req.body.deviceToken === '') {
-            return UserService.removeDefaultUserDevice(savedUser);
+            return UserService.removeDefaultUserDevice(user);
           }
           else if (req.body.deviceToken) {
             return UserService.clearDevices(req.user)
               .then(function () {
-                return UserService.setDevice(savedUser, {
+                return UserService.setDevice(user, {
                   id: req.body.deviceToken,
-                  platform: req.body.platform || req.query.platform || savedUser.platform
+                  platform: req.body.platform || req.query.platform || user.platform
                 });
               });
           }
@@ -475,6 +488,21 @@ module.exports = {
       var data = [
         { field: '"updatedAt" = $', value: new Date() },
       ];
+
+      data.push({
+        field: 'data = $',
+        value: {
+          tel: user.tel,
+          gender: user.gender,
+          birthYear: user.birthYear,
+          subdistrict: user.subdistrict,
+          district: user.district,
+          city: user.city,
+          latitude: user.latitude,
+          longitude: user.longitude,
+          geom: user.geom
+        }
+      });
 
       // if (password) {
       //   data.push({ field: 'password = $', value: password });

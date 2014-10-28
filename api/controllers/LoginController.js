@@ -144,52 +144,41 @@ module.exports = {
 
           // Found sicksense ID.
           sicksenseID = result.rows[0];
+          var sicksenseData = sicksenseID.data || {};
 
           if (sicksenseID.is_verify) {
             // User not found.
             if (!user) {
 
-              // Find latest connected user with sicksense id.
-              var joinTable = 'sicksense_users su LEFT JOIN users u ON su.user_id = u.id';
-              DBService.select(joinTable, 'u.*', [
-                  { field: 'su.sicksense_id = $', value: sicksenseID.id }
-                ], 'ORDER BY u.id DESC LIMIT 1 OFFSET 0')
-                .then(function (result) {
-                  var latest = {};
-                  if (result.rows.length === 1) {
-                    latest = result.rows[0];
-                  }
+              // Duplicate user from data column.
+              passgen(uuid).hash(sails.config.session.secret, function (err, hashedUUID) {
+                if (err) return res.serverError(err);
 
-                  passgen(uuid).hash(sails.config.session.secret, function (err, hashedUUID) {
-                    if (err) return res.serverError(err);
-
-                    // Create new user.
-                    DBService.insert('users', [
-                        { field: 'email', value: uuid + '@sicksense.com' },
-                        { field: 'password', value: hashedUUID },
-                        { field: 'tel', value: latest.tel },
-                        { field: 'gender', value: latest.gender },
-                        { field: '"birthYear"', value: latest.birthYear },
-                        { field: 'subdistrict', value: latest.subdistrict },
-                        { field: 'district', value: latest.district },
-                        { field: 'city', value: latest.city },
-                        { field: 'latitude', value: latest.latitude },
-                        { field: 'longitude', value: latest.longitude },
-                        { field: 'geom', value: latest.geom },
-                        { field: '"createdAt"', value: new Date() },
-                        { field: '"updatedAt"', value: new Date() }
-                      ])
-                      .then(function (result) {
-                        if (result.rows.length === 0) {
-                          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
-                        }
-                        user = result.rows[0];
-                        connectSicksenseIDAndUser();
-                      })
-                      .catch(raiseError);
-                  });
-                })
-                .catch(raiseError);
+                // Create new user.
+                DBService.insert('users', [
+                    { field: 'email', value: uuid + '@sicksense.com' },
+                    { field: 'password', value: hashedUUID },
+                    { field: 'tel', value: sicksenseData.tel },
+                    { field: 'gender', value: sicksenseData.gender },
+                    { field: '"birthYear"', value: sicksenseData.birthYear },
+                    { field: 'subdistrict', value: sicksenseData.subdistrict },
+                    { field: 'district', value: sicksenseData.district },
+                    { field: 'city', value: sicksenseData.city },
+                    { field: 'latitude', value: sicksenseData.latitude },
+                    { field: 'longitude', value: sicksenseData.longitude },
+                    { field: 'geom', value: sicksenseData.geom },
+                    { field: '"createdAt"', value: new Date() },
+                    { field: '"updatedAt"', value: new Date() }
+                  ])
+                  .then(function (result) {
+                    if (result.rows.length === 0) {
+                      return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                    }
+                    user = result.rows[0];
+                    connectSicksenseIDAndUser();
+                  })
+                  .catch(raiseError);
+              });
             }
             else {
               return connectSicksenseIDAndUser();

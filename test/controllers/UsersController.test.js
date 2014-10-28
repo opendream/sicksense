@@ -526,6 +526,63 @@ describe('UserController test', function() {
           });
       });
 
+      it('should save demographic into data column (sicksense id)', function(done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense3@opendream.co.th",
+            password: "12345678",
+            uuid: 'UUID-SIRIWAT-TEST12',
+            tel: "0841291342",
+            gender: "male",
+            birthYear: 1986,
+            address: {
+              subdistrict: "Samsen Nok",
+              district: "Huai Khwang",
+              city: "Bangkok"
+            },
+            location: {
+              latitude: 13.1135,
+              longitude: 105.0014
+            }
+          })
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(err);
+
+            DBService.select('sicksense', 'data', [
+                { field: 'id = $', value: res.body.response.sicksenseId }
+              ])
+              .then(function (result) {
+                var profile = result.rows[0].data;
+
+                DBService.select('users', '*', [
+                    { field: 'id = $', value: res.body.response.id }
+                  ])
+                  .then(function (result) {
+                    var _user = result.rows[0];
+                    _user.tel.should.equal(profile.tel);
+                    _user.gender.should.equal(profile.gender);
+                    _user.birthYear.should.equal(profile.birthYear);
+                    _user.subdistrict.should.equal(profile.subdistrict);
+                    _user.district.should.equal(profile.district);
+                    _user.city.should.equal(profile.city);
+                    _user.latitude.should.equal(profile.latitude);
+                    _user.longitude.should.equal(profile.longitude);
+                    _user.geom.should.equal(profile.geom);
+                    done();
+                  })
+                  .catch(function (err) {
+                    done(err);
+                  })
+              })
+              .catch(function (err) {
+                done(err);
+              });
+          });
+      });
+
     });
 
   });
@@ -650,6 +707,58 @@ describe('UserController test', function() {
           res.body.response.platform.should.equal('doctormeandroid');
 
           done();
+        });
+    });
+
+    it('should update sicksense data column', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id)
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          tel: '0909876543',
+          gender: "male",
+          birthYear: 1998,
+          address: {
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
+            city: "Bangkok"
+          },
+        })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          DBService.select('sicksense', 'data', [
+             { field: 'id = $', value: sicksenseID.id }
+            ])
+            .then(function (result) {
+              var profile = result.rows[0].data;
+
+              DBService.select('users', '*', [
+                  { field: 'id = $', value: user.id }
+                ])
+                .then(function (result) {
+                  var _user = result.rows[0];
+                  _user.tel.should.equal(profile.tel);
+                  _user.gender.should.equal(profile.gender);
+                  _user.birthYear.should.equal(profile.birthYear);
+                  _user.subdistrict.should.equal(profile.subdistrict);
+                  _user.district.should.equal(profile.district);
+                  _user.city.should.equal(profile.city);
+                  _user.latitude.should.equal(profile.latitude);
+                  _user.longitude.should.equal(profile.longitude);
+                  _user.geom.should.equal(profile.geom);
+                  done();
+                })
+                .catch(function (err) {
+                  done(err);
+                });
+            })
+            .catch(function (err) {
+              done(err);
+            });
         });
     });
 
