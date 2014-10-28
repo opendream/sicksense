@@ -14,6 +14,7 @@ module.exports = function(req, res, next) {
         sails.log.debug('[tokenAuth]', now);
         UserService.getUserJSON(accessToken.userId)
           .then(function (userJSON) {
+            sails.log.debug('[tokenAuth]', now);
             req.user = userJSON;
             next();
           })

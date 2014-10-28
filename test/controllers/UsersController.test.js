@@ -1383,8 +1383,18 @@ describe('UserController test', function() {
           { field: '"createdAt"', value: new Date() }
         ]);
       })
+      // create sicksense id with no devices(users) linked.
       .then(function (result) {
         data.sicksense = result.rows[0];
+
+        return DBService.insert('sicksense', [
+          { field: 'email', value: 'request-verify-002@opendream.co.th' },
+          { field: 'password', value: 'password-here-is-ignored' },
+          { field: '"createdAt"', value: new Date() }
+        ]);
+      })
+      .then(function (result) {
+        data.unlinked_sicksense = result.rows[0];
         // assign verification token
         return OnetimeTokenService.create('user.verifyEmail', data.sicksense.id, 10)
           .then(function (tokenObject) {
@@ -1482,6 +1492,38 @@ describe('UserController test', function() {
             })
             .catch(done)
             .finally(_after);
+          });
+
+        function _before() {
+          tmp.count = 0;
+          tmp.send = MailService.send;
+          MailService.send = function (subject, body, from, to, html) {
+            tmp.body = body;
+            tmp.html = html;
+            tmp.to = to;
+            tmp.count++;
+          };
+        }
+
+        function _after() {
+          MailService.send = tmp.send;
+        }
+    });
+
+    it('should not required any devices(users) to request verification e-mail', function (done) {
+        var tmp = {};
+
+        _before();
+
+        request(sails.hooks.http.app)
+          .post('/users/request-verify')
+          .send({
+            email: 'request-verify-002@opendream.co.th',
+          })
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+            done();
           });
 
         function _before() {

@@ -117,6 +117,7 @@ module.exports = {
 
     function checkUserEmailExists(email) {
       return when.promise(function (resolve, reject) {
+        console.log('--', email);
         DBService.select('users', 'email', [
             { field: 'email = $', value: email }
           ])
@@ -1027,18 +1028,7 @@ module.exports = {
         // -- if yes
         if (result) {
           data.sicksense = result;
-          // load user object
-          return DBService.select('sicksense_users', 'user_id', [
-            { field: 'sicksense_id = $', value: result.id }
-          ])
-          .then(function (result) {
-            return DBService.select('users', '*', [
-              { field: 'id = $', value: result.rows[0].user_id }
-            ]);
-          })
-          .then(function (result) {
-            return when.resolve(result.rows[0]);
-          });
+          return when.resolve();
         }
         // -- else
         else {
@@ -1048,7 +1038,7 @@ module.exports = {
           return when.reject(error);
         }
       })
-      .then(function (user) {
+      .then(function () {
         // 1. delete old token
         return OnetimeTokenService.delete(data.sicksense.id, 'user.verifyEmail')
         // 2. generate the new one
