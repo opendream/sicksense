@@ -4,11 +4,11 @@ var passgen = require('password-hash-and-salt');
 module.exports = {
 
   index: function(req, res) {
-    req.checkBody('email', 'E-mail field is required').notEmpty();
-    req.checkBody('email', 'E-mail field is not valid').isEmail();
+    req.checkBody('email', 'กรุณากรอกอีเมล').notEmpty();
+    req.checkBody('email', 'กรุณากรอกอีเมลให้ถูกต้อง').isEmail();
 
-    req.checkBody('password', 'Password field is required').notEmpty();
-    req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+    req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
+    req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร').isLength(8);
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -22,7 +22,7 @@ module.exports = {
 
     var now = (new Date()).getTime();
     pgconnect(function(err, client, pgDone) {
-      if (err) return res.serverError("Could not connect to database");
+      if (err) return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       sails.log.debug('[LoginController:index]', now);
 
       var user;
@@ -78,13 +78,13 @@ module.exports = {
   },
 
   connect: function(req, res) {
-    req.checkBody('email', 'E-mail field is required').notEmpty();
-    req.checkBody('email', 'E-mail field is not valid').isEmail();
+    req.checkBody('email', 'กรุณากรอกอีเมล').notEmpty();
+    req.checkBody('email', 'กรุณากรอกอีเมลให้ถูกต้อง').isEmail();
 
-    req.checkBody('password', 'Password field is required').notEmpty();
-    req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+    req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
+    req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร').isLength(8);
 
-    req.checkBody('uuid', 'UUID field is required.').notEmpty();
+    req.checkBody('uuid', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง').notEmpty();
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -132,13 +132,13 @@ module.exports = {
                       .catch(raiseError);
                   }
 
-                  return res.forbidden('Invalid email and password.');
+                  return res.forbidden('อีเมลหรือรหัสผ่านของคุณไม่ถูกต้อง');
                 })
                 .catch(raiseError);
             }
             // User not found.
             else {
-              return res.forbidden('Invalid email and password.');
+              return res.forbidden('อีเมลหรือรหัสผ่านของคุณไม่ถูกต้อง');
             }
           }
 
@@ -181,7 +181,7 @@ module.exports = {
                       ])
                       .then(function (result) {
                         if (result.rows.length === 0) {
-                          return res.serverError('Could perform the request.');
+                          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
                         }
                         user = result.rows[0];
                         connectSicksenseIDAndUser();
@@ -196,7 +196,7 @@ module.exports = {
             }
           }
           else {
-            return res.forbidden('Please verify email.', 'unverified_email');
+            return res.forbidden('กรุณายืนยันอีเมล', 'unverified_email');
           }
         })
         .catch(raiseError);
@@ -237,7 +237,7 @@ module.exports = {
 
     function sendEmailVerification() {
       // check if subscribed account then send verification e-mail.
-      var config = sails.config.mail.verificationEmail,
+      var config = sails.config.mail.verification,
           subject = config.subject,
           body = config.body,
           from = config.from,
@@ -260,7 +260,7 @@ module.exports = {
         .catch(function (err) {
           sails.log.error(new Error('Can not send verification e-mail'), err);
           sails.log.error(err);
-          res.serverError(err);
+          res.serverError('ไม่สามารถส่งอีเมลยืนยันได้');
         });
     };
 
@@ -270,7 +270,7 @@ module.exports = {
   },
 
   unlink: function(req, res) {
-    req.checkBody('uuid', 'UUID field is required').notEmpty();
+    req.checkBody('uuid', 'เกิดข้อผิดพลาด ไม่สามารถยกเลิกการเชื่อมต่อได้').notEmpty();
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -288,7 +288,7 @@ module.exports = {
         res.ok(userJSON);
       })
       .catch(function (err) {
-        res.serverError('Could not perform your request.');
+        res.serverError('เกิดข้อผิดพลาด ไม่สามารถยกเลิกการเชื่อมต่อได้');
       });
   }
 

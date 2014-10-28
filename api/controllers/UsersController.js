@@ -25,7 +25,7 @@ module.exports = {
       checkUserEmailExists(data.email)
         .then(function(exists) {
           if (exists) {
-            return res.conflict('This e-mail is already registered, please login or try another e-mail.');
+            return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น.');
           }
 
           return createUser(data)
@@ -40,7 +40,7 @@ module.exports = {
                 return checkSicksenseEmailExists(data.sicksense.email)
                   .then(function (exists) {
                     if (exists) {
-                      return res.conflict('This e-mail is already registered, please login or try another e-mail');
+                      return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น');
                     }
                     else {
                       return createSicksenseID(data)
@@ -152,7 +152,7 @@ module.exports = {
             ])
             .then(function(result) {
               if (result.rows.length === 0) {
-                reject(new Error('Could not insert data into database.'));
+                reject(new Error('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'));
               }
               else {
                 user = result.rows[0];
@@ -222,7 +222,7 @@ module.exports = {
             ])
             .then(function (result) {
               if (result.rows.length === 0) {
-                reject(new Error('Could not insert data into database.'));
+                reject(new Error('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'));
               }
               else {
                 user.sicksense = result.rows[0];
@@ -269,7 +269,7 @@ module.exports = {
         .catch(function (err) {
           sails.log.error(new Error('Can not send verification e-mail'), err);
           sails.log.error(err);
-          res.serverError(err);
+          res.serverError('ไม่สามารถส่งอีเมลยืนยันได้');
         });
     };
 
@@ -291,40 +291,40 @@ module.exports = {
 
     function validate() {
       return when.promise(function (resolve, reject) {
-        req.checkBody('email', 'E-mail field is required').notEmpty();
-        req.checkBody('email', 'E-mail field is not valid').isEmail();
+        req.checkBody('email', 'กรุณากรอกอีเมล').notEmpty();
+        req.checkBody('email', 'กรุณากรอกอีเมลให้ถูกต้อง').isEmail();
 
-        req.checkBody('password', 'Password field is required').notEmpty();
-        req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+        req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
+        req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร').isLength(8);
 
-        req.checkBody('uuid', 'UUID field is required').notEmpty();
+        req.checkBody('uuid', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง').notEmpty();
 
         if (req.body.gender) {
-          req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
+          req.checkBody('gender', 'กรุณาเลือกเพศ').isIn(['male', 'female']);
         }
 
         if (req.body.birthYear) {
           req.sanitize('birthYear').toInt();
-          req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
-          req.checkBody('birthYear', 'Birth Year field is required').isInt();
-          req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
+          req.checkBody('birthYear', 'กรุณาเลือกปีเกิด').notEmpty();
+          req.checkBody('birthYear', 'กรุณาเลือกปีเกิดให้ถูกต้อง').isInt();
+          req.checkBody('birthYear', 'กรุณาเลือกปีเกิดให้ถูกต้อง').isBetween(1900, (new Date()).getUTCFullYear());
         }
 
         if (!_.isEmpty(req.body.address)) {
-          req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
-          req.checkBody('address.district', 'Address:District field is required').notEmpty();
-          req.checkBody('address.city', 'Address:City field is required').notEmpty();
+          req.checkBody('address.subdistrict', 'กรุณาเลือกตำบล').notEmpty();
+          req.checkBody('address.district', 'กรุณาเลือกอำเภอ').notEmpty();
+          req.checkBody('address.city', 'กรุณาเลือกจังหวัด').notEmpty();
         }
 
         if (!_.isEmpty(req.body.location)) {
           req.sanitize('location.latitude').toFloat();
           req.sanitize('location.longitude').toFloat();
-          req.checkBody('location.latitude', 'Location:Latitude field is required').notEmpty();
-          req.checkBody('location.latitude', 'Location:Latitude field is not valid').isFloat();
-          req.checkBody('location.latitude', 'Location:Latitude field is not valid').isBetween(-90, 90);
-          req.checkBody('location.longitude', 'Location:Longitude field is required').notEmpty();
-          req.checkBody('location.longitude', 'Location:Longitude field is not valid').isFloat();
-          req.checkBody('location.longitude', 'Location:Longitude field is not valid').isBetween(-180, 180);
+          req.checkBody('location.latitude', 'กรุณาเลือกพิกัดให้ถูกต้อง').notEmpty();
+          req.checkBody('location.latitude', 'กรุณาเลือกพิกัดให้ถูกต้อง').isFloat();
+          req.checkBody('location.latitude', 'กรุณาเลือกพิกัดให้ถูกต้อง').isBetween(-90, 90);
+          req.checkBody('location.longitude', 'กรุณาเลือกพิกัดให้ถูกต้อง').notEmpty();
+          req.checkBody('location.longitude', 'กรุณาเลือกพิกัดให้ถูกต้อง').isFloat();
+          req.checkBody('location.longitude', 'กรุณาเลือกพิกัดให้ถูกต้อง').isBetween(-180, 180);
         }
 
         if (req.body.platform || req.query.platform) {
@@ -346,7 +346,7 @@ module.exports = {
             })
             .catch(function (err) {
               if (err.toString().match('not found')) {
-                err = "Address field is not valid. Address not found";
+                err = 'กรุณาเลือกที่อยู่ให้ถูกต้อง';
               }
               res.badRequest(err, {
                 address: {
@@ -370,13 +370,13 @@ module.exports = {
     AccessToken.findOneByToken(req.query.accessToken).exec(function(err, _accessToken) {
       if (err) {
         sails.log.error(err);
-        return res.accessToken(new Error("Could not perform your request"));
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       }
 
       accessToken = _accessToken;
 
       if (!accessToken || accessToken.userId != req.params.id) {
-        return res.forbidden(new Error("Can not save to other profile"));
+        return res.forbidden('ไม่สามารถแก้ไขข้อมูลผู้อื่นได้');
       }
 
       validate()
@@ -399,7 +399,7 @@ module.exports = {
               }
             })
             .catch(function (err) {
-              res.serverError('Could not perform your request.');
+              res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
             });
         })
         .catch(function (err) {
@@ -467,7 +467,7 @@ module.exports = {
           }
         })
         .catch(function (err) {
-          res.serverError('Could not perform your request1');
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         });
     }
 
@@ -505,7 +505,7 @@ module.exports = {
         })
         .catch(function (err) {
           sails.log.error(err);
-          res.serverError('Could not perform your request2');
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         });
     }
 
@@ -613,7 +613,7 @@ module.exports = {
         }) // end then()
         .catch(function (err) {
           sails.log.error(err);
-          return res.serverError("Could not perform your request");
+          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         }); // end DBService.update()
     }
 
@@ -621,24 +621,24 @@ module.exports = {
       return when.promise(function (resolve, reject) {
 
         if (req.body.password) {
-          req.checkBody('password', 'Password field must have length at least 8 characters').isLength(8);
+          req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร').isLength(8);
         }
 
         if (req.body.gender) {
-          req.checkBody('gender', 'Gender field is not valid').isIn(['male', 'female']);
+          req.checkBody('gender', 'กรุณาเลือกเพศ').isIn(['male', 'female']);
         }
 
         if (req.body.birthYear) {
           req.sanitize('birthYear').toInt();
-          req.checkBody('birthYear', 'Birth Year field is required').notEmpty();
-          req.checkBody('birthYear', 'Birth Year field is required').isInt();
-          req.checkBody('birthYear', 'Birth Year field is not valid').isBetween(1900, (new Date()).getUTCFullYear());
+          req.checkBody('birthYear', 'กรุณาเลือกปีเกิด').notEmpty();
+          req.checkBody('birthYear', 'กรุณาเลือกปีเกิดให้ถูกต้อง').isInt();
+          req.checkBody('birthYear', 'กรุณาเลือกปีเกิดให้ถูกต้อง').isBetween(1900, (new Date()).getUTCFullYear());
         }
 
         if (!_.isEmpty(req.body.address)) {
-          req.checkBody('address.subdistrict', 'Address:Subdistrict field is required').notEmpty();
-          req.checkBody('address.district', 'Address:District field is required').notEmpty();
-          req.checkBody('address.city', 'Address:City field is required').notEmpty();
+          req.checkBody('address.subdistrict', 'กรุณาเลือกตำบล').notEmpty();
+          req.checkBody('address.district', 'กรุณาเลือกอำเภอ').notEmpty();
+          req.checkBody('address.city', 'กรุณาเลือกจังหวัด').notEmpty();
         }
 
         var errors = req.validationErrors();
@@ -658,7 +658,7 @@ module.exports = {
                 .then(resolve)
                 .catch(function (err) {
                   if (err.toString().match('not found')) {
-                    err = "Address field is not valid. Address not found";
+                    err = "กรุณาเลือกที่อยู่ให้ถูกต้อง";
 
                     res.badRequest(err, {
                       address: {
@@ -668,7 +668,7 @@ module.exports = {
                   }
                   else {
                     sails.log.error(err);
-                    res.serverError("Server error", err);
+                    res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
                   }
 
                   reject(err);
@@ -745,11 +745,11 @@ module.exports = {
     AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
       if (err) {
         sails.log.error(err);
-        return res.accessToken(new Error("Could not perform your request"));
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       }
 
       if (!accessToken || accessToken.userId != req.params.id) {
-        return res.forbidden(new Error("You can not get another user's reports"));
+        return res.forbidden('ไม่สามารถดึงข้อมูลได้');
       }
 
       if (req.query.offset) {
@@ -774,7 +774,7 @@ module.exports = {
       pgconnect(function(err, client, pgDone) {
         if (err) {
           sails.log.error(err);
-          return res.serverError(new Error("Could not connect to database"));
+          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         }
         sails.log.debug('[UsersController:userReports()]', now);
 
@@ -797,7 +797,7 @@ module.exports = {
         client.query(selectQuery, selectValues, function(err, result) {
           if (err) {
             sails.log.error(err);
-            return res.serverError(new Error("Could not perform your request"));
+            return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
           }
 
           client.query(countQuery, countValues, function(err, countResult) {
@@ -806,7 +806,7 @@ module.exports = {
 
             if (err) {
               sails.log.error(err);
-              return res.serverError(new Error("Could not perform your request"));
+              return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
             }
 
             when.map(result.rows, function(row) {
@@ -839,11 +839,11 @@ module.exports = {
     AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
       if (err) {
         sails.log.error(err);
-        return res.accessToken(new Error("Could not perform your request"));
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       }
 
       if (!accessToken || accessToken.userId != req.params.id) {
-        return res.forbidden(new Error("You can not get another user's reports"));
+        return res.forbidden('ไม่สามารถดึงข้อมูลได้');
       }
 
       UserService.getUserJSON(req.user.id)
@@ -854,11 +854,11 @@ module.exports = {
               res.ok(userJSON);
             })
             .catch(function (err) {
-              res.serverError('Could not connect to database.');
+              res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
             });
         })
         .catch(function (err) {
-          res.serverError('Could not connect to database.');
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         });
     });
   },
@@ -868,7 +868,7 @@ module.exports = {
     var email = req.body.email;
     if (email) {
       pgconnect(function(err, client, done) {
-        if (err) return res.serverError('Could not connect to database.');
+        if (err) return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
 
         UserService.getSicksenseIDByEmail(email)
           .then(function (_sicksenseID) {
@@ -923,7 +923,7 @@ module.exports = {
       .then(function(tokenObject) {
         onetimeToken = tokenObject;
         if (!onetimeToken) {
-          return res.forbidden('Token is invalid');
+          return res.forbidden('ไม่ได้สามารถตั้งค่ารหัสผ่านใหม่ได้ เนื่องจากลิงก์หมดอายุ');
         }
 
         var sicksenseId = onetimeToken.user_id;
@@ -934,7 +934,7 @@ module.exports = {
             return UserService.updatePassword(sicksenseId, password, true)
               .then(function () {
                 res.ok({
-                  message: 'Password has been updated.'
+                  message: 'ตั้งค่ารหัสผ่านใหม่สำเร็จ'
                 });
               })
               .catch(function (err) {
@@ -951,8 +951,8 @@ module.exports = {
 
     function validate() {
       return when.promise(function(resolve, reject) {
-        req.checkBody('token', 'Token is required').notEmpty();
-        req.checkBody('password', 'Password is required').notEmpty();
+        req.checkBody('token', 'ไม่ได้สามารถตั้งค่ารหัสผ่านใหม่ได้ เนื่องจากข้อมูลไม่ครบถ้วน').notEmpty();
+        req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
 
         var errors = req.validationErrors();
         var paramErrors = req.validationErrors(true);
@@ -974,7 +974,7 @@ module.exports = {
   },
 
   verify: function (req, res) {
-    req.check('token', '`token` field is required').notEmpty();
+    req.check('token', 'ไม่ได้สามารถยืนยันอีเมลได้ เนื่องจากข้อมูลไม่ครบถ้วน').notEmpty();
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -999,19 +999,19 @@ module.exports = {
             })
             .catch(function (err) {
               sails.log.error('UsersController.verify()::', err);
-              res.serverError('Server error, Cannot verify user e-mail. Please try again', err);
+              res.serverError('ไม่ได้สามารถยืนยันอีเมลได้ กรุณาลองใหม่อีกครั้ง');
             });
 
         }
         else {
-          res.forbidden('Invalid Token');
+          res.forbidden('ไม่ได้สามารถยืนยันอีเมลได้ เนื่องจากลิงก์หมดอายุ');
         }
       });
   },
 
   requestVerify: function(req, res) {
-    req.checkBody('email', 'E-mail field is required').notEmpty();
-    req.checkBody('email', 'E-mail field is not valid').isEmail();
+    req.checkBody('email', 'กรุณากรอกอีเมล').notEmpty();
+    req.checkBody('email', 'กรุณากรอกอีเมลให้ถูกต้อง').isEmail();
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -1043,7 +1043,7 @@ module.exports = {
         // -- else
         else {
           // 1. show bad request.
-          var error = new Error('E-mail address not found. Please register first');
+          var error = new Error('ไม่พบอีเมลในระบบ');
           error.status = 400;
           return when.reject(error);
         }
@@ -1085,7 +1085,7 @@ module.exports = {
         }
         else {
           sails.log.error('UsersController.requestVerify()::', err);
-          res.serverError('Server error, Cannot send verification e-mail', err);
+          res.serverError('ไม่สามารถส่งอีเมลยืนยันได้', err);
         }
       });
   },
@@ -1095,40 +1095,40 @@ module.exports = {
     AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
       if (err) {
         sails.log.error(err);
-        return res.serverError(new Error("Could not perform your request"));
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       }
 
       if (!accessToken || accessToken.userId != req.params.id) {
-        return res.forbidden(new Error("You can not get another user's password"));
+        return res.forbidden('ไม่สามารถแก้ไขรหัสผ่านของผู้อื่นได้');
       }
 
       validate()
         .then(function () {
           passgen(req.body.oldPassword).hash(sails.config.session.secret, function (err, hashedPassword) {
-            if (err) return res.serverError('Could not perform your request.');
+            if (err) return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
             var joinTable = 'sicksense_users su LEFT JOIN sicksense s ON su.sicksense_id = s.id';
             return DBService.select(joinTable, 's.*', [
                 { field: 'su.user_id = $', value: accessToken.userId },
                 { field: 's.password = $', value: hashedPassword }
               ])
               .then(function (result) {
-                if (result.rows.length === 0) return res.forbidden('Unauthorized');
+                if (result.rows.length === 0) return res.forbidden('รหัสผ่านเก่าไม่ถูกต้อง');
                 var sicksenseId = result.rows[0].id;
                 var newPassword = req.body.newPassword;
                 return UserService.updatePassword(sicksenseId, newPassword, true)
                   .then(responseJSON)
                   .catch(function (err) {
                     sails.log.error(err);
-                    res.serverError('Could not perform your request.');
+                    res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
                   });
               })
               .catch(function (err) {
-                res.serverError('Could not perform your request.');
+                res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
               });
           });
         })
         .catch(function (err) {
-          res.serverError('Could not perform your request.');
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         });
     });
 
@@ -1138,14 +1138,14 @@ module.exports = {
           res.ok(userJSON);
         })
         .catch(function (err) {
-          res.serverError('Could not perform your request.');
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         });
     }
 
     function validate() {
       return when.promise(function(resolve, reject) {
-        req.checkBody('oldPassword', 'Old password is required').notEmpty();
-        req.checkBody('newPassword', 'New password is required').notEmpty();
+        req.checkBody('oldPassword', 'กรุณากรอกรหัสผ่านเก่า').notEmpty();
+        req.checkBody('newPassword', 'กรุณากรอกรหัสผ่านใหม่').notEmpty();
 
         var errors = req.validationErrors();
         var paramErrors = req.validationErrors(true);
