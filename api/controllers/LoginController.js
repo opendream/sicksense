@@ -239,7 +239,7 @@ module.exports = {
       // check if subscribed account then send verification e-mail.
       var config = sails.config.mail.verification,
           subject = config.subject,
-          body = config.body,
+          text = config.text,
           from = config.from,
           to = sicksenseID.email,
           html = config.html;
@@ -251,11 +251,11 @@ module.exports = {
             token: tokenObject.token
           });
 
-          // substitute value in body, html
-          body = body.replace(/\%token%/, url);
-          html = html.replace(/\%token%/, url);
+          // substitute value in text, html
+          text = text.replace(/\%verification_url%/, url);
+          html = html.replace(/\%verification_url%/, url);
 
-          return MailService.send(subject, body, from, to, html);
+          return MailService.send(subject, text, from, to, html);
         })
         .catch(function (err) {
           sails.log.error(new Error('Can not send verification e-mail'), err);

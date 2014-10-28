@@ -62,12 +62,11 @@ module.exports = {
               resolve(result.rows[0]);
             }
             else {
-              reject('ที่อยู่ไม่ถูกต้อง');
+              reject(new Error('Address not found'));
             }
           });
         })
         .catch(function (err) {
-          sails.log.error(err);
           reject(err);
         });
     });

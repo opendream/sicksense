@@ -10,7 +10,7 @@ module.exports.mail = {
     subject: 'Please verify your e-mail',
     from: 'John Doe <john@example.com>',
     html: loadFile('./assets/templates/email/verification.html'),
-    body: loadFile('./assets/templates/email/verification.txt')
+    text: loadFile('./assets/templates/email/verification.txt')
   },
 
   notification: {
@@ -20,14 +20,14 @@ module.exports.mail = {
     ],
     from: 'John Doe <john@example.com>',
     html: loadFile('./assets/templates/email/notification.html'),
-    body: loadFile('./assets/templates/email/notification.txt')
+    text: loadFile('./assets/templates/email/notification.txt')
   },
 
   forgotPassword: {
     subject: 'Forgot password',
     from: 'John Doe <john@example.com>',
     html: loadFile('./assets/templates/email/forgot_password.html'),
-    body: loadFile('./assets/templates/email/forgot_password.txt')
+    text: loadFile('./assets/templates/email/forgot_password.txt')
   }
 
 };

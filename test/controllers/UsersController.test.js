@@ -52,7 +52,6 @@ describe('UserController test', function() {
 
           res.body.meta.status.should.equal(400);
           res.body.meta.errorType.should.equal("Bad Request");
-          res.body.meta.errorMessage.should.match(/is required/);
 
           res.body.meta.invalidFields.should.have.properties([ 'email', 'password', 'uuid' ]);
 
@@ -287,9 +286,9 @@ describe('UserController test', function() {
         mailserviceSend = sails.services.mailservice.send;
         onetimetokenserviceCreate = sails.services.onetimetokenservice.create;
 
-        sails.services.mailservice.send = function send(subject, body, from, to, html) {
+        sails.services.mailservice.send = function send(subject, text, from, to, html) {
           counter.mail++;
-          mail.body = body;
+          mail.text = text;
           mail.to = to;
           mail.html = html;
         };
@@ -335,9 +334,9 @@ describe('UserController test', function() {
         // Override.
         sails.config.mail.verification = {
           subject: '[sicksense] Please verify your e-mail',
-          body: 'Use this link %token%',
+          text: 'Use this link %verification_url%',
           from: 'sicksense.com',
-          html: 'Use this link %token%',
+          html: 'Use this link %verification_url%',
           lifetime: (60 * 60) * 3000 // 3 hours
         };
 
@@ -372,7 +371,7 @@ describe('UserController test', function() {
                   result.rows.length.should.equal(1);
                   var token = result.rows[0].token;
 
-                  mail.body.should.containEql(token);
+                  mail.text.should.containEql(token);
                   mail.to.should.equal("siriwat600@opendream.co.th");
                   mail.html.should.containEql(token);
 
@@ -431,7 +430,6 @@ describe('UserController test', function() {
 
           res.body.meta.status.should.equal(409);
           res.body.meta.errorType.should.equal('Conflict');
-          res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
 
           done();
         });
@@ -475,7 +473,6 @@ describe('UserController test', function() {
             if (err) return done(err);
 
             res.body.meta.errorType.should.equal('Conflict');
-            res.body.meta.errorMessage.should.match(/is already (registered|existed)/);
 
             done();
           });
@@ -1287,7 +1284,6 @@ describe('UserController test', function() {
 
           res.body.meta.status.should.equal(400);
           res.body.meta.errorType.should.equal("Bad Request");
-          res.body.meta.errorMessage.should.match(/is required/);
 
           done();
         });
@@ -1474,7 +1470,7 @@ describe('UserController test', function() {
               tmp.resultNew.rows.should.have.length(1);
 
               tmp.count.should.equal(1);
-              tmp.body.should.containEql(tmp.resultNew.rows[0].token);
+              tmp.text.should.containEql(tmp.resultNew.rows[0].token);
               tmp.html.should.containEql(tmp.resultNew.rows[0].token);
               tmp.to.should.equal('request-verify-001@opendream.co.th');
 
@@ -1487,8 +1483,8 @@ describe('UserController test', function() {
         function _before() {
           tmp.count = 0;
           tmp.send = MailService.send;
-          MailService.send = function (subject, body, from, to, html) {
-            tmp.body = body;
+          MailService.send = function (subject, text, from, to, html) {
+            tmp.text = text;
             tmp.html = html;
             tmp.to = to;
             tmp.count++;
