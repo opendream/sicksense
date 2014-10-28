@@ -79,11 +79,13 @@ describe('AccessTokenService test', function() {
         result.length.should.equal(1);
         result[0].token.should.equal(data.user.accessToken.token);
 
+        sails.config.tokenLife += 10;
         AccessTokenService.refresh(data.user.id)
           .then(function (newAccessToken) {
             newAccessToken.should.be.ok;
             parseInt(newAccessToken.userId).should.equal(data.user.id);
-            newAccessToken.token.should.not.equal(data.user.accessToken.token);
+            newAccessToken.token.should.equal(data.user.accessToken.token);
+            newAccessToken.expired.should.greaterThan(data.user.accessToken.expired);
             done();
           })
           .catch(function(err) {
@@ -93,6 +95,39 @@ describe('AccessTokenService test', function() {
 
     });
 
+  });
+
+  describe('renew()', function (done) {
+    var accessToken;
+
+    before(function (done) {
+      DBService.delete('accesstoken', [
+        { field: '"userId" = $', value: data.user.id }
+      ])
+      .then(function () {
+        done();
+      })
+      .catch(done);
+    });
+
+    it('should create new token', function(done) {
+
+      AccessToken.find({ userId: data.user.id }).exec(function(err, result) {
+        result.length.should.equal(0);
+
+        AccessTokenService.renew(data.user.id)
+          .then(function (newAccessToken) {
+            newAccessToken.should.be.ok;
+            parseInt(newAccessToken.userId).should.equal(data.user.id);
+            data.user.accessToken = newAccessToken;
+            done();
+          })
+          .catch(function(err) {
+            done(err);
+          });
+      });
+
+    });
   });
 
   describe('delete()', function() {

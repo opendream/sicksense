@@ -22,13 +22,47 @@ module.exports = {
           };
         }
 
-        if (!accessToken.expired || accessToken.expired > new Date()) {
-          // Renew
-          accessToken.token = rack();
-          accessToken.expired = (new Date()).addDays(sails.config.tokenLife);
-        }
+        accessToken.expired = (new Date()).addDays(sails.config.tokenLife);
 
         if (isNew) {
+          accessToken.token = rack();
+          AccessToken.create(accessToken).exec(callback);
+        }
+        else {
+          AccessToken.update({id: accessToken.id}, accessToken).exec(callback);
+        }
+
+        function callback(err, savedAccessToken) {
+          if (err) return reject(err);
+          if (savedAccessToken instanceof Array) {
+            resolve(savedAccessToken[0]);
+          }
+          else {
+            resolve(savedAccessToken);
+          }
+        };
+
+      });
+    });
+  },
+
+  renew: function renew(userId) {
+    return when.promise(function(resolve, reject) {
+      AccessToken.findOneByUserId(userId).exec(function(err, accessToken) {
+        if (err) return reject(err);
+
+        var isNew;
+
+        if (isNew = !accessToken) {
+          accessToken = accessToken || {
+            userId: userId
+          };
+        }
+
+        accessToken.expired = (new Date()).addDays(sails.config.tokenLife);
+
+        if (isNew) {
+          accessToken.token = rack();
           AccessToken.create(accessToken).exec(callback);
         }
         else {
