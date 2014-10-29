@@ -514,6 +514,41 @@ describe('UserController test', function() {
           });
       });
 
+      it('should not created new user when something wrong (incorrect password)', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense-002@opendream.co.th",
+            password: "1234qwer-in-cor-rect",
+            tel: "0841291342",
+            gender: "male",
+            birthYear: 1986,
+            address: {
+              subdistrict: "Samsen Nok",
+              district: "Huai Khwang",
+              city: "Bangkok"
+            },
+            location: {
+              latitude: 13.1135,
+              longitude: 105.0014
+            },
+            uuid: 'UUID-SICKSENSE-TEST-WRONG-001'
+          })
+          .expect('Content-Type', /json/)
+          .expect(409)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+
+            DBService.select('users', 'id', [
+              { field: 'email = $', value: 'UUID-SICKSENSE-TEST-WRONG-001' }
+            ])
+            .then(function (result) {
+              result.rows.should.have.length(0);
+              done();
+            });
+          });
+      });
+
       it('should not login if register with correct e-mail and password and not verified', function (done) {
         request(sails.hooks.http.app)
           .post('/users')
@@ -530,6 +565,41 @@ describe('UserController test', function() {
             res.body.meta.errorSubType.should.equal('unverified_email');
 
             done();
+          });
+      });
+
+      it('should not created new user when something wrong (unverified)', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense-002@opendream.co.th",
+            password: "1234qwer",
+            tel: "0841291342",
+            gender: "male",
+            birthYear: 1986,
+            address: {
+              subdistrict: "Samsen Nok",
+              district: "Huai Khwang",
+              city: "Bangkok"
+            },
+            location: {
+              latitude: 13.1135,
+              longitude: 105.0014
+            },
+            uuid: 'UUID-SICKSENSE-TEST-WRONG-001'
+          })
+          .expect('Content-Type', /json/)
+          .expect(403)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+
+            DBService.select('users', 'id', [
+              { field: 'email = $', value: 'UUID-SICKSENSE-TEST-WRONG-001' }
+            ])
+            .then(function (result) {
+              result.rows.should.have.length(0);
+              done();
+            });
           });
       });
 

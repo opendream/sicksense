@@ -27,6 +27,7 @@ module.exports = {
           var promise = when.resolve();
 
           if (!exists) {
+            data.newUser = true;
             promise = createUser(data);
           }
           else if (exists && data.sicksense && data.sicksense.email) {
@@ -66,18 +67,24 @@ module.exports = {
                               });
                             }
                             else {
-                              var error = new Error('กรุณายืนยันอีเมล');
-                              error.subType = 'unverified_email';
-                              return res.forbidden(error);
+                              cleanUser().then(function () {
+                                var error = new Error('กรุณายืนยันอีเมล');
+                                error.subType = 'unverified_email';
+                                return res.forbidden(error);
+                              });
                             }
                           }
                           else {
-                            // if password not correct.
-                            return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น');
+                            cleanUser().then(function () {
+                              // if password not correct.
+                              return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น');
+                            });
                           }
                         })
                         .catch(function (err) {
-                          res.serverError(err);
+                          cleanUser().then(function () {
+                            res.serverError(err);
+                          });
                         });
                     }
                     else {
@@ -92,7 +99,9 @@ module.exports = {
                           return responseJSON();
                         })
                         .catch(function (err) {
-                          res.serverError(err);
+                          cleanUser().then(function () {
+                            res.serverError(err);
+                          });
                         });
                     }
 
@@ -100,19 +109,42 @@ module.exports = {
                     return promise;
                   })
                   .catch(function (err) {
-                    res.serverError(err);
+                    cleanUser().then(function () {
+                      res.serverError(err);
+                    });
                   });
               }
 
               return responseJSON();
             })
             .catch(function (err) {
-              res.serverError(err);
+              cleanUser().then(function () {
+                res.serverError(err);
+              });
             });
         })
         .catch(function (err) {
-          res.serverError(err);
+          cleanUser().then(function () {
+            res.serverError(err);
+          });
         });
+    }
+
+    function cleanUser() {
+      // delete newly created user
+      if (data.newUser && user) {
+        return DBService.delete('accesstoken', [
+          { field: '"userId" = $', value: user.id }
+        ])
+        .then(function () {
+          return DBService.delete('users', [
+            { field: 'id = $', value: user.id }
+          ]);
+        })
+      }
+      else {
+        return when.resolve();
+      }
     }
 
     function prepare() {
