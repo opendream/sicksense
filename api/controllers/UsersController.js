@@ -967,10 +967,9 @@ module.exports = {
 
   getUser: function(req, res) {
     // Check own access token first.
-    AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
+    AccessToken.findOne({ token: req.query.accessToken }).exec(function(err, accessToken) {
       if (err) {
-        sails.log.error(err);
-        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', err);
       }
 
       if (!accessToken || accessToken.userId != req.params.id) {
@@ -981,14 +980,19 @@ module.exports = {
       UserService.getUserJSON(req.user.id)
         .then(function (userJSON) {
           user = userJSON;
-          return EmailSubscriptionsService.isSubscribed({id: user.sicksenseId})
+          if (user.sicksenseId) {
+            return EmailSubscriptionsService.isSubscribed({id: user.sicksenseId });
+          }
+          else {
+            return when.resolve(false);
+          }
         })
         .then(function (isSubscribed) {
           user.isSubscribed = isSubscribed;
           res.ok(user);
         })
         .catch(function (err) {
-          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', err);
         });
     });
   },
