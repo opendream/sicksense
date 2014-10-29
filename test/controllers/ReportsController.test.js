@@ -400,6 +400,59 @@ describe('ReportController test', function() {
         });
     });
 
+    it('should create new report even if user has no address', function(done) {
+      var tmp = {},
+          startedAt = (new Date()).addDays(-3);
+
+      createUser()
+        .then(function () {
+          return createAccessToken(tmp.user);
+        })
+        .then(function () {
+          request(sails.hooks.http.app)
+            .post('/reports')
+            .query({ accessToken: tmp.accessToken.token })
+            .send({
+              isFine: false,
+              symptoms: [ "symptom_1", "symptom_2" ],
+              animalContact: true,
+              startedAt: startedAt,
+              moreInfo: "Symptoms of H1N1 swine flu are like regular flu symptoms and include fever, \
+              cough, sore throat, runny nose, body aches, headache, chills, and fatigue. Many people\
+               with swine flu have had diarrhea and vomiting.",
+              platform: 'android'
+            })
+            .expect(200)
+            .end(function(err, res) {
+              if (err) return done(new Error(err));
+              done();
+            });
+        });
+
+      function createUser() {
+        return DBService.insert('users', [
+          { field: 'email', value: 'uuid-no-address-man-001@sicksense.com' },
+          { field: 'password', value: 'no-password' }
+        ])
+        .then(function (result) {
+          tmp.user = result.rows[0];
+          return when.resolve(tmp.user);
+        });
+      }
+
+      function createAccessToken(user) {
+        return DBService.insert('accesstoken', [
+          { field: '"userId"', value: user.id },
+          { field: 'token', value: 'token-no-address-man-1234' },
+          { field: 'expired', value: moment().add(sails.config.tokenLife, 'days') }
+        ])
+        .then(function (result) {
+          tmp.accessToken = result.rows[0];
+          return when.resolve(tmp.accessToken);
+        });
+      }
+    });
+
     it('should create new report if pass validation', function(done) {
       var startedAt = (new Date()).addDays(-3);
       request(sails.hooks.http.app)
