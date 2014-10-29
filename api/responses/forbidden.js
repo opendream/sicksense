@@ -44,6 +44,9 @@ module.exports = function forbidden (err, viewOrRedirect) {
     this.req._sails.log.verbose(err);
   }
 
+  if (err.name) {
+    err.name = '';
+  }
   err = {
     meta: {
       status: 403,

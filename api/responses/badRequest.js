@@ -51,6 +51,9 @@ module.exports = function badRequest(err, invalidFields, viewOrRedirect) {
     this.req._sails.log.verbose(err);
   }
 
+  if (err.name) {
+    err.name = '';
+  }
   err = {
     meta: {
       status: 400,

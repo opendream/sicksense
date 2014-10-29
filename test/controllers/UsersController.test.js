@@ -463,12 +463,12 @@ describe('UserController test', function() {
           });
       });
 
-      it('should not allow to create with existing email (sicksense id)', function(done) {
+      it('should not allow to create with existing email with incorrect password (sicksense id)', function(done) {
         request(sails.hooks.http.app)
           .post('/users')
           .send({
             email: "siriwat+sicksense@opendream.co.th",
-            password: "12345678",
+            password: "incorrect-password-here",
             uuid: 'UUID-SIRIWAT-TEST10'
           })
           .expect('Content-Type', /json/)
@@ -482,7 +482,7 @@ describe('UserController test', function() {
           });
       });
 
-      it('should allow to create with new e-mail and old uuid, unlink old devices', function (done) {
+      it('should allow to create with new e-mail and old uuid, unlink old sicksense id', function (done) {
         request(sails.hooks.http.app)
           .post('/users')
           .send({
@@ -494,6 +494,8 @@ describe('UserController test', function() {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(new Error(err));
+
+            data.user2 = res.body.response;
 
             res.body.response.id.should.equal(data.user.id);
             res.body.response.sicksenseId.should.exists;
@@ -510,6 +512,56 @@ describe('UserController test', function() {
             })
             .catch(done);
           });
+      });
+
+      it('should not login if register with correct e-mail and password and not verified', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense-002@opendream.co.th",
+            password: "1234qwer",
+            uuid: 'UUID-SICKSENSE-TEST10'
+          })
+          .expect('Content-Type', /json/)
+          .expect(403)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            res.body.meta.errorSubType.should.equal('unverified_email');
+
+            done();
+          });
+      });
+
+      it('should auto-login if register with correct e-mail and password and already verified', function (done) {
+
+        verify().then(function () {
+          request(sails.hooks.http.app)
+            .post('/users')
+            .send({
+              email: "siriwat+sicksense-002@opendream.co.th",
+              password: "1234qwer",
+              uuid: 'UUID-SICKSENSE-TEST10'
+            })
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.response.id.should.equal(data.user2.id);
+              res.body.response.sicksenseId.should.equal(data.user2.sicksenseId);
+
+              done();
+            });
+        });
+
+        function verify() {
+          return DBService.update('sicksense', [
+            { field: 'is_verify = $', value: 't' }
+          ], [
+            { field: 'id = $', value: data.user2.sicksenseId }
+          ]);
+        }
       });
 
       it('should subscribe if subscribe is sent', function(done) {

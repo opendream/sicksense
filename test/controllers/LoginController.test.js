@@ -14,8 +14,6 @@ describe('LoginController test', function() {
     done();
   });
 
-  before
-
   /*describe('[POST] login', function() {
     before(function(done) {
       TestHelper.clearUsers()
