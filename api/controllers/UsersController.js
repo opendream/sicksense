@@ -1250,6 +1250,9 @@ module.exports = {
                 var sicksenseId = result.rows[0].id;
                 var newPassword = req.body.newPassword;
                 return UserService.updatePassword(sicksenseId, newPassword, true)
+                  .then(function () {
+                    return AccessTokenService.refresh(accessToken.userId)
+                  })
                   .then(responseJSON)
                   .catch(function (err) {
                     sails.log.error(err);
@@ -1266,9 +1269,10 @@ module.exports = {
         });
     });
 
-    function responseJSON() {
+    function responseJSON(accessToken) {
       return UserService.getUserJSON(req.user.id)
         .then(function (userJSON) {
+          userJSON.accessToken = accessToken.token;
           res.ok(userJSON);
         })
         .catch(function (err) {
