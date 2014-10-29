@@ -185,7 +185,7 @@ module.exports = {
             }
           }
           else {
-            var error = new Error('Please verify email.');
+            var error = new Error('กรุณายืนยันอีเมล');
             error.subType = 'unverified_email';
             return res.forbidden(error);
           }

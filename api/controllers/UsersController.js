@@ -48,11 +48,40 @@ module.exports = {
               if (data.sicksense) {
                 return checkSicksenseEmailExists(data.sicksense.email)
                   .then(function (exists) {
+                    var promise = when.resolve();
                     if (exists) {
-                      return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น');
+                      // try to login first.
+                      promise = checkSicksenseEmailPassword(data)
+                        .then(function (result) {
+                          if (result) {
+                            if (result.is_verify) {
+                              user.sicksense = result;
+
+                              return DBService.insert('sicksense_users', [
+                                { field: 'sicksense_id', value: user.sicksense.id },
+                                { field: 'user_id', value: user.id }
+                              ])
+                              .then(function () {
+                                return responseJSON();
+                              });
+                            }
+                            else {
+                              var error = new Error('กรุณายืนยันอีเมล');
+                              error.subType = 'unverified_email';
+                              return res.forbidden(error);
+                            }
+                          }
+                          else {
+                            // if password not correct.
+                            return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น');
+                          }
+                        })
+                        .catch(function (err) {
+                          res.serverError(err);
+                        });
                     }
                     else {
-                      return createSicksenseID(data)
+                      promise = createSicksenseID(data)
                         .then(function() {
                           return sendEmailVerification();
                         })
@@ -66,6 +95,9 @@ module.exports = {
                           res.serverError(err);
                         });
                     }
+
+
+                    return promise;
                   })
                   .catch(function (err) {
                     res.serverError(err);
@@ -208,7 +240,7 @@ module.exports = {
 
     function isSicksenseID(email) {
       return !email.match(/\@(www\.)?sicksense\.com$/);
-    };
+    }
 
     function checkSicksenseEmailExists(email) {
       return when.promise(function (resolve, reject) {
@@ -222,7 +254,31 @@ module.exports = {
             reject(err);
           });
       });
-    };
+    }
+
+    function checkSicksenseEmailPassword(data) {
+      var email = data.sicksense.email,
+          password = data.sicksense.password;
+
+      return when.promise(function (resolve, reject) {
+        passgen(password).hash(sails.config.session.secret, function (err, hashedPassword) {
+          if (err) return raiseError(err);
+
+          // Try to login.
+          DBService.select('sicksense', '*', [
+              { field: 'email = $', value: email },
+              { field: 'password = $', value: hashedPassword }
+            ])
+            .then(function (result) {
+              resolve(result.rows[0]);
+            })
+            .catch(function (err) {
+              reject(err);
+            });
+
+        });
+      });
+    }
 
     function createSicksenseID(data) {
       return when.promise(function (resolve, reject) {
