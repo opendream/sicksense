@@ -1013,11 +1013,23 @@ describe('UserController test', function() {
     before(function(done) {
       TestHelper.clearAll()
         .then(function() {
+          return TestHelper.createUser({ email: "siriwut@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function() {
           return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
         })
         .then(function(_user) {
           user = _user;
           accessToken = user.accessToken;
+          return EmailSubscriptionsService.subscribe(user)
+        })
+        .then(function (subscribe) {
+          return TestHelper.createSicksenseID({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function (sicksense) {
+          return TestHelper.connectSicksenseAndUser(sicksense, user)
+        })
+        .then(function (sicksense) {
           done();
         })
         .catch(done);

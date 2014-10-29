@@ -945,16 +945,15 @@ module.exports = {
         return res.forbidden('ไม่สามารถดึงข้อมูลได้');
       }
 
+      var user;
       UserService.getUserJSON(req.user.id)
         .then(function (userJSON) {
-          EmailSubscriptionsService.isSubscribed(req.user)
-            .then(function (isSubscribed) {
-              userJSON.isSubscribed = isSubscribed;
-              res.ok(userJSON);
-            })
-            .catch(function (err) {
-              res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
-            });
+          user = userJSON;
+          return EmailSubscriptionsService.isSubscribed({id: user.sicksenseId})
+        })
+        .then(function (isSubscribed) {
+          user.isSubscribed = isSubscribed;
+          res.ok(user);
         })
         .catch(function (err) {
           res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
