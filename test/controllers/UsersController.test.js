@@ -426,7 +426,7 @@ describe('UserController test', function() {
         .expect('Content-Type', /json/)
         .expect(409)
         .end(function(err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
 
           res.body.meta.status.should.equal(409);
           res.body.meta.errorType.should.equal('Conflict');
@@ -436,6 +436,8 @@ describe('UserController test', function() {
     });
 
     describe('with sicksense account', function() {
+
+      var data = {};
 
       it('should create sicksense account with minimum fields requirement', function(done) {
         request(sails.hooks.http.app)
@@ -454,6 +456,8 @@ describe('UserController test', function() {
             res.body.response.id.should.ok;
             res.body.response.email.should.equal("siriwat+sicksense@opendream.co.th");
             res.body.response.accessToken.should.be.ok;
+
+            data.user = res.body.response;
 
             done();
           });
@@ -475,6 +479,36 @@ describe('UserController test', function() {
             res.body.meta.errorType.should.equal('Conflict');
 
             done();
+          });
+      });
+
+      it('should allow to create with new e-mail and old uuid, unlink old devices', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense-002@opendream.co.th",
+            password: "1234qwer",
+            uuid: 'UUID-SICKSENSE-TEST10'
+          })
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            res.body.response.id.should.equal(data.user.id);
+            res.body.response.sicksenseId.should.exists;
+            // not generate new token
+            res.body.response.accessToken.should.equal(data.user.accessToken);
+
+            DBService.select('sicksense_users', '*', [
+              { field: 'sicksense_id = $', value: data.user.sicksenseId }
+            ])
+            .then(function (result) {
+              // unlink old devices
+              result.rows.should.have.length(0);
+              done();
+            })
+            .catch(done);
           });
       });
 
