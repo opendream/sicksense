@@ -323,7 +323,7 @@ module.exports = {
         req.checkBody('email', 'กรุณากรอกอีเมลให้ถูกต้อง').isEmail();
 
         req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
-        req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร').isLength(8);
+        req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
 
         req.checkBody('uuid', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง').notEmpty();
 
@@ -995,6 +995,7 @@ module.exports = {
       return when.promise(function(resolve, reject) {
         req.checkBody('token', 'ไม่ได้สามารถตั้งค่ารหัสผ่านใหม่ได้ เนื่องจากข้อมูลไม่ครบถ้วน').notEmpty();
         req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
+        req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
 
         var errors = req.validationErrors();
         var paramErrors = req.validationErrors(true);
@@ -1187,6 +1188,9 @@ module.exports = {
       return when.promise(function(resolve, reject) {
         req.checkBody('oldPassword', 'กรุณากรอกรหัสผ่านเก่า').notEmpty();
         req.checkBody('newPassword', 'กรุณากรอกรหัสผ่านใหม่').notEmpty();
+
+        req.checkBody('oldPassword', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
+        req.checkBody('newPassword', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
 
         var errors = req.validationErrors();
         var paramErrors = req.validationErrors(true);

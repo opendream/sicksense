@@ -64,6 +64,48 @@ describe('UserController test', function() {
         });
     });
 
+    it('should validate shorter password', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "UUID-SICKSENSE-TEST1@sicksense.com",
+          password: "TEST1"
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.status.should.equal(400);
+          res.body.meta.errorType.should.equal("Bad Request");
+
+          res.body.meta.invalidFields.should.have.properties([ 'password' ]);
+          res.body.meta.invalidFields.password.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
+    it('should validate longer password', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "UUID-SICKSENSE-TEST1@sicksense.com",
+          password: "UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-65"
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.status.should.equal(400);
+          res.body.meta.errorType.should.equal("Bad Request");
+
+          res.body.meta.invalidFields.should.have.properties([ 'password' ]);
+          res.body.meta.invalidFields.password.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
     it('should validate user address', function(done) {
       request(sails.hooks.http.app)
         .post('/users')
@@ -1336,6 +1378,38 @@ describe('UserController test', function() {
         });
     });
 
+    it('should error if password is shorter than 8 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({ password: '1234567' })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'password' ]);
+          res.body.meta.invalidFields.password.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
+    it('should error if password is longer than 64 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({ 
+          password: 'UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-65'
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'password' ]);
+          res.body.meta.invalidFields.password.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
     it('should error when token and password are provided but token is invalid', function(done) {
       request(sails.hooks.http.app)
         .post('/users/reset-password')
@@ -1836,6 +1910,50 @@ describe('UserController test', function() {
         .expect(403)
         .end(function(err, res) {
           if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should error if password is shorter than 8 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          oldPassword: 'short',
+          newPassword: 'shorter'
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'oldPassword', 'newPassword' ]);
+          res.body.meta.invalidFields.oldPassword.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+          res.body.meta.invalidFields.newPassword.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
+    it('should error if password is longer than 64 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          oldPassword: 'UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-65',
+          newPassword: 'UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST2-65'
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'oldPassword', 'newPassword' ]);
+          res.body.meta.invalidFields.oldPassword.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+          res.body.meta.invalidFields.newPassword.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
 
           done();
         });
