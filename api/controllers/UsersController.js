@@ -24,11 +24,20 @@ module.exports = {
     function run() {
       checkUserEmailExists(data.email)
         .then(function(exists) {
-          if (exists) {
-            return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น.');
+          var promise = when.resolve();
+
+          if (!exists) {
+            promise = createUser(data);
+          }
+          else if (exists && data.sicksense && data.sicksense.email) {
+            user = exists;
+            promise = unlinkOldDevices(user.id);
+          }
+          else {
+            return res.conflict('อุปกรณ์นี้ได้ทำการลงทะเบียนไว้แล้ว ไม่จำเป็นต้องลงทะเบียนอีก');
           }
 
-          return createUser(data)
+          return promise
             .then(function() {
               return createAccessToken();
             })
@@ -72,7 +81,7 @@ module.exports = {
         .catch(function (err) {
           res.serverError(err);
         });
-    };
+    }
 
     function prepare() {
       var body = req.body;
@@ -112,22 +121,28 @@ module.exports = {
       data.subdistrict = body.address.subdistrict;
       data.district = body.address.district;
       data.city = body.address.city;
-      data.platform = body.platform || req.query.platform || 'doctormeios'
-    };
+      data.platform = body.platform || req.query.platform || 'doctormeios';
+    }
 
     function checkUserEmailExists(email) {
       return when.promise(function (resolve, reject) {
-        DBService.select('users', 'email', [
+        DBService.select('users', '*', [
             { field: 'email = $', value: email }
           ])
           .then(function(result) {
-            resolve(result.rows.length !== 0);
+            resolve(result.rows[0]);
           })
           .catch(function(err) {
             reject(err);
           });
       });
-    };
+    }
+
+    function unlinkOldDevices(userId) {
+      return DBService.delete('sicksense_users', [
+        { field: 'user_id = $', value: userId }
+      ]);
+    }
 
     function createUser(data) {
       return when.promise(function (resolve, reject) {
@@ -1050,22 +1065,21 @@ module.exports = {
 
     // Check if e-mail exists
     UserService.doesSicksenseIDExist(req.body.email)
+      // check if this e-mail is already verified.
       .then(function (result) {
+        data.sicksense = result;
+
+        if (data.sicksense.is_verify) {
+          var error = new Error('This e-mail is already verified');
+          error.status = 400;
+          error.subType = 'email_is_already_verified';
+          return when.reject(error);
+        }
+      })
+      .then(function () {
         // -- if yes
-        if (result) {
-          data.sicksense = result;
-          // load user object
-          return DBService.select('sicksense_users', 'user_id', [
-            { field: 'sicksense_id = $', value: result.id }
-          ])
-          .then(function (result) {
-            return DBService.select('users', '*', [
-              { field: 'id = $', value: result.rows[0].user_id }
-            ]);
-          })
-          .then(function (result) {
-            return when.resolve(result.rows[0]);
-          });
+        if (data.sicksense) {
+          return when.resolve();
         }
         // -- else
         else {
@@ -1075,7 +1089,7 @@ module.exports = {
           return when.reject(error);
         }
       })
-      .then(function (user) {
+      .then(function () {
         // 1. delete old token
         return OnetimeTokenService.delete(data.sicksense.id, 'user.verifyEmail')
         // 2. generate the new one
