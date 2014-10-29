@@ -208,11 +208,21 @@ module.exports = {
     var report, symptoms, userAddress, locationByUserAddress;
     ReportService.loadLocationByAddress(values.address)
       .then(function(result) {
-        values.location_id = result.id;
-        values.locationByAddress = {
-          latitude: result.latitude,
-          longitude: result.longitude
-        };
+        if (result) {
+          values.location_id = result.id;
+          values.locationByAddress = {
+            latitude: result.latitude,
+            longitude: result.longitude
+          };
+        }
+        else {
+          values.location_id = null;
+          values.locationByAddress = {
+            latitude: null,
+            longitude: null
+          };
+        }
+
         return ReportService.create(values);
       })
       .then(function(_report) {
