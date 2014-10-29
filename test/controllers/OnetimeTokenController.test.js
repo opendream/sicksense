@@ -46,7 +46,7 @@ describe('OnetimeTokenController test', function() {
         .post('/onetimetoken/validate')
         .expect(400)
         .end(function(err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
           done();
         });
     });
@@ -57,7 +57,7 @@ describe('OnetimeTokenController test', function() {
         .send({ token: '12345678' })
         .expect(400)
         .end(function(err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
           done();
         });
     });
@@ -68,7 +68,7 @@ describe('OnetimeTokenController test', function() {
         .send({ type: 'test' })
         .expect(400)
         .end(function(err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
           done();
         });
     });
@@ -79,7 +79,7 @@ describe('OnetimeTokenController test', function() {
         .send({ token: 'invalid token', type: 'test' })
         .expect(400)
         .end(function(err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
           done();
         });
     });
@@ -90,7 +90,7 @@ describe('OnetimeTokenController test', function() {
         .send({ token: onetimeToken2.token, type: onetimeToken2.type })
         .expect(400)
         .end(function(err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
           done();
         });
     });
@@ -101,7 +101,7 @@ describe('OnetimeTokenController test', function() {
         .send({ token: onetimeToken.token, type: onetimeToken.type })
         .expect(200)
         .end(function(err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
           done();
         });
     });
