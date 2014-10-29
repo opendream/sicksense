@@ -2036,7 +2036,12 @@ describe('UserController test', function() {
                     { field: '"userId" = $', value: user.id }
                   ])
                 .then(function(result) {
-                  result.rows.length.should.equal(0);
+                  result.rows.length.should.equal(1);
+
+                  res.body.response.id.should.equal(user.id);
+                  res.body.response.accessToken.should.be.ok;
+                  res.body.response.accessToken.should.not.equal(user.accessToken);
+
                   done();
                 })
                 .catch(done);
