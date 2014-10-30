@@ -154,22 +154,35 @@ module.exports = {
               passgen(uuid).hash(sails.config.session.secret, function (err, hashedUUID) {
                 if (err) return res.serverError(err);
 
-                // Create new user.
-                DBService.insert('users', [
-                    { field: 'email', value: uuid + '@sicksense.com' },
-                    { field: 'password', value: hashedUUID },
-                    { field: 'tel', value: sicksenseData.tel },
-                    { field: 'gender', value: sicksenseData.gender },
-                    { field: '"birthYear"', value: sicksenseData.birthYear },
-                    { field: 'subdistrict', value: sicksenseData.subdistrict },
-                    { field: 'district', value: sicksenseData.district },
-                    { field: 'city', value: sicksenseData.city },
-                    { field: 'latitude', value: sicksenseData.latitude },
-                    { field: 'longitude', value: sicksenseData.longitude },
-                    { field: 'geom', value: sicksenseData.geom },
-                    { field: '"createdAt"', value: new Date() },
-                    { field: '"updatedAt"', value: new Date() }
-                  ])
+                var platform = req.body.platform || req.query.platform || 'doctormeios';
+
+                var conditions = [
+                  { field: 'email = $', value: uuid + '@sicksense.com' }
+                ];
+
+                var dataToInsert = [
+                  { field: 'email', value: uuid + '@sicksense.com' },
+                  { field: 'password', value: hashedUUID },
+                  { field: 'tel', value: sicksenseData.tel },
+                  { field: 'gender', value: sicksenseData.gender },
+                  { field: '"birthYear"', value: sicksenseData.birthYear },
+                  { field: 'subdistrict', value: sicksenseData.subdistrict },
+                  { field: 'district', value: sicksenseData.district },
+                  { field: 'city', value: sicksenseData.city },
+                  { field: 'latitude', value: sicksenseData.latitude },
+                  { field: 'longitude', value: sicksenseData.longitude },
+                  { field: 'geom', value: sicksenseData.geom },
+                  { field: 'platform', value: platform },
+                  { field: '"createdAt"', value: new Date() },
+                  { field: '"updatedAt"', value: new Date() }
+                ];
+
+                var dataToUpdate = [
+                  { field: '"updatedAt" = $', value: new Date() }
+                ];
+
+                // Create new user or update if exists.
+                DBService.upsert('users', conditions, dataToInsert, dataToUpdate)
                   .then(function (result) {
                     if (result.rows.length === 0) {
                       return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
@@ -195,22 +208,16 @@ module.exports = {
     });
 
     function connectSicksenseIDAndUser() {
-      return DBService.select('sicksense_users', '*', [
-        { field: 'sicksense_id = $', value: sicksenseID.id },
+      return DBService.delete('sicksense_users', [
         { field: 'user_id = $', value: user.id }
       ])
       .then(function (result) {
-        if (result.rows.length === 0) {
-          return DBService.insert('sicksense_users', [
-              { field: 'sicksense_id', value: sicksenseID.id },
-              { field: 'user_id', value: user.id }
-            ])
-            .then(refreshAccessToken)
-            .catch(raiseError);
-        }
-        else {
-          return refreshAccessToken();
-        }
+        return DBService.insert('sicksense_users', [
+            { field: 'sicksense_id', value: sicksenseID.id },
+            { field: 'user_id', value: user.id }
+        ])
+        .then(refreshAccessToken)
+        .catch(raiseError);
       })
       .catch(raiseError);
     }

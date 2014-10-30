@@ -1,11 +1,13 @@
 var util = require('util');
 var when = require('when');
+var assert = require('assert');
 
 module.exports = {
   select: select,
   insert: insert,
   update: update,
-  delete: _delete
+  delete: _delete,
+  upsert: upsert
 };
 
 function select(table, fieldStr, conditions, extraStr) {
@@ -147,4 +149,20 @@ function _delete(table, conditions) {
       });
 
   });
+}
+
+function upsert(table, conditions, dataToInsert, dataToUpdate) {
+  assert.notEqual(conditions);
+
+  // Find the specific rows
+  return DBService
+    .select(table, '*', conditions)
+    .then(function (result) {
+      if (result.rows.length === 0) {
+        return DBService.insert(table, dataToInsert);
+      }
+      else {
+        return DBService.update(table, dataToUpdate, conditions);
+      }
+    });
 }

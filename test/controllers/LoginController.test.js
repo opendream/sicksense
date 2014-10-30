@@ -405,6 +405,65 @@ describe('LoginController test', function() {
         });
     });
 
+    it('should create new user with platform specified', function (done) {
+      request(sails.hooks.http.app)
+        .post('/connect')
+        .send({
+          email: data.sicksenseID.email,
+          password: '12345678',
+          uuid: 'A000-00010',
+          platform: 'sicksenseweb'
+        })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          res.body.response.id.should.be.ok;
+          res.body.response.email.should.equal(data.sicksenseID.email);
+          res.body.response.accessToken.should.be.ok;
+
+          res.body.response.platform.should.equal('sicksenseweb');
+
+          done();
+        });
+    });
+
+    it('should not create new user if already exists, update instead. Unlink old sicksense id as well', function (done) {
+      var tmp = {};
+
+      request(sails.hooks.http.app)
+        .post('/connect')
+        .send({
+          email: data.sicksenseID.email,
+          password: '12345678',
+          uuid: 'A000-00010'
+        })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          tmp.user1 = res.body.response;
+
+          request(sails.hooks.http.app)
+            .post('/connect')
+            .send({
+              email: data.sicksenseID3.email,
+              password: '12345678',
+              uuid: 'A000-00010'
+            })
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(err);
+
+              res.body.response.id.should.equal(tmp.user1.id);
+              res.body.response.email.should.equal(data.sicksenseID3.email);
+              res.body.response.accessToken.should.equal(tmp.user1.accessToken);
+
+              done();
+            });
+        });
+    });
+
     it('should create new sicksense id return user object with accessToken if sicksense id is not found but user is exists', function (done) {
       request(sails.hooks.http.app)
         .post('/connect')
