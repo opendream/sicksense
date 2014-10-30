@@ -191,7 +191,7 @@ module.exports = {
     function checkUserEmailExists(email) {
       return when.promise(function (resolve, reject) {
         DBService.select('users', '*', [
-            { field: 'email = $', value: email }
+            { field: 'email = $', value: email.toLowerCase() }
           ])
           .then(function(result) {
             resolve(result.rows[0]);
@@ -214,7 +214,7 @@ module.exports = {
           if (err) return reject(err);
 
           DBService.insert('users', [
-              { field: 'email', value: data.email },
+              { field: 'email', value: data.email.toLowerCase() },
               { field: 'password', value: hashedPassword },
               { field: 'tel', value: data.tel },
               { field: 'gender', value: data.gender },
@@ -277,7 +277,7 @@ module.exports = {
     function checkSicksenseEmailExists(email) {
       return when.promise(function (resolve, reject) {
         DBService.select('sicksense', 'email', [
-            { field: 'email = $', value: email }
+            { field: 'email = $', value: email.toLowerCase() }
           ])
           .then(function (result) {
             resolve(result.rows.length !== 0);
@@ -330,7 +330,7 @@ module.exports = {
           };
 
           DBService.insert('sicksense', [
-              { field: 'email', value: data.sicksense.email },
+              { field: 'email', value: data.sicksense.email.toLowerCase() },
               { field: 'password', value: hashedPassword },
               { field: 'data', value: sicksenseData },
               { field: '"createdAt"', value: new Date() },

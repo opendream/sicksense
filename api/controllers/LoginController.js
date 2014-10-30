@@ -103,7 +103,7 @@ module.exports = {
 
       // Try to login.
       DBService.select('sicksense', '*', [
-          { field: 'email = $', value: email },
+          { field: 'email = $', value: email.toLowerCase() },
           { field: 'password = $', value: hashedPassword }
         ])
         .then(function (result) {
@@ -114,12 +114,12 @@ module.exports = {
             // User exists.
             if (user) {
               return DBService.select('sicksense', '*', [
-                  { field: 'email = $', value: email }
+                  { field: 'email = $', value: email.toLowerCase() }
                 ])
                 .then(function (result) {
                   if (result.rows.length === 0) {
                     return DBService.insert('sicksense', [
-                        { field: 'email', value: email },
+                        { field: 'email', value: email.toLowerCase() },
                         { field: 'password', value: hashedPassword },
                         { field: '"createdAt"', value: new Date() },
                         { field: '"updatedAt"', value: new Date() }
@@ -156,12 +156,14 @@ module.exports = {
 
                 var platform = req.body.platform || req.query.platform || 'doctormeios';
 
+                var email = ('' + uuid + '@sicksense.com').toLowerCase();
+
                 var conditions = [
-                  { field: 'email = $', value: uuid + '@sicksense.com' }
+                  { field: 'email = $', value: email }
                 ];
 
                 var dataToInsert = [
-                  { field: 'email', value: uuid + '@sicksense.com' },
+                  { field: 'email', value: email },
                   { field: 'password', value: hashedUUID },
                   { field: 'tel', value: sicksenseData.tel },
                   { field: 'gender', value: sicksenseData.gender },

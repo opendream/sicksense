@@ -180,7 +180,7 @@ describe('UserController test', function() {
           res.body.meta.status.should.equal(200);
           res.body.response.should.not.have.property('password');
           res.body.response.id.should.ok;
-          res.body.response.email.should.equal("UUID-SICKSENSE-TEST2@sicksense.com");
+          res.body.response.email.should.equal("uuid-sicksense-test2@sicksense.com");
           res.body.response.tel.should.equal("0841291342");
           res.body.response.gender.should.equal("male");
           res.body.response.birthYear.should.equal(1986);
@@ -309,6 +309,30 @@ describe('UserController test', function() {
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should save new record with lowercase e-mail', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "UUID-SICKSENSE-TEST-700@sicksense.com",
+          password: "UUID-SICKSENSE-TEST-700",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {},
+          location: {},
+          uuid: 'UUID-SICKSENSE-TEST-700'
+        })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.email.should.equal('uuid-sicksense-test-700@sicksense.com');
 
           done();
         });
@@ -477,6 +501,38 @@ describe('UserController test', function() {
         });
     });
 
+    it('should not allow to create with existing (case-insensitived) email (anonymous)', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "uuid-sicksense-test1@sicksense.com",
+          password: "uuid-sicksense-test1",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
+            city: "Bangkok"
+          },
+          location: {
+            latitude: 13.1135,
+            longitude: 105.0014
+          },
+          uuid: 'uuid-sicksense-test1'
+        })
+        .expect('Content-Type', /json/)
+        .expect(409)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
+
+          res.body.meta.status.should.equal(409);
+          res.body.meta.errorType.should.equal('Conflict');
+
+          done();
+        });
+    });
+
     describe('with sicksense account', function() {
 
       var data = {};
@@ -501,6 +557,44 @@ describe('UserController test', function() {
 
             data.user = res.body.response;
 
+            done();
+          });
+      });
+
+      it('should save sicksense id email as lowercase', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense+CASE+001@opendream.co.th",
+            password: "12345678",
+            uuid: 'UUID-SICKSENSE-TEST11'
+          })
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(err);
+
+            res.body.response.should.not.have.property('password');
+            res.body.response.id.should.ok;
+            res.body.response.email.should.equal("siriwat+sicksense+case+001@opendream.co.th");
+            res.body.response.accessToken.should.be.ok;
+
+            done();
+          });
+      });
+
+      it('should check e-mail as case-insensitive', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense+CaSe+001@opendream.co.th",
+            password: "12345678",
+            uuid: 'UUID-SICKSENSE-TEST12'
+          })
+          .expect('Content-Type', /json/)
+          .expect(409)
+          .end(function(err, res) {
+            if (err) return done(err);
             done();
           });
       });
@@ -1368,6 +1462,17 @@ describe('UserController test', function() {
         });
     });
 
+    it('should check e-mail as case-insensitive', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/forgot-password')
+        .send({ email: 'JOHN@example.com' })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
     it('should remove old token before create the new one', function(done) {
       request(sails.hooks.http.app)
         .post('/users/forgot-password')
@@ -1518,7 +1623,7 @@ describe('UserController test', function() {
     it('should error if password is longer than 64 characters', function(done) {
       request(sails.hooks.http.app)
         .post('/users/reset-password')
-        .send({ 
+        .send({
           password: 'UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-65'
         })
         .expect(400)
@@ -1839,6 +1944,43 @@ describe('UserController test', function() {
             })
             .catch(done)
             .finally(_after);
+          });
+
+        function _before() {
+          tmp.count = 0;
+          tmp.send = MailService.send;
+          MailService.send = function (subject, text, from, to, html) {
+            tmp.text = text;
+            tmp.html = html;
+            tmp.to = to;
+            tmp.count++;
+          };
+        }
+
+        function _after() {
+          MailService.send = tmp.send;
+        }
+    });
+
+    it('should check e-mail as case-insensitive', function (done) {
+      var tmp = {};
+
+        _before();
+
+        request(sails.hooks.http.app)
+          .post('/users/request-verify')
+          .send({
+            email: 'request-VERIFY-001@opendream.co.th',
+          })
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            tmp.count.should.equal(1);
+            tmp.to.should.equal('request-verify-001@opendream.co.th');
+
+            done();
+            _after();
           });
 
         function _before() {

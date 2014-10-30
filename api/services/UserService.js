@@ -134,7 +134,7 @@ function getUsersBySicksenseId(sicksenseId) {
 function getSicksenseIDByEmail(email) {
   return when.promise(function (resolve, reject) {
     DBService.select('sicksense', '*', [
-        { field: 'email = $', value: email }
+        { field: 'email = $', value: email.toLowerCase() }
       ])
       .then(function (result) {
         if (result.rows.length === 0) return reject(new Error('Sicksense ID not found.'));
@@ -456,7 +456,7 @@ function verify(sicksenseId) {
 
 function doesSicksenseIDExist(email) {
   return DBService.select('sicksense', '*', [
-    { field: 'email = $', value: email }
+    { field: 'email = $', value: email.toLowerCase() }
   ])
   .then(function (result) {
     if (result.rows.length !== 0) {
