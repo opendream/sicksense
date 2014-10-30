@@ -393,6 +393,16 @@ describe('LoginController test', function() {
                   user.latitude.should.equal(profile.latitude);
                   user.longitude.should.equal(profile.longitude);
                   user.geom.should.equal(profile.geom);
+
+                  res.body.response.tel.should.equal(profile.tel);
+                  res.body.response.gender.should.equal(profile.gender);
+                  res.body.response.birthYear.should.equal(profile.birthYear);
+                  res.body.response.address.subdistrict.should.equal(profile.subdistrict);
+                  res.body.response.address.district.should.equal(profile.district);
+                  res.body.response.address.city.should.equal(profile.city);
+                  res.body.response.location.latitude.should.equal(profile.latitude);
+                  res.body.response.location.longitude.should.equal(profile.longitude);
+
                   done();
                 })
                 .catch(function (err) {
