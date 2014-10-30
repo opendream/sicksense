@@ -191,7 +191,7 @@ module.exports = {
     function checkUserEmailExists(email) {
       return when.promise(function (resolve, reject) {
         DBService.select('users', '*', [
-            { field: 'email = $', value: email.toLowerCase() }
+            { field: 'LOWER(email) = LOWER($)', value: email.toLowerCase() }
           ])
           .then(function(result) {
             resolve(result.rows[0]);
@@ -277,7 +277,7 @@ module.exports = {
     function checkSicksenseEmailExists(email) {
       return when.promise(function (resolve, reject) {
         DBService.select('sicksense', 'email', [
-            { field: 'email = $', value: email.toLowerCase() }
+            { field: 'LOWER(email) = LOWER($)', value: email.toLowerCase() }
           ])
           .then(function (result) {
             resolve(result.rows.length !== 0);
@@ -298,7 +298,7 @@ module.exports = {
 
           // Try to login.
           DBService.select('sicksense', '*', [
-              { field: 'email = $', value: email },
+              { field: 'LOWER(email) = LOWER($)', value: email },
               { field: 'password = $', value: hashedPassword }
             ])
             .then(function (result) {

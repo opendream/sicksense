@@ -588,13 +588,13 @@ describe('UserController test', function() {
           .post('/users')
           .send({
             email: "siriwat+sicksense+CaSe+001@opendream.co.th",
-            password: "12345678",
+            password: "1234567890",
             uuid: 'UUID-SICKSENSE-TEST12'
           })
           .expect('Content-Type', /json/)
           .expect(409)
           .end(function(err, res) {
-            if (err) return done(err);
+            if (err) return done(new Error(err));
             done();
           });
       });

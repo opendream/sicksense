@@ -103,7 +103,7 @@ module.exports = {
 
       // Try to login.
       DBService.select('sicksense', '*', [
-          { field: 'email = $', value: email.toLowerCase() },
+          { field: 'LOWER(email) = LOWER($)', value: email.toLowerCase() },
           { field: 'password = $', value: hashedPassword }
         ])
         .then(function (result) {
@@ -114,7 +114,7 @@ module.exports = {
             // User exists.
             if (user) {
               return DBService.select('sicksense', '*', [
-                  { field: 'email = $', value: email.toLowerCase() }
+                  { field: 'LOWER(email) = LOWER($)', value: email.toLowerCase() }
                 ])
                 .then(function (result) {
                   if (result.rows.length === 0) {
@@ -159,7 +159,7 @@ module.exports = {
                 var email = ('' + uuid + '@sicksense.com').toLowerCase();
 
                 var conditions = [
-                  { field: 'email = $', value: email }
+                  { field: 'LOWER(email) = LOWER($)', value: email }
                 ];
 
                 var dataToInsert = [
