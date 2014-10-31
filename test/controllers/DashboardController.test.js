@@ -19,11 +19,39 @@ function getFirstDayOfWeek(date) {
   return dateObj.addDays(-1 * dateObj.getDay());
 }
 
+function initSymptoms() {
+  var symptoms = sails.config.symptoms.items;
+
+  return when
+    .map(symptoms, function (item) {
+      return when.promise(function (resolve, reject) {
+
+        Symptoms.findOrCreate({
+          name: item.slug
+        }, {
+          name: item.slug
+        }, function (err, result) {
+          if (err) return reject(err);
+
+          result.isILI = _.contains(sails.config.symptoms.ILISymptoms, item.slug);
+          result.predefined = true;
+          result.save(function (err) {
+            if (err) return reject(err);
+            resolve();
+          });
+
+        });
+
+      });
+    });
+}
+
 describe('DashboardController Test', function() {
   var user, accessToken;
 
   before(function(done) {
     TestHelper.clearAll()
+      .then(initSymptoms)
       .then(_.bind(TestHelper.createUser, { email: "siriwat@opendream.co.th", password: "12345678" }))
       .then(function(_user) {
         user = _user;
@@ -631,6 +659,87 @@ describe('DashboardController Test', function() {
           done();
         });
     });
+
+    it('should not show non-sicksense symptoms', function(done) {
+      var tmp = {};
+
+      addNewSymptoms().then(function () {
+        request(sails.hooks.http.app)
+          .get('/dashboard')
+          .query({
+            city: "Bangkok",
+            includeReports: true
+          })
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(err);
+
+            res.body.response.should.have.properties([
+              'reports', 'ILI', 'numberOfReporters', 'numberOfReports', 'graphs', 'topSymptoms'
+            ]);
+
+            res.body.response.topSymptoms.should.have.length(2);
+            res.body.response.topSymptoms[0].name.should.equal('cough');
+            res.body.response.topSymptoms[0].percentOfReports.should.equal(66.67);
+            res.body.response.topSymptoms[0].numberOfReports.should.equal(2);
+            res.body.response.topSymptoms[1].name.should.equal('fever');
+            res.body.response.topSymptoms[1].percentOfReports.should.equal(33.33);
+            res.body.response.topSymptoms[1].numberOfReports.should.equal(1);
+
+            done();
+          });
+      }).catch(done);
+
+      function addNewSymptoms() {
+        return DBService.insert('symptoms', [
+          { field: 'name', value: 'custom 1' },
+          { field: '"isILI"', value: false },
+          { field: 'predefined', value: false }
+        ])
+        .then(function (result) {
+          tmp.symptom = result.rows[0];
+
+          return DBService.insert('users', [
+            { field: 'email', value: 'siriwat+custom.symptom@sicksense.com' },
+            { field: 'password', value: 'yo-man-yo' }
+          ]);
+        })
+        .then(function (result) {
+          tmp.user = result.rows[0];
+
+          return DBService.select('locations', 'id', [
+            { field: 'province_en = $', value: 'Bangkok' }
+          ])
+          .then(function (result) {
+            return DBService.insert('reports', [
+              { field: '"isFine"', value: false },
+              { field: '"animalContact"', value: false },
+              { field: '"userId"', value: tmp.user.id },
+              { field: '"startedAt"', value: new Date() },
+              { field: '"is_sicksense"', value: true },
+              { field: '"location_id"', value: result.rows[0].id },
+              { field: '"year"', value: moment().year() },
+              { field: '"week"', value: moment().week() - 1 }
+            ]);
+          });
+        })
+        .then(function (result) {
+          tmp.report = result.rows[0];
+
+          return DBService.insert('reportssymptoms', [
+            { field: '"reportId"', value: tmp.report.id },
+            { field: '"symptomId"', value: tmp.symptom.id }
+          ])
+          .then(function () {
+            return DBService.insert('reportssymptoms', [
+              { field: '"reportId"', value: tmp.report.id },
+              { field: '"symptomId"', value: 1 }
+            ]);
+          });
+        });
+      }
+    });
+
   });
 
 });

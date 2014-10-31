@@ -317,6 +317,7 @@ function dashboardProcess(req, res, city, date, extraData) {
             INNER JOIN symptoms s ON ss.symptom_id = s.id \
           WHERE \
               is_sicksense = true AND \
+              s.predefined = true AND \
               ( year = $1 AND week = $2 ) " + cityCriteria + " \
           GROUP BY s.name \
           ORDER BY count DESC \
