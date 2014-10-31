@@ -8,7 +8,7 @@ require('date-utils');
 var config = require('../config/local.js');
 var FIRST_YEAR = 2010;
 
-request('http://interfetpthailand.net/ili/', function (error, response, body) {
+request('http://164.115.25.123/ili/', function (error, response, body) {
 
   var xmlString;
 
@@ -27,7 +27,7 @@ request('http://interfetpthailand.net/ili/', function (error, response, body) {
         }
 
         if (!error && result) {
-          pg.connect(config.connections.postgresql.connectionString, function (error, client, pgDone) {
+          pg.connect(config.connections.postgresql, function (error, client, pgDone) {
             if (error) {
               pgDone();
               console.error(error);
