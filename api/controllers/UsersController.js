@@ -1032,7 +1032,7 @@ module.exports = {
           })
           .then(function() {
             return res.ok({
-              'message': 'วิธีตั้งค่ารหัสผ่านใหม่ถูกส่งไปยังเมล ' + email + 'แล้ว'
+              'message': 'วิธีตั้งค่ารหัสผ่านใหม่ถูกส่งไปยังเมล ' + email + ' แล้ว'
             });
           })
           .catch(function(err) {
