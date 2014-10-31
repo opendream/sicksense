@@ -9,7 +9,7 @@ module.exports = {
             var now = (new Date()).getTime();
             pgconnect(function(err, client, done) {
                 sails.log.debug('[EmailSubscriptionsController:hooks]', now);
-                if (err) return res.serverError('Could not connect to database');
+                if (err) return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
 
                 UserService.getUserByEmail(client, req.body.recipient)
                     .then(function(user) {

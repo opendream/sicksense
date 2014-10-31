@@ -19,14 +19,14 @@ function create(req, res) {
       res.ok(news);
     })
     .catch(function(err) {
-      res.serverError(err);
+      res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
     });
 
   function validate() {
     return when.promise(function(resolve, reject) {
-      req.checkBody('title', 'Title is required').notEmpty();
-      req.checkBody('title', 'Title must less than 100 characters').isLength(1, 100);
-      req.checkBody('content', 'Content is required').notEmpty();
+      req.checkBody('title', 'หัวข้อต้องกรอก').notEmpty();
+      req.checkBody('title', 'หัวข้อต้องยาวไม่เกิน 100 ตัวอักษร').isLength(1, 100);
+      req.checkBody('content', 'เนื้อหาต้องกรอก').notEmpty();
 
       var errors = req.validationErrors();
       var paramErrors = req.validationErrors(true);
@@ -63,16 +63,16 @@ function index(req, res) {
               });
             })
             .catch(function (err) {
-              return res.serverError(err);
+              return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
             });
         })
         .catch(function (err) {
-          return res.serverError(err);
+          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         });
 
     })
     .catch( function (err) {
-      res.serverError(err);
+      res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
     });
 
   function validate() {
@@ -127,18 +127,18 @@ function update(req, res) {
           return res.ok(result.rows[0]);
         })
         .catch(function (err) {
-          return res.serverError(err);
+          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         })
     })
     .catch(function(err) {
-      res.serverError(err);
+      res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
     });
 
   function validate() {
     return when.promise(function(resolve, reject) {
-      req.checkBody('title', 'Title is required').notEmpty();
-      req.checkBody('title', 'Title must less than 100 characters').isLength(1, 100);
-      req.checkBody('content', 'Content is required').notEmpty();
+      req.checkBody('title', 'หัวข้อต้องกรอก').notEmpty();
+      req.checkBody('title', 'หัวข้อต้องยาวไม่เกิน 100 ตัวอักษร').isLength(1, 100);
+      req.checkBody('content', 'เนื้อหาต้องกรอก').notEmpty();
 
       var errors = req.validationErrors();
       var paramErrors = req.validationErrors(true);
@@ -159,11 +159,11 @@ function getNews(req, res) {
         return res.ok(news);
 
       } else {
-        return res.notFound("News not found");
+        return res.notFound("ไม่พบข่าว");
       }
     })
     .catch(function (err) {
-      return res.serverError(err);
+      return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
     });
 }
 
@@ -178,14 +178,14 @@ function destroy(req, res) {
           return res.ok();
         })
         .catch(function (err) {
-          return res.serverError(err);
+          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         });
 
       } else {
-        return res.notFound("News not found");
+        return res.notFound("ไม่พบข่าว");
       }
     })
     .catch(function (err) {
-      return res.serverError(err);
+      return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
     });
 }

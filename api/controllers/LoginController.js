@@ -200,7 +200,7 @@ module.exports = {
             }
           }
           else {
-            var error = new Error('กรุณายืนยันอีเมล');
+            var error = new Error('กรุณาตรวจสอบอีเมลเพื่อยืนยันการใช้งาน Sicksense ID');
             error.subType = 'unverified_email';
             return res.forbidden(error);
           }

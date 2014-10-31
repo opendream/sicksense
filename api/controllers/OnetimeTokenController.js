@@ -10,9 +10,9 @@ module.exports = {
         var type = req.body.type;
         OnetimeTokenService.getByToken(token)
           .then(function(tokenObject) {
-            var error = new Error('Invalid token.');
+            var error = new Error('ลิงก์ไม่ถูกต้อง');
             var paramErrors = {
-              token: { msg: 'Invalid token.' }
+              token: { msg: 'ลิงก์ไม่ถูกต้อง' }
             };
 
             if (!tokenObject) {
@@ -24,7 +24,7 @@ module.exports = {
             }
 
             if (tokenObject.expired < new Date()) {
-              paramErrors.token.msg = 'Token is already expired.';
+              paramErrors.token.msg = 'ลิงก์หมดอายุ';
               return res.badRequest(error, paramErrors);
             }
 
@@ -42,8 +42,8 @@ module.exports = {
 
     function validate() {
       return when.promise(function(resolve, reject) {
-        req.checkBody('token', 'Token is required').notEmpty();
-        req.checkBody('type', 'Password is required').notEmpty();
+        req.checkBody('token', 'ต้องการ Token').notEmpty();
+        req.checkBody('type', 'ต้องการ Password').notEmpty();
 
         var errors = req.validationErrors();
         var paramErrors = req.validationErrors(true);

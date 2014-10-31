@@ -22,7 +22,7 @@ function index(req, res) {
 
       if (err) {
         sails.log.error(err);
-        return res.serverError('Server error', err);
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       }
       sails.log.debug('[NotificationsControlller:index]', now);
 
@@ -40,7 +40,7 @@ function index(req, res) {
           pgDone();
           sails.log.debug('[NotificationsControlller:index]', now);
           sails.log.error(err);
-          return res.serverError('Server error', err);
+          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         }
 
         notifications = result.rows;
@@ -51,7 +51,7 @@ function index(req, res) {
 
           if (err) {
             sails.log.error(err);
-            return res.serverError('Server error', err);
+            return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
           }
 
           res.ok({
@@ -92,7 +92,7 @@ function create(req, res) {
     pgconnect(function (err, client, pgDone) {
       if (err) {
         sails.log.error(err);
-        return res.serverError("Server error", err);
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       }
       sails.log.debug('[NotificationsControlller:create]', now);
 
@@ -102,7 +102,7 @@ function create(req, res) {
         sails.log.debug('[NotificationsControlller:create]', now);
         if (err) {
           sails.log.error(err);
-          return res.serverError("Server error", err);
+          return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         }
 
         var data = [
@@ -147,7 +147,7 @@ function create(req, res) {
           })
           .catch(function (err) {
             sails.log.error(err);
-            return res.serverError("Server error", err);
+            return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
           });
       });
     });
@@ -237,7 +237,7 @@ function destroy(req, res) {
     pgconnect(function (err, client, pgDone) {
       if (err) {
         sails.log.error(err);
-        return res.serverError("Server error", err);
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       }
       sails.log.debug('[NotificationsControlller:create]', now);
 
@@ -255,7 +255,7 @@ function destroy(req, res) {
             pgDone();
             sails.log.debug('[NotificationsControlller:create]', now);
             sails.log.error(err);
-            return res.serverError("Server error", err);
+            return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
           }
 
           req.notification.status = NotificationsService.STATUS.deleted;
@@ -274,7 +274,7 @@ function destroy(req, res) {
           sails.log.debug('[NotificationsControlller:create]', now);
           if (err) {
             sails.log.error(err);
-            return res.serverError("Server error", err);
+            return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
           }
 
           req.notification.status = NotificationsService.STATUS.deleted;

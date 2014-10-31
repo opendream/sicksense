@@ -4,6 +4,7 @@ var request = require('supertest');
 var when = require('when');
 var rewire = require('rewire');
 var passgen = require('password-hash-and-salt');
+var moment = require('moment');
 
 describe('UserController test', function() {
 
@@ -1505,12 +1506,12 @@ describe('UserController test', function() {
       {
         token: '12345678',
         type: 'testdelete',
-        expired: new Date()
+        expired: moment().add(1, 'days')
       },
       {
         token: '23456789',
         type: 'testdelete',
-        expired: new Date()
+        expired: moment().add(1, 'days')
       }
     ];
 
@@ -1672,15 +1673,15 @@ describe('UserController test', function() {
                 })
                 .then(function() {
                   return DBService.select('accesstoken', '*', [
-                      { field: '"userId" = $', value: user.id }
-                    ])
+                    { field: '"userId" = $', value: user.id }
+                  ]);
                 })
                 .then(function (result) {
                   result.rows.length.should.equal(0);
                   done();
                 })
                 .catch(done);
-              })
+              });
             })
             .catch(done);
 
