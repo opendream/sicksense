@@ -46,10 +46,7 @@ module.exports = {
         return DBService.delete('email_subscription', [{
             field: '"userId"=$',
             value: sicksenseID.id
-        }])
-        .then(function() {
-            MailService.subscribe(sicksenseID.email, 'no');
-        });
+        }]);
     },
 
     getEmailsToNotify: function() {
