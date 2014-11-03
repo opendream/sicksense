@@ -177,6 +177,11 @@ module.exports = {
         };
       }
 
+      // TODO: remove after application (both android and ios) upgraded to 4.2
+      if (!body.uuid) {
+        body.uuid = body.email.replace(/\@.*/, '');
+      }
+
       data.email = body.uuid + '@sicksense.com';
       data.password = body.uuid;
       data.tel = body.tel;
@@ -271,7 +276,7 @@ module.exports = {
     };
 
     function isSicksenseID(email) {
-      return !email.match(/\@(www\.)?sicksense\.com$/);
+      return !email.match(/\@(www\.)?sicksense\.(com|org)$/);
     }
 
     function checkSicksenseEmailExists(email) {
@@ -413,7 +418,8 @@ module.exports = {
         req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
         req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
 
-        req.checkBody('uuid', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง').notEmpty();
+        // TODO: uncomment after application (both android and ios) upgraded to 4.2
+        // req.checkBody('uuid', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง').notEmpty();
 
         if (req.body.gender) {
           req.checkBody('gender', 'กรุณาเลือกเพศ').isIn(['male', 'female']);
