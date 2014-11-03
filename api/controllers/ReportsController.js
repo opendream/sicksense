@@ -46,7 +46,7 @@ module.exports = {
     pgconnect(function(err, client, pgDone) {
       if (err) {
         sails.log.error(err);
-        return res.serverError(new Error("Could not connect to database"));
+        return res.serverError(new Error("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"));
       }
       sails.log.debug('[ReportsControlller:index]', now);
 
@@ -111,7 +111,7 @@ module.exports = {
           pgDone();
           sails.log.debug('[ReportsControlller:index]', now);
           sails.log.error(err);
-          return res.serverError(new Error("Could not perform your request"));
+          return res.serverError(new Error("เกิดข้อผิดพลาด ไม่สามารถดึงข้อมูลได้"));
         }
 
         client.query(countQuery, countValues, function(err, countResult) {
@@ -120,7 +120,7 @@ module.exports = {
 
           if (err) {
             sails.log.error(err);
-            return res.serverError(new Error("Could not perform your request"));
+            return res.serverError(new Error("เกิดข้อผิดพลาด ไม่สามารถดึงข้อมูลได้"));
           }
 
           when.map(result.rows, function(row) {
@@ -208,11 +208,21 @@ module.exports = {
     var report, symptoms, userAddress, locationByUserAddress;
     ReportService.loadLocationByAddress(values.address)
       .then(function(result) {
-        values.location_id = result.id;
-        values.locationByAddress = {
-          latitude: result.latitude,
-          longitude: result.longitude
-        };
+        if (result) {
+          values.location_id = result.id;
+          values.locationByAddress = {
+            latitude: result.latitude,
+            longitude: result.longitude
+          };
+        }
+        else {
+          values.location_id = null;
+          values.locationByAddress = {
+            latitude: null,
+            longitude: null
+          };
+        }
+
         return ReportService.create(values);
       })
       .then(function(_report) {
@@ -247,7 +257,7 @@ module.exports = {
         return res.ok(reportJSON);
       })
       .catch(function(err) {
-        res.serverError(err);
+        res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       });
   }
 };

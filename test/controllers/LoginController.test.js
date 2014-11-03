@@ -14,8 +14,6 @@ describe('LoginController test', function() {
     done();
   });
 
-  before
-
   /*describe('[POST] login', function() {
     before(function(done) {
       TestHelper.clearUsers()
@@ -282,6 +280,25 @@ describe('LoginController test', function() {
         });
     });
 
+    it('should return user object with accessToken if user and sicksense id are exists and they are already connected (case-insensitive test)', function (done) {
+      request(sails.hooks.http.app)
+        .post('/connect')
+        .query({ accessToken: data.user.accessToken })
+        .send({
+          email: data.sicksenseID.email.toUpperCase(),
+          password: '12345678',
+          uuid: 'A001'
+        })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+          res.body.response.id.should.equal(data.user.id);
+          res.body.response.email.should.equal(data.sicksenseID.email);
+          res.body.response.accessToken.should.be.ok;
+          done();
+        });
+    });
+
     it('should return user object with accessToken then user and sicksense id should be connected', function (done) {
       UserService.getUsersBySicksenseId(data.sicksenseID2.id)
         .then(function (users) {
@@ -395,6 +412,16 @@ describe('LoginController test', function() {
                   user.latitude.should.equal(profile.latitude);
                   user.longitude.should.equal(profile.longitude);
                   user.geom.should.equal(profile.geom);
+
+                  res.body.response.tel.should.equal(profile.tel);
+                  res.body.response.gender.should.equal(profile.gender);
+                  res.body.response.birthYear.should.equal(profile.birthYear);
+                  res.body.response.address.subdistrict.should.equal(profile.subdistrict);
+                  res.body.response.address.district.should.equal(profile.district);
+                  res.body.response.address.city.should.equal(profile.city);
+                  res.body.response.location.latitude.should.equal(profile.latitude);
+                  res.body.response.location.longitude.should.equal(profile.longitude);
+
                   done();
                 })
                 .catch(function (err) {
@@ -403,6 +430,101 @@ describe('LoginController test', function() {
             })
             .catch(function (err) {
               done(err);
+            });
+        });
+    });
+
+    it('should create new user with platform specified', function (done) {
+      request(sails.hooks.http.app)
+        .post('/connect')
+        .send({
+          email: data.sicksenseID.email,
+          password: '12345678',
+          uuid: 'A000-00010',
+          platform: 'sicksenseweb'
+        })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          res.body.response.id.should.be.ok;
+          res.body.response.email.should.equal(data.sicksenseID.email);
+          res.body.response.accessToken.should.be.ok;
+
+          res.body.response.platform.should.equal('sicksenseweb');
+
+          done();
+        });
+    });
+
+    it('should not create new user if already exists, update instead. Unlink old sicksense id as well', function (done) {
+      var tmp = {};
+
+      request(sails.hooks.http.app)
+        .post('/connect')
+        .send({
+          email: data.sicksenseID.email,
+          password: '12345678',
+          uuid: 'A000-00010'
+        })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          tmp.user1 = res.body.response;
+
+          request(sails.hooks.http.app)
+            .post('/connect')
+            .send({
+              email: data.sicksenseID3.email,
+              password: '12345678',
+              uuid: 'A000-00010'
+            })
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(err);
+
+              res.body.response.id.should.equal(tmp.user1.id);
+              res.body.response.email.should.equal(data.sicksenseID3.email);
+              res.body.response.accessToken.should.equal(tmp.user1.accessToken);
+
+              done();
+            });
+        });
+    });
+
+    it('should not create new user if already exists, update instead. Unlink old sicksense id as well (case-insensitive test)', function (done) {
+      var tmp = {};
+
+      request(sails.hooks.http.app)
+        .post('/connect')
+        .send({
+          email: data.sicksenseID.email.toUpperCase(),
+          password: '12345678',
+          uuid: 'A000-00010'
+        })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(new Error(err));
+
+          tmp.user1 = res.body.response;
+
+          request(sails.hooks.http.app)
+            .post('/connect')
+            .send({
+              email: data.sicksenseID3.email,
+              password: '12345678',
+              uuid: 'A000-00010'
+            })
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.response.id.should.equal(tmp.user1.id);
+              res.body.response.email.should.equal(data.sicksenseID3.email);
+              res.body.response.accessToken.should.equal(tmp.user1.accessToken);
+
+              done();
             });
         });
     });

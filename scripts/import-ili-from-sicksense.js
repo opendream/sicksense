@@ -44,7 +44,7 @@ when
 
 function saveILILog(doc) {
   return when.promise(function (resolve, reject) {
-    pg.connect(config.connections.postgresql.connectionString, function (error, client, pgDone) {
+    pg.connect(config.connections.postgresql, function (error, client, pgDone) {
       if (error) {
         pgDone();
         console.error(error);
@@ -123,10 +123,10 @@ function getILI(city, startDate, endDate) {
         AND s.name IN (' + params.join(', ') + ') ' + cityCriteria + ' \
     ';
 
-    pg.connect(config.connections.postgresql.connectionString, function(err, client, pgDone) {
+    pg.connect(config.connections.postgresql, function(err, client, pgDone) {
       if (err) {
         pgDone();
-        console.log.error(err);
+        console.log(err);
         var error = new Error("Could not connect to database");
         error.statusCode = 500;
         return reject(err);
@@ -135,7 +135,7 @@ function getILI(city, startDate, endDate) {
       client.query(selectQuery, values, function(err, iliResult) {
         if (err) {
           pgDone();
-          console.log.error('-- iliresult', err);
+          console.log('-- iliresult', err);
           var error = new Error("Could not perform your request");
           error.statusCode = 500;
           return reject(err);

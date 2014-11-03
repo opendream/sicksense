@@ -13,7 +13,7 @@
  * ```
  */
 
-module.exports = function forbidden (err, subType, viewOrRedirect) {
+module.exports = function forbidden (err, viewOrRedirect) {
 
   // Get access to `req` & `res`
   var req = this.req;
@@ -44,12 +44,15 @@ module.exports = function forbidden (err, subType, viewOrRedirect) {
     this.req._sails.log.verbose(err);
   }
 
+  if (err.name) {
+    err.name = '';
+  }
   err = {
     meta: {
       status: 403,
       errorType: 'Forbidden',
-      errorSubType: subType || null,
-      errorMessage: err
+      errorSubType: err.subType || null,
+      errorMessage: err.toString()
     }
   };
 

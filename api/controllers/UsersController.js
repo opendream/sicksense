@@ -24,11 +24,21 @@ module.exports = {
     function run() {
       checkUserEmailExists(data.email)
         .then(function(exists) {
-          if (exists) {
-            return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น.');
+          var promise = when.resolve();
+
+          if (!exists) {
+            data.newUser = true;
+            promise = createUser(data);
+          }
+          else if (exists && data.sicksense && data.sicksense.email) {
+            user = exists;
+            promise = unlinkOldDevices(user.id);
+          }
+          else {
+            return res.conflict('อุปกรณ์นี้ได้ทำการลงทะเบียนไว้แล้ว ไม่จำเป็นต้องลงทะเบียนอีก');
           }
 
-          return createUser(data)
+          return promise
             .then(function() {
               return createAccessToken();
             })
@@ -39,11 +49,46 @@ module.exports = {
               if (data.sicksense) {
                 return checkSicksenseEmailExists(data.sicksense.email)
                   .then(function (exists) {
+                    var promise = when.resolve();
                     if (exists) {
-                      return res.conflict('อีเมลนี้ถูกใช้แล้ว กรุณาใช้อีเมลอื่น');
+                      // try to login first.
+                      promise = checkSicksenseEmailPassword(data)
+                        .then(function (result) {
+                          if (result) {
+                            if (result.is_verify) {
+                              user.sicksense = result;
+
+                              return DBService.insert('sicksense_users', [
+                                { field: 'sicksense_id', value: user.sicksense.id },
+                                { field: 'user_id', value: user.id }
+                              ])
+                              .then(function () {
+                                return responseJSON();
+                              });
+                            }
+                            else {
+                              cleanUser().then(function () {
+                                var error = new Error('กรุณาตรวจสอบอีเมลเพื่อยืนยันการใช้งาน Sicksense ID');
+                                error.subType = 'unverified_email';
+                                return res.forbidden(error);
+                              });
+                            }
+                          }
+                          else {
+                            cleanUser().then(function () {
+                              // if password not correct.
+                              return res.conflict('อีเมลนี้ซ้ำ กรุณาใช้อีเมลอื่น');
+                            });
+                          }
+                        })
+                        .catch(function (err) {
+                          cleanUser().then(function () {
+                            res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                          });
+                        });
                     }
                     else {
-                      return createSicksenseID(data)
+                      promise = createSicksenseID(data)
                         .then(function() {
                           return sendEmailVerification();
                         })
@@ -54,25 +99,53 @@ module.exports = {
                           return responseJSON();
                         })
                         .catch(function (err) {
-                          res.serverError(err);
+                          cleanUser().then(function () {
+                            res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                          });
                         });
                     }
+
+
+                    return promise;
                   })
                   .catch(function (err) {
-                    res.serverError(err);
+                    cleanUser().then(function () {
+                      res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+                    });
                   });
               }
 
               return responseJSON();
             })
             .catch(function (err) {
-              res.serverError(err);
+              cleanUser().then(function () {
+                res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+              });
             });
         })
         .catch(function (err) {
-          res.serverError(err);
+          cleanUser().then(function () {
+            res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+          });
         });
-    };
+    }
+
+    function cleanUser() {
+      // delete newly created user
+      if (data.newUser && user) {
+        return DBService.delete('accesstoken', [
+          { field: '"userId" = $', value: user.id }
+        ])
+        .then(function () {
+          return DBService.delete('users', [
+            { field: 'id = $', value: user.id }
+          ]);
+        })
+      }
+      else {
+        return when.resolve();
+      }
+    }
 
     function prepare() {
       var body = req.body;
@@ -112,22 +185,28 @@ module.exports = {
       data.subdistrict = body.address.subdistrict;
       data.district = body.address.district;
       data.city = body.address.city;
-      data.platform = body.platform || req.query.platform || 'doctormeios'
-    };
+      data.platform = body.platform || req.query.platform || 'doctormeios';
+    }
 
     function checkUserEmailExists(email) {
       return when.promise(function (resolve, reject) {
-        DBService.select('users', 'email', [
-            { field: 'email = $', value: email }
+        DBService.select('users', '*', [
+            { field: 'LOWER(email) = LOWER($)', value: email.toLowerCase() }
           ])
           .then(function(result) {
-            resolve(result.rows.length !== 0);
+            resolve(result.rows[0]);
           })
           .catch(function(err) {
             reject(err);
           });
       });
-    };
+    }
+
+    function unlinkOldDevices(userId) {
+      return DBService.delete('sicksense_users', [
+        { field: 'user_id = $', value: userId }
+      ]);
+    }
 
     function createUser(data) {
       return when.promise(function (resolve, reject) {
@@ -135,7 +214,7 @@ module.exports = {
           if (err) return reject(err);
 
           DBService.insert('users', [
-              { field: 'email', value: data.email },
+              { field: 'email', value: data.email.toLowerCase() },
               { field: 'password', value: hashedPassword },
               { field: 'tel', value: data.tel },
               { field: 'gender', value: data.gender },
@@ -193,12 +272,12 @@ module.exports = {
 
     function isSicksenseID(email) {
       return !email.match(/\@(www\.)?sicksense\.com$/);
-    };
+    }
 
     function checkSicksenseEmailExists(email) {
       return when.promise(function (resolve, reject) {
         DBService.select('sicksense', 'email', [
-            { field: 'email = $', value: email }
+            { field: 'LOWER(email) = LOWER($)', value: email.toLowerCase() }
           ])
           .then(function (result) {
             resolve(result.rows.length !== 0);
@@ -207,7 +286,31 @@ module.exports = {
             reject(err);
           });
       });
-    };
+    }
+
+    function checkSicksenseEmailPassword(data) {
+      var email = data.sicksense.email,
+          password = data.sicksense.password;
+
+      return when.promise(function (resolve, reject) {
+        passgen(password).hash(sails.config.session.secret, function (err, hashedPassword) {
+          if (err) return raiseError(err);
+
+          // Try to login.
+          DBService.select('sicksense', '*', [
+              { field: 'LOWER(email) = LOWER($)', value: email },
+              { field: 'password = $', value: hashedPassword }
+            ])
+            .then(function (result) {
+              resolve(result.rows[0]);
+            })
+            .catch(function (err) {
+              reject(err);
+            });
+
+        });
+      });
+    }
 
     function createSicksenseID(data) {
       return when.promise(function (resolve, reject) {
@@ -227,7 +330,7 @@ module.exports = {
           };
 
           DBService.insert('sicksense', [
-              { field: 'email', value: data.sicksense.email },
+              { field: 'email', value: data.sicksense.email.toLowerCase() },
               { field: 'password', value: hashedPassword },
               { field: 'data', value: sicksenseData },
               { field: '"createdAt"', value: new Date() },
@@ -298,7 +401,7 @@ module.exports = {
           res.ok(userJSON);
         })
         .catch(function (err) {
-          res.serverError(err);
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         })
     };
 
@@ -308,7 +411,7 @@ module.exports = {
         req.checkBody('email', 'กรุณากรอกอีเมลให้ถูกต้อง').isEmail();
 
         req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
-        req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร').isLength(8);
+        req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
 
         req.checkBody('uuid', 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง').notEmpty();
 
@@ -428,7 +531,7 @@ module.exports = {
           res.ok(userJSON);
         })
         .catch(function (err) {
-          res.serverError(err);
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
         });
     }
 
@@ -634,7 +737,7 @@ module.exports = {
                 res.ok(userJSON);
               })
               .catch(function (err) {
-                res.serverError(err);
+                res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
               });
           });
 
@@ -864,29 +967,32 @@ module.exports = {
 
   getUser: function(req, res) {
     // Check own access token first.
-    AccessToken.findOneByToken(req.query.accessToken).exec(function(err, accessToken) {
+    AccessToken.findOne({ token: req.query.accessToken }).exec(function(err, accessToken) {
       if (err) {
-        sails.log.error(err);
-        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', err);
       }
 
       if (!accessToken || accessToken.userId != req.params.id) {
         return res.forbidden('ไม่สามารถดึงข้อมูลได้');
       }
 
+      var user;
       UserService.getUserJSON(req.user.id)
         .then(function (userJSON) {
-          EmailSubscriptionsService.isSubscribed(req.user)
-            .then(function (isSubscribed) {
-              userJSON.isSubscribed = isSubscribed;
-              res.ok(userJSON);
-            })
-            .catch(function (err) {
-              res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
-            });
+          user = userJSON;
+          if (user.sicksenseId) {
+            return EmailSubscriptionsService.isSubscribed({id: user.sicksenseId });
+          }
+          else {
+            return when.resolve(false);
+          }
+        })
+        .then(function (isSubscribed) {
+          user.isSubscribed = isSubscribed;
+          res.ok(user);
         })
         .catch(function (err) {
-          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+          res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', err);
         });
     });
   },
@@ -926,7 +1032,7 @@ module.exports = {
           })
           .then(function() {
             return res.ok({
-              'message': 'วิธีตั้งค่ารหัสผ่านใหม่ถูกส่งไปยังเมล ' + email + 'แล้ว'
+              'message': 'วิธีตั้งค่ารหัสผ่านใหม่ถูกส่งไปยังเมล ' + email + ' แล้ว'
             });
           })
           .catch(function(err) {
@@ -951,6 +1057,9 @@ module.exports = {
       .then(function(tokenObject) {
         onetimeToken = tokenObject;
         if (!onetimeToken) {
+          return res.forbidden('ไม่ได้สามารถตั้งค่ารหัสผ่านใหม่ได้ โปรดตรวจสอบลิงก์ใหม่');
+        }
+        else if (!OnetimeTokenService.isValidToken(onetimeToken)) {
           return res.forbidden('ไม่ได้สามารถตั้งค่ารหัสผ่านใหม่ได้ เนื่องจากลิงก์หมดอายุ');
         }
 
@@ -962,25 +1071,29 @@ module.exports = {
             return UserService.updatePassword(sicksenseId, password, true)
               .then(function () {
                 res.ok({
-                  message: 'ตั้งค่ารหัสผ่านใหม่สำเร็จ'
+                  message: 'ตั้งรหัสผ่านใหม่เรียบร้อยแล้ว'
                 });
               })
               .catch(function (err) {
-                res.serverError(err);
+                sails.log.error(err);
+                res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
               });
           })
           .catch(function(err) {
-            return res.serverError(err)
+            sails.log.error(err);
+            return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
           });
       })
       .catch(function(err) {
-        return res.serverError(err)
+        sails.log.error(err);
+        return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
       });
 
     function validate() {
       return when.promise(function(resolve, reject) {
-        req.checkBody('token', 'ไม่ได้สามารถตั้งค่ารหัสผ่านใหม่ได้ เนื่องจากข้อมูลไม่ครบถ้วน').notEmpty();
+        req.checkBody('token', 'ไม่ได้สามารถตั้งค่ารหัสผ่านใหม่ได้').notEmpty();
         req.checkBody('password', 'กรุณากรอกรหัสผ่าน').notEmpty();
+        req.checkBody('password', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
 
         var errors = req.validationErrors();
         var paramErrors = req.validationErrors(true);
@@ -1002,7 +1115,7 @@ module.exports = {
   },
 
   verify: function (req, res) {
-    req.check('token', 'ไม่ได้สามารถยืนยันอีเมลได้ เนื่องจากข้อมูลไม่ครบถ้วน').notEmpty();
+    req.check('token', 'ไม่ได้สามารถยืนยันอีเมลได้ โปรดตรวจสอบลิงก์ใหม่').notEmpty();
 
     var errors = req.validationErrors();
     var paramErrors = req.validationErrors(true);
@@ -1051,22 +1164,21 @@ module.exports = {
 
     // Check if e-mail exists
     UserService.doesSicksenseIDExist(req.body.email)
+      // check if this e-mail is already verified.
       .then(function (result) {
+        data.sicksense = result;
+
+        if (data.sicksense.is_verify) {
+          var error = new Error('อีเมลนี้ได้รับการยืนยันแล้ว');
+          error.status = 400;
+          error.subType = 'email_is_already_verified';
+          return when.reject(error);
+        }
+      })
+      .then(function () {
         // -- if yes
-        if (result) {
-          data.sicksense = result;
-          // load user object
-          return DBService.select('sicksense_users', 'user_id', [
-            { field: 'sicksense_id = $', value: result.id }
-          ])
-          .then(function (result) {
-            return DBService.select('users', '*', [
-              { field: 'id = $', value: result.rows[0].user_id }
-            ]);
-          })
-          .then(function (result) {
-            return when.resolve(result.rows[0]);
-          });
+        if (data.sicksense) {
+          return when.resolve();
         }
         // -- else
         else {
@@ -1076,7 +1188,7 @@ module.exports = {
           return when.reject(error);
         }
       })
-      .then(function (user) {
+      .then(function () {
         // 1. delete old token
         return OnetimeTokenService.delete(data.sicksense.id, 'user.verifyEmail')
         // 2. generate the new one
@@ -1140,10 +1252,13 @@ module.exports = {
                 { field: 's.password = $', value: hashedPassword }
               ])
               .then(function (result) {
-                if (result.rows.length === 0) return res.forbidden('รหัสผ่านเก่าไม่ถูกต้อง');
+                if (result.rows.length === 0) return res.forbidden('รหัสผ่าน Sicksense ปัจจุบันไม่ถูกต้อง');
                 var sicksenseId = result.rows[0].id;
                 var newPassword = req.body.newPassword;
                 return UserService.updatePassword(sicksenseId, newPassword, true)
+                  .then(function () {
+                    return AccessTokenService.refresh(accessToken.userId)
+                  })
                   .then(responseJSON)
                   .catch(function (err) {
                     sails.log.error(err);
@@ -1160,9 +1275,10 @@ module.exports = {
         });
     });
 
-    function responseJSON() {
+    function responseJSON(accessToken) {
       return UserService.getUserJSON(req.user.id)
         .then(function (userJSON) {
+          userJSON.accessToken = accessToken.token;
           res.ok(userJSON);
         })
         .catch(function (err) {
@@ -1172,8 +1288,11 @@ module.exports = {
 
     function validate() {
       return when.promise(function(resolve, reject) {
-        req.checkBody('oldPassword', 'กรุณากรอกรหัสผ่านเก่า').notEmpty();
+        req.checkBody('oldPassword', 'กรุณากรอกรหัสผ่าน Sicksense ปัจจุบัน').notEmpty();
         req.checkBody('newPassword', 'กรุณากรอกรหัสผ่านใหม่').notEmpty();
+
+        req.checkBody('oldPassword', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
+        req.checkBody('newPassword', 'กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร').isLength(8, 64);
 
         var errors = req.validationErrors();
         var paramErrors = req.validationErrors(true);

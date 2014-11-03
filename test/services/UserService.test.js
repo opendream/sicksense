@@ -222,14 +222,14 @@ describe('UserService test', function() {
       // create new user
       DBService
       .insert('users', [
-        { field: 'email', value: 'doesSicksenseIDExist001@sicksense.com' },
+        { field: 'email', value: 'doessicksenseidexist001@sicksense.com' },
         { field: 'password', value: 'text-here-is-ignored' }
       ])
       // create sicksense id
       .then(function (result) {
         data.user = result.rows[0];
         return DBService.insert('sicksense', [
-          { field: 'email', value: 'doesSicksenseIDExist001@opendream.co.th' },
+          { field: 'email', value: 'doessicksenseidexist001@opendream.co.th' },
           { field: 'password', value: 'password-here-is-ignored' },
           { field: '"createdAt"', value: new Date() }
         ]);
@@ -256,12 +256,23 @@ describe('UserService test', function() {
     });
 
     it('should resolve sicksense object if exists', function (done) {
+      UserService.doesSicksenseIDExist('doessicksenseidexist001@opendream.co.th')
+        .then(function (result) {
+          result.id.should.exists;
+          result.email.should.equal('doessicksenseidexist001@opendream.co.th');
+          done();
+        })
+        .catch(done);
+    });
+
+    it('should resolve sicksense object if exists (case-insensitive e-mail)', function (done) {
       UserService.doesSicksenseIDExist('doesSicksenseIDExist001@opendream.co.th')
         .then(function (result) {
           result.id.should.exists;
-          result.email.should.equal('doesSicksenseIDExist001@opendream.co.th');
+          result.email.should.equal('doessicksenseidexist001@opendream.co.th');
           done();
-        });
+        })
+        .catch(done);
     });
 
     it('should resolve false if else', function (done) {
@@ -404,6 +415,22 @@ describe('UserService test', function() {
     it('should return sicksense id', function (done) {
 
       UserService.getSicksenseIDByEmail('siriwat@opendream.co.th')
+        .then(function (sicksenseID) {
+          sicksenseID.should.be.ok;
+          sicksenseID.id.should.equal(data.sicksenseID.id);
+          sicksenseID.email.should.equal('siriwat@opendream.co.th');
+          (sicksenseID.password === undefined).should.be.true;
+          done();
+        })
+        .catch(function (err) {
+          done(err);
+        });
+
+    });
+
+    it('should return sicksense id (case-insensitive e-mail)', function (done) {
+
+      UserService.getSicksenseIDByEmail('siRIWAT@opendream.co.th')
         .then(function (sicksenseID) {
           sicksenseID.should.be.ok;
           sicksenseID.id.should.equal(data.sicksenseID.id);

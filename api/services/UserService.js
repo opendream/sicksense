@@ -77,7 +77,7 @@ function getUserByEmailPassword(client, email, password) {
           }
 
           if (result.rows.length === 0) {
-            var error = new Error("E-mail and Password pair is not valid");
+            var error = new Error("อีเมลหรือรหัสผ่านของคุณไม่ถูกต้อง");
             error.status = 403;
             reject(error);
             return;
@@ -94,7 +94,7 @@ function getUserByID(client, id) {
   return when.promise(function(resolve, reject) {
     client.query('SELECT * FROM users WHERE id=$1::int', [ id ], function(err, result) {
       if (err) return reject(err);
-      if (result.rows.length === 0) return reject(new Error("User not found"));
+      if (result.rows.length === 0) return reject(new Error("ไม่พบผู้ใช้นี้ในระบบ"));
 
       resolve(result.rows[0]);
     });
@@ -105,7 +105,7 @@ function getUserByEmail(client, email) {
   return when.promise(function(resolve, reject) {
     client.query('SELECT * FROM users WHERE email=$1', [ email ], function(err, result) {
       if (err) return reject(err);
-      if (result.rows.length === 0) return reject('User not found');
+      if (result.rows.length === 0) return reject('ไม่พบผู้ใช้นี้ในระบบ');
 
       resolve(result.rows[0]);
     });
@@ -134,10 +134,10 @@ function getUsersBySicksenseId(sicksenseId) {
 function getSicksenseIDByEmail(email) {
   return when.promise(function (resolve, reject) {
     DBService.select('sicksense', '*', [
-        { field: 'email = $', value: email }
+        { field: 'email = $', value: email.toLowerCase() }
       ])
       .then(function (result) {
-        if (result.rows.length === 0) return reject(new Error('Sicksense ID not found.'));
+        if (result.rows.length === 0) return reject(new Error('ไม่พบผู้ใช้นี้ในระบบ'));
         delete result.rows[0].password;
         resolve(result.rows[0]);
       })
@@ -165,7 +165,7 @@ function getAccessToken(client, userId, refresh) {
             });
         }
         else {
-          var error = new Error("AccessToken not found");
+          var error = new Error("Access token ไม่ถูกต้อง");
           error.status = 404;
           return reject(error);
         }
@@ -456,7 +456,7 @@ function verify(sicksenseId) {
 
 function doesSicksenseIDExist(email) {
   return DBService.select('sicksense', '*', [
-    { field: 'email = $', value: email }
+    { field: 'email = $', value: email.toLowerCase() }
   ])
   .then(function (result) {
     if (result.rows.length !== 0) {

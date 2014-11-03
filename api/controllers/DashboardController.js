@@ -317,6 +317,7 @@ function dashboardProcess(req, res, city, date, extraData) {
             INNER JOIN symptoms s ON ss.symptom_id = s.id \
           WHERE \
               is_sicksense = true AND \
+              s.predefined = true AND \
               ( year = $1 AND week = $2 ) " + cityCriteria + " \
           GROUP BY s.name \
           ORDER BY count DESC \
@@ -361,7 +362,7 @@ function dashboardProcess(req, res, city, date, extraData) {
       var returnData;
 
       if (isError) {
-        res.serverError("Could not perform your request");
+        res.serverError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
       }
       else {
         var percentOfFinePeople = UtilityService.toPercent(data.finePeople, data.numberOfReporters);
@@ -410,7 +411,7 @@ function getILILogs(client, source, startDate, endDate, limit) {
 
       if (err) {
         sails.log.error('-- ILILOGS stat error (sql)', err);
-        var error = new Error("Could not connect to database");
+        var error = new Error("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
         error.status = 500;
         return reject(err);
       }

@@ -4,6 +4,7 @@ var request = require('supertest');
 var when = require('when');
 var rewire = require('rewire');
 var passgen = require('password-hash-and-salt');
+var moment = require('moment');
 
 describe('UserController test', function() {
 
@@ -59,6 +60,48 @@ describe('UserController test', function() {
             'gender', 'birthYear', 'address',
             'address.subdistrict', 'address.district', 'address.city'
           ]);
+
+          done();
+        });
+    });
+
+    it('should validate shorter password', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "UUID-SICKSENSE-TEST1@sicksense.com",
+          password: "TEST1"
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.status.should.equal(400);
+          res.body.meta.errorType.should.equal("Bad Request");
+
+          res.body.meta.invalidFields.should.have.properties([ 'password' ]);
+          res.body.meta.invalidFields.password.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
+    it('should validate longer password', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "UUID-SICKSENSE-TEST1@sicksense.com",
+          password: "UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-65"
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.status.should.equal(400);
+          res.body.meta.errorType.should.equal("Bad Request");
+
+          res.body.meta.invalidFields.should.have.properties([ 'password' ]);
+          res.body.meta.invalidFields.password.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
 
           done();
         });
@@ -138,7 +181,7 @@ describe('UserController test', function() {
           res.body.meta.status.should.equal(200);
           res.body.response.should.not.have.property('password');
           res.body.response.id.should.ok;
-          res.body.response.email.should.equal("UUID-SICKSENSE-TEST2@sicksense.com");
+          res.body.response.email.should.equal("uuid-sicksense-test2@sicksense.com");
           res.body.response.tel.should.equal("0841291342");
           res.body.response.gender.should.equal("male");
           res.body.response.birthYear.should.equal(1986);
@@ -267,6 +310,30 @@ describe('UserController test', function() {
         .expect(200)
         .end(function(err, res) {
           if (err) return done(err);
+
+          done();
+        });
+    });
+
+    it('should save new record with lowercase e-mail', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "UUID-SICKSENSE-TEST-700@sicksense.com",
+          password: "UUID-SICKSENSE-TEST-700",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {},
+          location: {},
+          uuid: 'UUID-SICKSENSE-TEST-700'
+        })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.response.email.should.equal('uuid-sicksense-test-700@sicksense.com');
 
           done();
         });
@@ -426,7 +493,39 @@ describe('UserController test', function() {
         .expect('Content-Type', /json/)
         .expect(409)
         .end(function(err, res) {
-          if (err) return done(err);
+          if (err) return done(new Error(err));
+
+          res.body.meta.status.should.equal(409);
+          res.body.meta.errorType.should.equal('Conflict');
+
+          done();
+        });
+    });
+
+    it('should not allow to create with existing (case-insensitived) email (anonymous)', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users')
+        .send({
+          email: "uuid-sicksense-test1@sicksense.com",
+          password: "uuid-sicksense-test1",
+          tel: "0841291342",
+          gender: "male",
+          birthYear: 1986,
+          address: {
+            subdistrict: "Samsen Nok",
+            district: "Huai Khwang",
+            city: "Bangkok"
+          },
+          location: {
+            latitude: 13.1135,
+            longitude: 105.0014
+          },
+          uuid: 'uuid-sicksense-test1'
+        })
+        .expect('Content-Type', /json/)
+        .expect(409)
+        .end(function(err, res) {
+          if (err) return done(new Error(err));
 
           res.body.meta.status.should.equal(409);
           res.body.meta.errorType.should.equal('Conflict');
@@ -436,6 +535,8 @@ describe('UserController test', function() {
     });
 
     describe('with sicksense account', function() {
+
+      var data = {};
 
       it('should create sicksense account with minimum fields requirement', function(done) {
         request(sails.hooks.http.app)
@@ -455,16 +556,56 @@ describe('UserController test', function() {
             res.body.response.email.should.equal("siriwat+sicksense@opendream.co.th");
             res.body.response.accessToken.should.be.ok;
 
+            data.user = res.body.response;
+
             done();
           });
       });
 
-      it('should not allow to create with existing email (sicksense id)', function(done) {
+      it('should save sicksense id email as lowercase', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense+CASE+001@opendream.co.th",
+            password: "12345678",
+            uuid: 'UUID-SICKSENSE-TEST11'
+          })
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function(err, res) {
+            if (err) return done(err);
+
+            res.body.response.should.not.have.property('password');
+            res.body.response.id.should.ok;
+            res.body.response.email.should.equal("siriwat+sicksense+case+001@opendream.co.th");
+            res.body.response.accessToken.should.be.ok;
+
+            done();
+          });
+      });
+
+      it('should check e-mail as case-insensitive', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense+CaSe+001@opendream.co.th",
+            password: "1234567890",
+            uuid: 'UUID-SICKSENSE-TEST12'
+          })
+          .expect('Content-Type', /json/)
+          .expect(409)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+            done();
+          });
+      });
+
+      it('should not allow to create with existing email with incorrect password (sicksense id)', function(done) {
         request(sails.hooks.http.app)
           .post('/users')
           .send({
             email: "siriwat+sicksense@opendream.co.th",
-            password: "12345678",
+            password: "incorrect-password-here",
             uuid: 'UUID-SIRIWAT-TEST10'
           })
           .expect('Content-Type', /json/)
@@ -476,6 +617,158 @@ describe('UserController test', function() {
 
             done();
           });
+      });
+
+      it('should allow to create with new e-mail and old uuid, unlink old sicksense id', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense-002@opendream.co.th",
+            password: "1234qwer",
+            uuid: 'UUID-SICKSENSE-TEST10'
+          })
+          .expect('Content-Type', /json/)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            data.user2 = res.body.response;
+
+            res.body.response.id.should.equal(data.user.id);
+            res.body.response.sicksenseId.should.exists;
+            // not generate new token
+            res.body.response.accessToken.should.equal(data.user.accessToken);
+
+            DBService.select('sicksense_users', '*', [
+              { field: 'sicksense_id = $', value: data.user.sicksenseId }
+            ])
+            .then(function (result) {
+              // unlink old devices
+              result.rows.should.have.length(0);
+              done();
+            })
+            .catch(done);
+          });
+      });
+
+      it('should not created new user when something wrong (incorrect password)', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense-002@opendream.co.th",
+            password: "1234qwer-in-cor-rect",
+            tel: "0841291342",
+            gender: "male",
+            birthYear: 1986,
+            address: {
+              subdistrict: "Samsen Nok",
+              district: "Huai Khwang",
+              city: "Bangkok"
+            },
+            location: {
+              latitude: 13.1135,
+              longitude: 105.0014
+            },
+            uuid: 'UUID-SICKSENSE-TEST-WRONG-001'
+          })
+          .expect('Content-Type', /json/)
+          .expect(409)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+
+            DBService.select('users', 'id', [
+              { field: 'email = $', value: 'UUID-SICKSENSE-TEST-WRONG-001' }
+            ])
+            .then(function (result) {
+              result.rows.should.have.length(0);
+              done();
+            });
+          });
+      });
+
+      it('should not login if register with correct e-mail and password and not verified', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense-002@opendream.co.th",
+            password: "1234qwer",
+            uuid: 'UUID-SICKSENSE-TEST10'
+          })
+          .expect('Content-Type', /json/)
+          .expect(403)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            res.body.meta.errorSubType.should.equal('unverified_email');
+
+            done();
+          });
+      });
+
+      it('should not created new user when something wrong (unverified)', function (done) {
+        request(sails.hooks.http.app)
+          .post('/users')
+          .send({
+            email: "siriwat+sicksense-002@opendream.co.th",
+            password: "1234qwer",
+            tel: "0841291342",
+            gender: "male",
+            birthYear: 1986,
+            address: {
+              subdistrict: "Samsen Nok",
+              district: "Huai Khwang",
+              city: "Bangkok"
+            },
+            location: {
+              latitude: 13.1135,
+              longitude: 105.0014
+            },
+            uuid: 'UUID-SICKSENSE-TEST-WRONG-001'
+          })
+          .expect('Content-Type', /json/)
+          .expect(403)
+          .end(function(err, res) {
+            if (err) return done(new Error(err));
+
+            DBService.select('users', 'id', [
+              { field: 'email = $', value: 'UUID-SICKSENSE-TEST-WRONG-001' }
+            ])
+            .then(function (result) {
+              result.rows.should.have.length(0);
+              done();
+            });
+          });
+      });
+
+      it('should auto-login if register with correct e-mail and password and already verified', function (done) {
+
+        verify().then(function () {
+          request(sails.hooks.http.app)
+            .post('/users')
+            .send({
+              email: "siriwat+sicksense-002@opendream.co.th",
+              password: "1234qwer",
+              uuid: 'UUID-SICKSENSE-TEST10'
+            })
+            .expect('Content-Type', /json/)
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.response.id.should.equal(data.user2.id);
+              res.body.response.sicksenseId.should.equal(data.user2.sicksenseId);
+
+              done();
+            });
+        });
+
+        function verify() {
+          return DBService.update('sicksense', [
+            { field: 'is_verify = $', value: 't' }
+          ], [
+            { field: 'id = $', value: data.user2.sicksenseId }
+          ]);
+        }
       });
 
       it('should subscribe if subscribe is sent', function(done) {
@@ -927,11 +1220,23 @@ describe('UserController test', function() {
     before(function(done) {
       TestHelper.clearAll()
         .then(function() {
+          return TestHelper.createUser({ email: "siriwut@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function() {
           return TestHelper.createUser({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
         })
         .then(function(_user) {
           user = _user;
           accessToken = user.accessToken;
+          return EmailSubscriptionsService.subscribe(user)
+        })
+        .then(function (subscribe) {
+          return TestHelper.createSicksenseID({ email: "siriwat@opendream.co.th", password: "12345678" }, true);
+        })
+        .then(function (sicksense) {
+          return TestHelper.connectSicksenseAndUser(sicksense, user)
+        })
+        .then(function (sicksense) {
           done();
         })
         .catch(done);
@@ -1158,6 +1463,17 @@ describe('UserController test', function() {
         });
     });
 
+    it('should check e-mail as case-insensitive', function (done) {
+      request(sails.hooks.http.app)
+        .post('/users/forgot-password')
+        .send({ email: 'JOHN@example.com' })
+        .expect(200)
+        .end(function(err, res) {
+          if (err) return done(err);
+          done();
+        });
+    });
+
     it('should remove old token before create the new one', function(done) {
       request(sails.hooks.http.app)
         .post('/users/forgot-password')
@@ -1190,12 +1506,12 @@ describe('UserController test', function() {
       {
         token: '12345678',
         type: 'testdelete',
-        expired: new Date()
+        expired: moment().add(1, 'days')
       },
       {
         token: '23456789',
         type: 'testdelete',
-        expired: new Date()
+        expired: moment().add(1, 'days')
       }
     ];
 
@@ -1290,6 +1606,38 @@ describe('UserController test', function() {
         });
     });
 
+    it('should error if password is shorter than 8 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({ password: '1234567' })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'password' ]);
+          res.body.meta.invalidFields.password.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
+    it('should error if password is longer than 64 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/reset-password')
+        .send({
+          password: 'UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-65'
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'password' ]);
+          res.body.meta.invalidFields.password.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
     it('should error when token and password are provided but token is invalid', function(done) {
       request(sails.hooks.http.app)
         .post('/users/reset-password')
@@ -1325,15 +1673,15 @@ describe('UserController test', function() {
                 })
                 .then(function() {
                   return DBService.select('accesstoken', '*', [
-                      { field: '"userId" = $', value: user.id }
-                    ])
+                    { field: '"userId" = $', value: user.id }
+                  ]);
                 })
                 .then(function (result) {
                   result.rows.length.should.equal(0);
                   done();
                 })
                 .catch(done);
-              })
+              });
             })
             .catch(done);
 
@@ -1488,8 +1836,18 @@ describe('UserController test', function() {
           { field: '"createdAt"', value: new Date() }
         ]);
       })
+      // create sicksense id with no devices(users) linked.
       .then(function (result) {
         data.sicksense = result.rows[0];
+
+        return DBService.insert('sicksense', [
+          { field: 'email', value: 'request-verify-002@opendream.co.th' },
+          { field: 'password', value: 'password-here-is-ignored' },
+          { field: '"createdAt"', value: new Date() }
+        ]);
+      })
+      .then(function (result) {
+        data.unlinked_sicksense = result.rows[0];
         // assign verification token
         return OnetimeTokenService.create('user.verifyEmail', data.sicksense.id, 10)
           .then(function (tokenObject) {
@@ -1604,6 +1962,124 @@ describe('UserController test', function() {
           MailService.send = tmp.send;
         }
     });
+
+    it('should check e-mail as case-insensitive', function (done) {
+      var tmp = {};
+
+        _before();
+
+        request(sails.hooks.http.app)
+          .post('/users/request-verify')
+          .send({
+            email: 'request-VERIFY-001@opendream.co.th',
+          })
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            tmp.count.should.equal(1);
+            tmp.to.should.equal('request-verify-001@opendream.co.th');
+
+            done();
+            _after();
+          });
+
+        function _before() {
+          tmp.count = 0;
+          tmp.send = MailService.send;
+          MailService.send = function (subject, text, from, to, html) {
+            tmp.text = text;
+            tmp.html = html;
+            tmp.to = to;
+            tmp.count++;
+          };
+        }
+
+        function _after() {
+          MailService.send = tmp.send;
+        }
+    });
+
+    it('should warn and won\'t send e-mail if users are already verified', function (done) {
+        var tmp = {};
+
+        _before();
+
+        DBService.update('sicksense', [
+          { field: 'is_verify = $', value: 't' }
+        ], [
+          { field: 'id = $' , value: data.sicksense.id }
+        ])
+        .then(function () {
+          request(sails.hooks.http.app)
+            .post('/users/request-verify')
+            .send({
+              email: 'request-verify-001@opendream.co.th',
+            })
+            .expect(400)
+            .end(function (err, res) {
+              if (err) return done(new Error(err));
+
+              res.body.meta.errorSubType.should.equal('email_is_already_verified');
+              tmp.count.should.equal(0);
+
+              _after();
+              done();
+            });
+        });
+
+        function _before() {
+          tmp.count = 0;
+          tmp.send = MailService.send;
+          MailService.send = function (subject, body, from, to, html) {
+            tmp.body = body;
+            tmp.html = html;
+            tmp.to = to;
+            tmp.count++;
+          };
+        }
+
+        function _after() {
+          MailService.send = tmp.send;
+        }
+    });
+
+    it('should not required any devices(users) to request verification e-mail', function (done) {
+        var tmp = {};
+
+        _before();
+
+        request(sails.hooks.http.app)
+          .post('/users/request-verify')
+          .send({
+            email: 'request-verify-002@opendream.co.th',
+          })
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(new Error(err));
+
+            tmp.count.should.equal(1);
+            tmp.to.should.equal('request-verify-002@opendream.co.th');
+
+            _after();
+            done();
+          });
+
+        function _before() {
+          tmp.count = 0;
+          tmp.send = MailService.send;
+          MailService.send = function (subject, body, from, to, html) {
+            tmp.body = body;
+            tmp.html = html;
+            tmp.to = to;
+            tmp.count++;
+          };
+        }
+
+        function _after() {
+          MailService.send = tmp.send;
+        }
+    });
   });
 
   describe('[POST] /users/:id/change-password', function () {
@@ -1704,6 +2180,50 @@ describe('UserController test', function() {
         });
     });
 
+    it('should error if password is shorter than 8 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          oldPassword: 'short',
+          newPassword: 'shorter'
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'oldPassword', 'newPassword' ]);
+          res.body.meta.invalidFields.oldPassword.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+          res.body.meta.invalidFields.newPassword.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
+    it('should error if password is longer than 64 characters', function(done) {
+      request(sails.hooks.http.app)
+        .post('/users/' + user.id + '/change-password')
+        .query({
+          accessToken: user.accessToken
+        })
+        .send({
+          oldPassword: 'UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-65',
+          newPassword: 'UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST1-UUID-SICKSENSE-TEST2-65'
+        })
+        .expect(400)
+        .end(function(err, res) {
+          if (err) return done(err);
+
+          res.body.meta.invalidFields.should.have.properties([ 'oldPassword', 'newPassword' ]);
+          res.body.meta.invalidFields.oldPassword.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+          res.body.meta.invalidFields.newPassword.should.equal('กรุณากรอกรหัสผ่านอย่างน้อย 8 ตัวอักษร และไม่เกิน 64 ตัวอักษร');
+
+          done();
+        });
+    });
+
     it('should update password and return user object with accessToken', function(done) {
       request(sails.hooks.http.app)
         .post('/users/' + user.id + '/change-password')
@@ -1729,7 +2249,12 @@ describe('UserController test', function() {
                     { field: '"userId" = $', value: user.id }
                   ])
                 .then(function(result) {
-                  result.rows.length.should.equal(0);
+                  result.rows.length.should.equal(1);
+
+                  res.body.response.id.should.equal(user.id);
+                  res.body.response.accessToken.should.be.ok;
+                  res.body.response.accessToken.should.not.equal(user.accessToken);
+
                   done();
                 })
                 .catch(done);

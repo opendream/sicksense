@@ -103,7 +103,7 @@ module.exports = {
 
       // Try to login.
       DBService.select('sicksense', '*', [
-          { field: 'email = $', value: email },
+          { field: 'LOWER(email) = LOWER($)', value: email.toLowerCase() },
           { field: 'password = $', value: hashedPassword }
         ])
         .then(function (result) {
@@ -114,12 +114,12 @@ module.exports = {
             // User exists.
             if (user) {
               return DBService.select('sicksense', '*', [
-                  { field: 'email = $', value: email }
+                  { field: 'LOWER(email) = LOWER($)', value: email.toLowerCase() }
                 ])
                 .then(function (result) {
                   if (result.rows.length === 0) {
                     return DBService.insert('sicksense', [
-                        { field: 'email', value: email },
+                        { field: 'email', value: email.toLowerCase() },
                         { field: 'password', value: hashedPassword },
                         { field: '"createdAt"', value: new Date() },
                         { field: '"updatedAt"', value: new Date() }
@@ -154,22 +154,37 @@ module.exports = {
               passgen(uuid).hash(sails.config.session.secret, function (err, hashedUUID) {
                 if (err) return res.serverError(err);
 
-                // Create new user.
-                DBService.insert('users', [
-                    { field: 'email', value: uuid + '@sicksense.com' },
-                    { field: 'password', value: hashedUUID },
-                    { field: 'tel', value: sicksenseData.tel },
-                    { field: 'gender', value: sicksenseData.gender },
-                    { field: '"birthYear"', value: sicksenseData.birthYear },
-                    { field: 'subdistrict', value: sicksenseData.subdistrict },
-                    { field: 'district', value: sicksenseData.district },
-                    { field: 'city', value: sicksenseData.city },
-                    { field: 'latitude', value: sicksenseData.latitude },
-                    { field: 'longitude', value: sicksenseData.longitude },
-                    { field: 'geom', value: sicksenseData.geom },
-                    { field: '"createdAt"', value: new Date() },
-                    { field: '"updatedAt"', value: new Date() }
-                  ])
+                var platform = req.body.platform || req.query.platform || 'doctormeios';
+
+                var email = ('' + uuid + '@sicksense.com').toLowerCase();
+
+                var conditions = [
+                  { field: 'LOWER(email) = LOWER($)', value: email }
+                ];
+
+                var dataToInsert = [
+                  { field: 'email', value: email },
+                  { field: 'password', value: hashedUUID },
+                  { field: 'tel', value: sicksenseData.tel },
+                  { field: 'gender', value: sicksenseData.gender },
+                  { field: '"birthYear"', value: sicksenseData.birthYear },
+                  { field: 'subdistrict', value: sicksenseData.subdistrict },
+                  { field: 'district', value: sicksenseData.district },
+                  { field: 'city', value: sicksenseData.city },
+                  { field: 'latitude', value: sicksenseData.latitude },
+                  { field: 'longitude', value: sicksenseData.longitude },
+                  { field: 'geom', value: sicksenseData.geom },
+                  { field: 'platform', value: platform },
+                  { field: '"createdAt"', value: new Date() },
+                  { field: '"updatedAt"', value: new Date() }
+                ];
+
+                var dataToUpdate = [
+                  { field: '"updatedAt" = $', value: new Date() }
+                ];
+
+                // Create new user or update if exists.
+                DBService.upsert('users', conditions, dataToInsert, dataToUpdate)
                   .then(function (result) {
                     if (result.rows.length === 0) {
                       return res.serverError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
@@ -185,7 +200,9 @@ module.exports = {
             }
           }
           else {
-            return res.forbidden('กรุณายืนยันอีเมล', 'unverified_email');
+            var error = new Error('กรุณาตรวจสอบอีเมลเพื่อยืนยันการใช้งาน Sicksense ID');
+            error.subType = 'unverified_email';
+            return res.forbidden(error);
           }
         })
         .catch(raiseError);
@@ -193,22 +210,16 @@ module.exports = {
     });
 
     function connectSicksenseIDAndUser() {
-      return DBService.select('sicksense_users', '*', [
-        { field: 'sicksense_id = $', value: sicksenseID.id },
+      return DBService.delete('sicksense_users', [
         { field: 'user_id = $', value: user.id }
       ])
       .then(function (result) {
-        if (result.rows.length === 0) {
-          return DBService.insert('sicksense_users', [
-              { field: 'sicksense_id', value: sicksenseID.id },
-              { field: 'user_id', value: user.id }
-            ])
-            .then(refreshAccessToken)
-            .catch(raiseError);
-        }
-        else {
-          return refreshAccessToken();
-        }
+        return DBService.insert('sicksense_users', [
+            { field: 'sicksense_id', value: sicksenseID.id },
+            { field: 'user_id', value: user.id }
+        ])
+        .then(refreshAccessToken)
+        .catch(raiseError);
       })
       .catch(raiseError);
     }
