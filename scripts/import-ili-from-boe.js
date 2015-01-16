@@ -6,7 +6,7 @@ var moment = require('moment');
 require('date-utils');
 
 var config = require('../config/local.js');
-var FIRST_YEAR = 2010;
+var FIRST_YEAR = 2012;
 
 request('http://164.115.25.123/ili/', function (error, response, body) {
 
