@@ -6,7 +6,7 @@ var moment = require('moment');
 require('date-utils');
 
 var config = require('../config/local.js');
-var FIRST_YEAR = 2012;
+var FIRST_YEAR = 2014;
 
 request('http://164.115.25.123/ili/', function (error, response, body) {
 
@@ -35,10 +35,14 @@ request('http://164.115.25.123/ili/', function (error, response, body) {
             }
 
             // Loop throught each dataSet (year).
+            var thisYear = moment().year();
             var index = 0;
             when
               .map(result.chart.dataSet, function (data) {
                 var currentYear = FIRST_YEAR + (index++);
+                if (currentYear > thisYear) {
+                  return when.resolve();
+                }
 
                 return when.map(data.set, function (week) {
                   return when.promise(function(resolve, reject) {
