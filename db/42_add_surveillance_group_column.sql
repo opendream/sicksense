@@ -1,0 +1,1 @@
+alter table reports add column surveillance_group varchar(40);
