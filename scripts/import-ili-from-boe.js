@@ -8,6 +8,12 @@ require('date-utils');
 var config = require('../config/local.js');
 var FIRST_YEAR = 2014;
 
+var yearColorMap = {
+  '3366cc': 2017,
+  '9605f3': 2018,
+  '000000': 2019
+}
+
 request('http://164.115.25.123/ili/', function (error, response, body) {
 
   var xmlString;
@@ -39,8 +45,9 @@ request('http://164.115.25.123/ili/', function (error, response, body) {
             var index = 0;
             when
               .map(result.chart.dataSet, function (data) {
-                var currentYear = FIRST_YEAR + (index++);
-                if (currentYear > thisYear) {
+                // var currentYear = FIRST_YEAR + (index++);
+                var currentYear = yearColorMap[data.$.color];
+                if (!currentYear || currentYear > thisYear) {
                   return when.resolve();
                 }
 
