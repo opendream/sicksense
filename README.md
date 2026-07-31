@@ -149,4 +149,4 @@ Tests target the legacy Node runtime and need a configured test database. The Do
 
 ## License
 
-GPLv3 — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).

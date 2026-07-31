@@ -55,5 +55,5 @@
   },
   "main": "app.js",
   "author": "siriwat@opendream.co.th",
-  "license": "GPLv3"
+  "license": "MIT"
 }
