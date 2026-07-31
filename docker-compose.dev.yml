@@ -1,0 +1,47 @@
+# Local development stack (epicore2 layout: root compose + dockerfiles/).
+#
+#   make up
+#   make db-schema   # or: make db-restore DUMP=tmp/dump.sql
+#   curl http://localhost:1337/
+
+services:
+  db:
+    build:
+      context: ./dockerfiles
+      dockerfile: postgis-9.3.Dockerfile
+    platform: linux/amd64
+    ports:
+      # 15432 is used by epicore2; keep a free host port.
+      - "25432:5432"
+    environment:
+      POSTGRES_DB: sicksense
+      POSTGRES_USER: sicksense
+      POSTGRES_PASSWORD: sicksense
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sicksense -d sicksense"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: dockerfiles/api.Dockerfile
+    platform: linux/amd64
+    ports:
+      - "1337:1337"
+    volumes:
+      - .:/app
+      - api_node_modules:/app/node_modules
+    environment:
+      NODE_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["node", "app.js"]
+
+volumes:
+  pgdata:
+  api_node_modules:

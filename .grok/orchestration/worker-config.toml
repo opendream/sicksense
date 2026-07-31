@@ -1,0 +1,31 @@
+# grok-senpai worker defaults
+# ---------------------------
+# Install keeps this file if it already exists (your project overrides win).
+# Re-running install always refreshes worker-config.example.toml and the skills.
+#
+# Grok may override model/effort per Task Packet when [policy].allow_override = true.
+
+[claude]
+# Claude Code model alias or full id (default: Fable)
+# Friendly aliases are defined in model-aliases.toml.
+model = "fable"
+# low | medium | high | xhigh | max  (default: high — Fable High)
+effort = "high"
+
+[codex]
+# Codex Sol (reasoning model)
+model = "gpt-5.6-sol"
+# low | medium | high | xhigh | max | ultra  (ultra = Sol top tier)
+effort = "ultra"
+
+[policy]
+# When true, Grok may set worker_model / worker_effort on the Task Packet.
+allow_override = true
+# If true, never go below these floors even when overriding.
+enforce_floors = true
+min_effort_claude = "high"
+min_effort_codex = "high"
+# If false, an unknown alias or raw model id requires human confirmation.
+allow_unknown_model = false
+# Echo the resolved agent, role, model, effort, and worktree before invoking.
+require_launch_echo = true
