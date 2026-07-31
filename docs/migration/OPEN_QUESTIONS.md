@@ -11,7 +11,8 @@ Updated after independent Grok report + Fable Max + Codex Sol Ultra review.
 2. **Global Flu View / multi-outlet export** — **topology + ownership resolved (2026-07-31)**  
    Separate Django app path-mounted on `api.sicksense.org/globalfluview/*`; Basic auth; DNS `api_globalfluview` never created (NXDOMAIN). Owner holds Basic credentials. **Final target:** fold into unified Python codebase as multi-outlet API (Phase B); keep Django until then.  
    **F1:** crosstab corruption **CONFIRMED** ([GFV_F1_CROSSTAB_VERIFY.md](./GFV_F1_CROSSTAB_VERIFY.md)).  
-**Still open:** re-publish corrected history?; privacy precision for new outlets; active external pollers vs real consumers.  
+**History:** **re-export all weeks** accepted ([ADR-003](./ADR-003-gfv-history-reexport.md)).  
+**Still open:** symptom/ILI mapping for replay; privacy precision for new outlets; active external pollers vs real consumers.  
    **Docs:** [GLOBAL_FLU_VIEW.md](./GLOBAL_FLU_VIEW.md).
 
 3. **Active consumers & app versions**  

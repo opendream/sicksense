@@ -24,6 +24,7 @@
 | [GFV_F1_CROSSTAB_VERIFY.md](./GFV_F1_CROSSTAB_VERIFY.md) | Prod SQL proof: crosstab symptom corruption (CONFIRMED) |
 | [ADR-001-userReports-behavior.md](./ADR-001-userReports-behavior.md) | Global report list bug/behavior |
 | [ADR-002-ili-rule.md](./ADR-002-ili-rule.md) | ILI any-of rule (Sails; GFV differs) |
+| [ADR-003-gfv-history-reexport.md](./ADR-003-gfv-history-reexport.md) | Rebuild all GFV historical weeks (option A) |
 
 ## Consensus next steps
 
@@ -31,7 +32,7 @@
 2. Schema/trigger dump → PG 16/17 characterization.  
 3. Mobile FastAPI slices: auth → reports → dashboard → admin/cron (keep GFV Django alive).  
 4. Cutover: main schema + GFV sync co-tenancy gates ([GLOBAL_FLU_VIEW.md](./GLOBAL_FLU_VIEW.md)).  
-5. **Phase B:** port GFV into unified multi-outlet module; retire dual-DB sync when safe; design for additional outlets.
+5. **Phase B:** port GFV into unified multi-outlet module; **replay all historical weeks** (ADR-003); retire dual-DB sync when safe; design for additional outlets.
 
 ## Explicit non-goals (until ADRs say otherwise)
 

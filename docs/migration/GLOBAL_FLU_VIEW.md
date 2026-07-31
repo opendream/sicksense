@@ -14,6 +14,7 @@ Remote: `git@bitbucket.org:opendream/sicksense_globalfluview.git`
 | Historical DNS `api_globalfluview.sicksense.org` | **Not fulfilled** (still NXDOMAIN); path deploy is live; leave closed unless a **hyphenated** hostname is explicitly needed later | 2026-07-31 |
 | Final migration target | GFV **is in scope** for the new Python codebase as a **multi-outlet export API** (IWOPS/GFV first; other outlets later) — not left on eternal separate Django | 2026-07-31 |
 | Interim (during mobile rewrite) | Keep live Django path working; do not break cron/sync; port GFV into unified service **after or in a late phase** of main API migration | 2026-07-31 |
+| Historical data after fix | **Option A** — recompute and republish **all** historical GFV weeks from raw `sicksense` data (not forward-only). See [ADR-003](./ADR-003-gfv-history-reexport.md) | 2026-07-31 |
 
 ## Current production verdict
 
@@ -102,11 +103,11 @@ Fold GFV into the **same** new Python service (or a tightly versioned module) as
 - Replace crosstab with conditional aggregation / Python mapping — **do not port crosstab**.
 - Symptom vocabulary map (Thai + legacy English + free-text policy).
 - Explicit outlet `is_ili` policy (owner decision).
-- Historical **backfill** of all GFV weeks from raw `sicksense` tables after correct extractor.
+- Historical **backfill of all weeks** from raw `sicksense` (**ADR-003 option A**): replay job + staged swap, not last-week-only cron.
 - No DDL on read path; half-open week intervals; optional late-arrival re-sync.
 
 ## Still open (product)
 
-- Whether to re-publish corrected historical weeks to external consumers (if any still read the feed).
+- Exact ILI + Thai/English symptom mapping table for replay (must be fixed **before** bulk re-export).
 - Pseudonymize ParticipantId / reduce coordinate precision for new outlets.
 - Path-only forever vs optional hyphenated hostname.

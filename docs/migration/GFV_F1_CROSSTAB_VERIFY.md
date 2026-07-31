@@ -119,7 +119,7 @@ Totals: ili = fever = 17,541 (17.1%); cough = 9,357; headache = 3,966; sore-thro
 - **Do not port the crosstab.** Replace with plain conditional aggregation, e.g. `bool_or(s.name = ANY(mapping))` / `max(CASE WHEN s.name IN (...) THEN 1 END)` grouped by report — or aggregate in Python. No extension needed, no label ambiguity.
 - **Build a symptom-vocabulary mapping table** (current Thai display names + legacy slugs + free-text policy) → GFV fields. Without it, a "fixed" pivot still exports near-zero symptom signal (finding 4.1).
 - **Decide `is_ili` semantics explicitly** (strict fever/cough/headache/sore-throat by mapped vocabulary; today's stored definition is "any symptom at all").
-- **Plan a backfill**: all 216 stored GFV weeks are corrupted; after the port, recompute historical weeks from sicksense raw data (raw tables retain everything needed; this verification recomputed a stored week exactly).
+- **Plan a backfill (owner chose option A)**: all 216 stored GFV weeks are corrupted; after the port, recompute **all** historical weeks from sicksense raw data and republish — see [ADR-003](./ADR-003-gfv-history-reexport.md). Raw tables retain everything needed; this verification recomputed a stored week exactly.
 - Fix the side issues at port time: no DDL in sync, date-filter the aggregation, half-open week intervals, explicit exclusion policy, and consider a late-arrival re-sync window.
 
 ## 6. Exact SQL run (credentials excluded)
