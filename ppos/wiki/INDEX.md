@@ -49,7 +49,10 @@ None yet.
 
 <!-- Hidden assumptions, blockers, stubs -->
 
-None yet.
+| ID | Article | Status | Confirm before |
+|----|---------|--------|----------------|
+| U01 | [unknown-U01-gfv-outlet-ili-rule.md](./unknown-U01-gfv-outlet-ili-rule.md) | open | Phase B GFV outlet + historical re-export |
+| U02 | [unknown-U02-gfv-symptom-vocabulary-map.md](./unknown-U02-gfv-symptom-vocabulary-map.md) | open | Phase B re-export (depends on U01) |
 
 ---
 

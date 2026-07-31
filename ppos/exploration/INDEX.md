@@ -21,7 +21,8 @@ None active.
 
 <!-- Track unresolved questions from exploration -->
 
-1. (none yet)
+1. **GFV / multi-outlet ILI set** — mobile `{fever,cough,sore-throat}` vs GFV intent (+headache) vs other → wiki [U01](../wiki/unknown-U01-gfv-outlet-ili-rule.md)  
+2. **Symptom vocabulary map** (Thai free-text + English slugs → Sym* flags) for re-export → wiki [U02](../wiki/unknown-U02-gfv-symptom-vocabulary-map.md)
 
 ## Compile Checkpoints
 
