@@ -1,0 +1,18 @@
+.git
+.grok
+.tmp
+node_modules
+bower_components
+npm-debug.log
+*.log
+.DS_Store
+.idea
+.vscode
+ppos
+config/local.js
+coverage
+lib-cov
+# Local dump files must never enter the image build context.
+tmp
+**/*.dump
+**/*.dump.sql

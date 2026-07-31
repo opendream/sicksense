@@ -1,0 +1,117 @@
+/**
+ * Local / Docker development config for Sails.
+ *
+ * Copy to config/local.js (gitignored):
+ *   cp config/local.js.example config/local.js
+ *
+ * Values below target docker-compose.dev.yml (service hostname `db`).
+ * For host-run API against published Postgres: host '127.0.0.1', port 25432.
+ *
+ * Do NOT commit real production secrets here.
+ */
+
+var fs = require('fs');
+
+function loadFile(filePath) {
+  return fs.readFileSync(filePath, { encoding: 'UTF8' });
+}
+
+if (process.env.NODE_ENV === 'test') {
+  // Tests should supply their own config; keep this empty when NODE_ENV=test.
+  module.exports = {};
+  return;
+}
+
+module.exports = {
+  environment: 'development',
+  // Bind all interfaces so the container port publish works.
+  host: '0.0.0.0',
+  port: 1337,
+
+  // Schema is managed by db/*.sql (make db-schema). Never auto-drop in Docker.
+  models: {
+    migrate: 'safe'
+  },
+
+  // Grunt stays enabled (prod fidelity). Nested grunt-cli is restored by
+  // dockerfiles/nest-sails-modules.sh after npm install (Sails hardcodes the path).
+
+  connections: {
+    postgresql: {
+      adapter: 'sails-postgresql',
+      // Compose service name; from host use 127.0.0.1 and port: 25432.
+      host: 'db',
+      port: 5432,
+      user: 'sicksense',
+      password: 'sicksense',
+      database: 'sicksense',
+      poolSize: 10
+      // Prefer discrete fields over connectionString for sails-postgresql 0.10.
+    }
+  },
+
+  log: {
+    level: 'info'
+  },
+
+  // Password hashing salt material used with session.secret in UserService.
+  // Local-only dummy value — not production.
+  salt: '$2a$16$localdevlocalsaltlocalsaltlo',
+
+  // Access token lifetime in days (prod uses a very large value).
+  tokenLife: 365,
+
+  // Optional shared API tokens for server-to-server calls (empty for local).
+  sharedTokens: [],
+
+  // Push stubs — local does not send real APNs/GCM.
+  apn: {
+    address: 'gateway.sandbox.push.apple.com',
+    cert: 'cert.pem',
+    key: 'key.pem'
+  },
+  gcm: {
+    key: 'local-dev-gcm-key-not-real',
+    options: {
+      collapseKey: 'sicksense'
+    }
+  },
+
+  onetimeToken: {
+    lifetime: 1000 * 60 * 60 * 24 // 24h
+  },
+
+  // Mailgun placeholders — outbound mail will fail until you plug real keys
+  // or add a mail catcher in a later compose iteration.
+  mailgun: {
+    apiKey: 'key-local-dev-not-real',
+    domain: 'localhost',
+    mailingList: 'dev',
+    token: 'local-dev-mailgun-token',
+    from: 'Sicksense Local <noreply@localhost>',
+    subjects: [
+      'Local: how are you today?',
+      'Local: feeling ok?'
+    ]
+  },
+
+  common: {
+    siteURL: 'http://localhost:1337',
+    verifyEndpoint: '/verify.html'
+  },
+
+  mail: {
+    verification: {
+      subject: '[Sicksense local] Verify email',
+      from: 'Sicksense Local <noreply@localhost>',
+      html: loadFile('./assets/templates/email/verification.html'),
+      text: loadFile('./assets/templates/email/verification.txt')
+    },
+    forgotPassword: {
+      subject: '[Sicksense local] Forgot password',
+      from: 'Sicksense Local <noreply@localhost>',
+      html: loadFile('./assets/templates/email/forgot_password.html'),
+      text: loadFile('./assets/templates/email/forgot_password.txt')
+    }
+  }
+};

@@ -1,0 +1,16 @@
+# Example friendly aliases for grok-senpai workers.
+# Copy to model-aliases.toml or let install.sh create it.
+# Unknown aliases require human confirmation unless policy allows raw model ids.
+
+[claude]
+opus = "opus"
+"claude-opus-5" = "claude-opus-5"
+"claude-opus-5[1m]" = "claude-opus-5[1m]"
+fable = "fable"
+sonnet = "sonnet"
+"claude-fable-5" = "claude-fable-5"
+"claude-fable-5[1m]" = "claude-fable-5[1m]"
+
+[codex]
+sol = "gpt-5.6-sol"
+"gpt-5.6-sol" = "gpt-5.6-sol"
