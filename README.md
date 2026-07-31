@@ -145,6 +145,7 @@ Tests target the legacy Node runtime and need a configured test database. The Do
 ## More detail
 
 - Docker images and scripts: **[dockerfiles/README.md](dockerfiles/README.md)**
+- Python rewrite / API I/O inventory: **[docs/migration/](docs/migration/)**
 - Multi-agent orchestration notes: **[AGENTS.md](AGENTS.md)**
 
 ## License
