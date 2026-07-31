@@ -429,19 +429,30 @@ So this is **not** “this user’s history”; it is a **system-wide recent fee
 
 ---
 
-## 11. Not in this repository (do not invent)
+## 11. Not in this repository (separate service)
 
-### Global Flu View–style paths
+### Global Flu View (proven separate Django app)
 
-Examples cited externally: `/globalfluview/api/weeks/`, `/globalfluview/api/surveys/{week_id}/`.
+Sibling repo: `opendream/sicksense_globalfluview` (local `../sicksense_globalfluview`).  
+Live base: `https://api.sicksense.org/globalfluview/` (same host as Sails; nginx path → uWSGI).  
+Full write-up: [GLOBAL_FLU_VIEW.md](./GLOBAL_FLU_VIEW.md).
+
+| Method | Path | Auth | Envelope |
+|--------|------|------|----------|
+| GET | `/globalfluview/api/weeks/` | HTTP Basic (Django) | `{Iwops:"v2", Resource, Data}` |
+| GET | `/globalfluview/api/surveys/{week_id}/` | HTTP Basic | same |
+| GET | `/globalfluview/api/participants/{week_id}/` | HTTP Basic | same |
 
 | Fact | Status |
 |------|--------|
-| Present in this codebase | **No** (grep empty; blueprints off) |
-| Served by this Sails app | **Unproven** |
-| Live host auth | May be **host-wide** basic auth (probe carefully); not proof the path is implemented here |
+| Present in this Sails codebase | **No** |
+| Served by this Sails app | **No** — separate Django process + DB `globalfluview` |
+| Live host | **Yes** — path mount on `api.sicksense.org` |
+| DNS `api_globalfluview.sicksense.org` | **NXDOMAIN** (planned vhost never shipped) |
+| Mobile FastAPI early phases | **Keep live Django**; do not break sync |
+| Final unified codebase | **In scope** as multi-outlet export (Phase B) — see [GLOBAL_FLU_VIEW.md](./GLOBAL_FLU_VIEW.md) |
 
-**Action:** resolve via nginx/upstream config and logs before adding any FastAPI routes.
+**Action:** preserve main schema compatibility for `sync_from_sicksense` until Phase B ports GFV into the new service. Early mobile inventory can omit GFV route tables; Phase B OpenAPI/outlet module must include them.
 
 ### Apiary-only / stale
 

@@ -8,9 +8,11 @@ Updated after independent Grok report + Fable Max + Codex Sol Ultra review.
    Confirm how (if at all) production exposes `POST /login`, `GET /reports`, `GET /dashboard` (controller `index` exists, only `GET /dashboard/now` is routed). Blueprints are off.  
    **Verify:** nginx/proxy config, access logs, mobile traffic.
 
-2. **Global Flu View / external aggregators**  
-   Paths such as `/globalfluview/api/weeks/` and `/globalfluview/api/surveys/{week_id}/` are **not** in this repo. Live host may use host-wide basic auth (not GFV-specific).  
-   **Verify:** reverse proxy upstreams, separate services, authenticated fixtures — do **not** invent endpoints.
+2. **Global Flu View / multi-outlet export** — **topology + ownership resolved (2026-07-31)**  
+   Separate Django app path-mounted on `api.sicksense.org/globalfluview/*`; Basic auth; DNS `api_globalfluview` never created (NXDOMAIN). Owner holds Basic credentials. **Final target:** fold into unified Python codebase as multi-outlet API (Phase B); keep Django until then.  
+   **F1:** crosstab corruption **CONFIRMED** ([GFV_F1_CROSSTAB_VERIFY.md](./GFV_F1_CROSSTAB_VERIFY.md)).  
+**Still open:** re-publish corrected history?; privacy precision for new outlets; active external pollers vs real consumers.  
+   **Docs:** [GLOBAL_FLU_VIEW.md](./GLOBAL_FLU_VIEW.md).
 
 3. **Active consumers & app versions**  
    DoctorMe / sicksense-web / external networks. Needed before changing `userReports` or dual-identity rules.
