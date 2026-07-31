@@ -2,7 +2,10 @@
 
 **Sources:** `config/routes.js`, `config/policies.js`, controllers under `api/controllers/`, services, `apiary.apib`, mocha tests.
 
-**Envelope:** see [RESPONSE_ENVELOPE.md](./RESPONSE_ENVELOPE.md).
+**Review:** Corrected after independent Grok report + Fable Max + Codex Sol Ultra (see [REVIEW_SYNTHESIS.md](./REVIEW_SYNTHESIS.md)).
+
+**Envelope:** see [RESPONSE_ENVELOPE.md](./RESPONSE_ENVELOPE.md).  
+**ADRs:** [userReports](./ADR-001-userReports-behavior.md), [ILI rule](./ADR-002-ili-rule.md).
 
 **Legend**
 
@@ -25,26 +28,31 @@
 | **Auth** | public |
 | **Controller** | `UsersController.create` |
 
-**Input (body JSON)**
+**Dual identity (important)**  
+- Device row in `users` often uses synthetic email `{uuid}@sicksense.com` (password derived from uuid).  
+- Optional real **Sicksense account** email/password lives in `sicksense` + link table `sicksense_users`.  
+- If `uuid` omitted, code derives uuid from email local-part (legacy pre-4.2 TODO).
+
+**Input (body JSON)** — validation as implemented (`validate()`)
 
 | Field | Required | Notes |
 |-------|----------|--------|
-| `uuid` | soft | Device id; if missing, derived from email local-part (legacy ≤4.1) |
-| `email` | for sicksense account | Real email when creating/linking sicksense ID |
-| `password` | with real email | Account password |
-| `tel` | yes (validated) | Phone |
-| `gender` | yes | `male` / `female` |
-| `birthYear` | yes | CE year |
-| `address.subdistrict` | yes | |
-| `address.district` | yes | |
-| `address.city` | yes | |
-| `location.latitude` / `longitude` | optional | GPS; stored as Point 4326 |
+| `email` | **yes** | Valid email (also used as sicksense ID when “real” email path) |
+| `password` | **yes** | Length 8–64 |
+| `uuid` | no | Device id; commented-out required check (pre-4.2 apps) |
+| `tel` | no* | Used if present; not hard-required in validate() block |
+| `gender` | no | If present: `male` \| `female` |
+| `birthYear` | no | If present: int 1900…current year |
+| `address` | no | If present: subdistrict, district, city all required + must match `locations` |
+| `location` | no | If present: lat/lon required and in range |
 | `platform` | optional | body or query; default `doctormeios` |
 | `deviceToken` | optional | Push device id; `""` clears |
 | `subscribe` | optional | email subscription after register |
 
+\*Demographics may still be written as undefined if omitted — clients usually send them.
+
 **Output (200)**  
-User JSON (`formattedUser` / `getUserJSON`) plus `accessToken` (and often `deviceToken`).
+User JSON (`formattedUser` / `getUserJSON`) plus `accessToken` (and often `deviceToken`). Linked sicksense email may replace device email in the JSON.
 
 **Errors**  
 400 validation; 409 device already registered / email taken; 403 / 500 as coded.
@@ -92,15 +100,34 @@ Updated user JSON.
 
 ---
 
-### `GET /users/:id/reports` — user report history
+### `GET /users/:id/reports` — report list (auth scoped to user, **data not filtered**)
 
 | | |
 |--|--|
-| **Auth** | accessToken |
+| **Auth** | accessToken; token’s `userId` must equal path `:id` |
 | **Controller** | `UsersController.userReports` |
+| **ADR** | [ADR-001](./ADR-001-userReports-behavior.md) |
 
-**Input:** path `id`; query `accessToken`, `offset` (default 0), `limit` (default 10).  
-**Output:** paginated reports for that user (report JSON list).
+**Input:** path `id`; query `accessToken`, `offset` (default 0), `limit` (default 10).
+
+**Actual behavior (parity-critical)**  
+SQL selects **all** reports ordered by `createdAt DESC` with limit/offset, and **global** `COUNT(*)`.  
+There is **no** `WHERE "userId" = :id`.  
+
+So this is **not** “this user’s history”; it is a **system-wide recent feed**, gated only by “token belongs to `:id`”.
+
+**Output:**
+
+```json
+{
+  "reports": {
+    "count": "<global total>",
+    "items": [ /* report JSON + symptoms */ ]
+  }
+}
+```
+
+**Rewrite decision required:** bug-for-bug vs filter by user vs new path (see ADR-001).
 
 ---
 
@@ -223,9 +250,21 @@ Updated user JSON.
 | `moreInfo` | optional | text |
 | `platform` | optional | body/query |
 
-**Server-derived:** `userId`, address from user, `location_id` from address lookup, `isILI` from symptom config, `is_anonymous` / `sicksense_id` from account link, week/year.
+**Server-derived**
 
-**Output:** report JSON (`ReportService.getReportJSON`).
+| Field | Rule |
+|-------|------|
+| `userId` | from token user |
+| address fields | from user profile |
+| `location_id` | lookup `locations` by address |
+| `isILI` | **any** of symptoms ∈ `{fever, cough, sore-throat}` — [ADR-002](./ADR-002-ili-rule.md) |
+| `is_anonymous` | `true` unless user has `sicksenseId` **and** `isVerified` |
+| `sicksense_id` | if linked |
+| `year` / `week` | from `moment(startedAt).week()` (locale-sensitive) |
+| geom | from GPS location or address-derived coords |
+
+**Output:** report JSON (`ReportService.getReportJSON`).  
+**Side effects:** insert report + reportssymptoms; **plpgsql triggers** update weekly summary tables.
 
 ---
 
@@ -275,7 +314,15 @@ Updated user JSON.
 | `date` | optional moment date |
 | `includeReports` | optional extra payload |
 
-**Output:** aggregated ILI / summary stats for location + period (fine/sick/ILI counts, charts data). Exact keys in controller return object — preserve in OpenAPI later.
+**Output:** aggregated ILI / summary stats for location + period (fine/sick/ILI counts, charts data from `ililog` BOE + sicksense series). Exact keys in controller return object — preserve in OpenAPI later.
+
+### `GET /dashboard` — **implemented, not in routes.js**
+
+| | |
+|--|--|
+| **Controller** | `DashboardController.index` |
+| **Evidence** | controller + tests/apiary mention |
+| **Status** | **OPEN** — same class of anomaly as `/login` and `/reports` |
 
 ---
 
@@ -379,6 +426,28 @@ Updated user JSON.
 |--------|------|--------|
 | GET | `/` | Homepage view (EJS), not API envelope |
 | OPTIONS | `/*` | CORS preflight 200 |
+
+---
+
+## 11. Not in this repository (do not invent)
+
+### Global Flu View–style paths
+
+Examples cited externally: `/globalfluview/api/weeks/`, `/globalfluview/api/surveys/{week_id}/`.
+
+| Fact | Status |
+|------|--------|
+| Present in this codebase | **No** (grep empty; blueprints off) |
+| Served by this Sails app | **Unproven** |
+| Live host auth | May be **host-wide** basic auth (probe carefully); not proof the path is implemented here |
+
+**Action:** resolve via nginx/upstream config and logs before adding any FastAPI routes.
+
+### Apiary-only / stale
+
+| Path | Notes |
+|------|--------|
+| `GET /reports/{id}` | In apiary; **no** matching controller action wired |
 
 ---
 
